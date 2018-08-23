@@ -1,4 +1,0 @@
-name: lm_ltr
-channels:
-  - defaults
-  - pytorch
