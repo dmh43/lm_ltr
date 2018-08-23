@@ -8,10 +8,18 @@ import torch
 from early_stopping import EarlyStopping
 
 
-def train_lm(dir_path, pretrain_path, cl=25, bs=64,
-       dropmult=1.0, lr=4e-3, startat=0,
-       use_clr=True, use_regular_schedule=False, use_discriminative=True, notrain=False, early_stopping=False):
-
+def train_lm(dir_path,
+             pretrain_path,
+             cl=25,
+             bs=64,
+             dropmult=1.0,
+             lr=4e-3,
+             startat=0,
+             use_clr=True,
+             use_regular_schedule=False,
+             use_discriminative=True,
+             notrain=False,
+             early_stopping=False):
   lm_path='fwd_lm'
   enc_path='fwd_lm_enc'
 
@@ -58,7 +66,6 @@ def train_lm(dir_path, pretrain_path, cl=25, bs=64,
     itos2 = pickle.load(open(pretrain_path / 'tmp' / f'itos_wt103.pkl', 'rb'))
     stoi2 = collections.defaultdict(lambda:-1, {v:k for k,v in enumerate(itos2)})
     nw = np.zeros((vs, em_sz), dtype=np.float32)
-    nb = np.zeros((vs,), dtype=np.float32)
     for i,w in enumerate(itos):
       r = stoi2[w]
       if r>=0:
