@@ -1,3 +1,5 @@
+from functools import partial
+
 import fire
 from fastai.text import *
 from fastai.lm_rnn import *
@@ -7,7 +9,7 @@ from early_stopping import EarlyStopping
 
 
 def train_lm(dir_path, pretrain_path, cl=25, pretrain_id='wt103', lm_id='', bs=64,
-       dropmult=1.0, lr=4e-3, preload=True, startat=0,
+       dropmult=1.0, lr=4e-3, startat=0,
        use_clr=True, use_regular_schedule=False, use_discriminative=True, notrain=False, joined=False,
        train_file_id='', early_stopping=False):
 
@@ -22,8 +24,6 @@ def train_lm(dir_path, pretrain_path, cl=25, pretrain_id='wt103', lm_id='', bs=6
   dir_path = Path(dir_path)
   pretrain_path = Path(pretrain_path)
   pre_lm_path = pretrain_path / 'models' / f'{PRE}{pretrain_id}.h5'
-  for p in [dir_path, pretrain_path, pre_lm_path]:
-    assert p.exists(), f'Error: {p} does not exist.'
 
   bptt=70
   em_sz,nh,nl = 400,1150,3
@@ -55,7 +55,7 @@ def train_lm(dir_path, pretrain_path, cl=25, pretrain_id='wt103', lm_id='', bs=6
   wd=1e-7
 
   lrs = np.array([lr/6,lr/3,lr,lr/2]) if use_discriminative else lr
-  if preload and startat == 0:
+  if startat == 0:
     wgts = torch.load(pre_lm_path, map_location=lambda storage, loc: storage)
     print(f'Loading pretrained weights...')
     ew = to_np(wgts['0.encoder.weight'])
@@ -78,7 +78,7 @@ def train_lm(dir_path, pretrain_path, cl=25, pretrain_id='wt103', lm_id='', bs=6
       learner.model.load_state_dict(wgts)
       #learner.freeze_to(-1)
       #learner.fit(lrs, 1, wds=wd, use_clr=(6,4), cycle_len=1)
-  elif preload:
+  else:
     print('Loading LM that was already fine-tuned on the target data...')
     learner.load(lm_path)
 
