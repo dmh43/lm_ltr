@@ -8,29 +8,23 @@ import torch
 from early_stopping import EarlyStopping
 
 
-def train_lm(dir_path, pretrain_path, cl=25, pretrain_id='wt103', lm_id='', bs=64,
+def train_lm(dir_path, pretrain_path, cl=25, bs=64,
        dropmult=1.0, lr=4e-3, startat=0,
-       use_clr=True, use_regular_schedule=False, use_discriminative=True, notrain=False, joined=False,
-       train_file_id='', early_stopping=False):
+       use_clr=True, use_regular_schedule=False, use_discriminative=True, notrain=False, early_stopping=False):
 
-  PRE = 'fwd_'
-  IDS = 'ids'
-  train_file_id = train_file_id if train_file_id == '' else f'_{train_file_id}'
-  joined_id = 'lm_' if joined else ''
-  lm_id = lm_id if lm_id == '' else f'{lm_id}_'
-  lm_path=f'{PRE}{lm_id}lm'
-  enc_path=f'{PRE}{lm_id}lm_enc'
+  lm_path='fwd_lm'
+  enc_path='fwd_lm_enc'
 
   dir_path = Path(dir_path)
   pretrain_path = Path(pretrain_path)
-  pre_lm_path = pretrain_path / 'models' / f'{PRE}{pretrain_id}.h5'
+  pre_lm_path = pretrain_path / 'models' / 'fwd_wt103.h5'
 
   bptt=70
   em_sz,nh,nl = 400,1150,3
   opt_fn = partial(optim.Adam, betas=(0.8, 0.99))
 
-  trn_lm_path = dir_path / 'tmp' / f'trn_{joined_id}{IDS}{train_file_id}.npy'
-  val_lm_path = dir_path / 'tmp' / f'val_{joined_id}{IDS}.npy'
+  trn_lm_path = dir_path / 'tmp' / 'trn_ids.npy'
+  val_lm_path = dir_path / 'tmp' / 'val_ids.npy'
 
   print(f'Loading {trn_lm_path} and {val_lm_path}')
   trn_lm = np.load(trn_lm_path)
@@ -61,7 +55,7 @@ def train_lm(dir_path, pretrain_path, cl=25, pretrain_id='wt103', lm_id='', bs=6
     ew = to_np(wgts['0.encoder.weight'])
     row_m = ew.mean(0)
 
-    itos2 = pickle.load(open(pretrain_path / 'tmp' / f'itos_{pretrain_id}.pkl', 'rb'))
+    itos2 = pickle.load(open(pretrain_path / 'tmp' / f'itos_wt103.pkl', 'rb'))
     stoi2 = collections.defaultdict(lambda:-1, {v:k for k,v in enumerate(itos2)})
     nw = np.zeros((vs, em_sz), dtype=np.float32)
     nb = np.zeros((vs,), dtype=np.float32)
