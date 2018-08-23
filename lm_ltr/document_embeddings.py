@@ -2,6 +2,7 @@ from typing import List
 
 import torch
 import torch.nn as nn
+from fastai import MultiBatchRNN
 
 from encode_documents import DocumentEncoder
 
