@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader, RandomSampler, BatchSampler
 from parsers import into_tokens
 
 def tokens_to_indexes(tokens: List[List[str]]):
-  lookup = {}
+  lookup: dict = {}
   result = []
   for tokens_chunk in tokens:
     chunk_result = []
@@ -16,7 +16,7 @@ def tokens_to_indexes(tokens: List[List[str]]):
   return result, lookup
 
 class QueryDataset(Dataset):
-  def __init__(self, documents: List[str], queries: List[str], labels: List[int]):
+  def __init__(self, documents: List[str], queries: List[str], labels: List[int]) -> None:
     assert len(queries) == len(labels)
     self.labels = labels
     self.queries = queries
