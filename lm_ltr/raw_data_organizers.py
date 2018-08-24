@@ -7,7 +7,7 @@ def get_raw_train_test(rows, size=0.8):
   documents = []
   query_label_lookup = {}
   for row in rows:
-    if query_label_lookup.get(row['query']) is not None:
+    if query_label_lookup.get(row['query']) is None:
       query_label_lookup[row['query']] = len(documents)
       documents.append(row['document'])
   samples = _.to_pairs(query_label_lookup)

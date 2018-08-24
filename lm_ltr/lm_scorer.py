@@ -27,7 +27,7 @@ class LMScorer(nn.Module):
                qrnn=False,
                query_embed_len=100,
                document_embed_len=100):
-    super().__init__(self)
+    super().__init__()
     self.document_encoder = DocumentEncoder(document_embed_len)
     self.query_encoder = QueryEncoder(query_term_embeds, query_embed_len)
     hidden_len = document_embed_len + query_embed_len

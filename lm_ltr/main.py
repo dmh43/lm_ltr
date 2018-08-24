@@ -3,19 +3,20 @@ import pickle
 
 import pydash as _
 import pymysql.cursors
+from fastai.text import Tokenizer
 import torch
 import torch.nn as nn
 
 from raw_data_organizers import get_raw_train_test
 from lm_scorer import LMScorer
-from parsers import into_tokens
 from train_model import train_model
 from eval_model import eval_model
 
 def count_unique_tokens(texts: List[str]) -> int:
+  tokenizer = Tokenizer()
   tokens: set = set()
   for text in texts:
-    tokens = tokens.union(into_tokens(text))
+    tokens = tokens.union(tokenizer.proc_text(text))
   return len(tokens)
 
 def get_model(num_query_terms: int, query_term_embed_len: int) -> nn.Module:

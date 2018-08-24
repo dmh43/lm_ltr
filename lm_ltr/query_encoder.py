@@ -5,6 +5,7 @@ import torch.nn as nn
 
 class QueryEncoder(nn.Module):
   def __init__(self, query_term_embeds: nn.Embedding, query_embed_len: int) -> None:
+    super().__init__()
     self.query_term_embeds = query_term_embeds
     self.query_embed_len = query_embed_len
 

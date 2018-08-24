@@ -1,8 +1,8 @@
 from typing import List
 
-from torch.utils.data import Dataset, DataLoader, RandomSampler, BatchSampler
-
-from parsers import into_tokens
+from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.sampler import RandomSampler, BatchSampler
+from fastai.text import Tokenizer
 
 def tokens_to_indexes(tokens: List[List[str]]):
   lookup: dict = {}
@@ -21,9 +21,10 @@ class QueryDataset(Dataset):
     self.labels = labels
     self.queries = queries
     self.documents = documents
-    self.tokenized_queries = [into_tokens(q) for q in self.queries]
+    self.tokenizer = Tokenizer()
+    self.tokenized_queries = [self.tokenizer.proc_text(q) for q in self.queries]
     self.idx_queries, self.query_term_lookup = tokens_to_indexes(self.tokenized_queries)
-    self.tokenized_documents = [into_tokens(doc) for doc in self.documents]
+    self.tokenized_documents = [self.tokenizer.proc_text(doc) for doc in self.documents]
     self.idx_documents, self.document_term_lookup = tokens_to_indexes(self.tokenized_documents)
 
   def __len__(self):

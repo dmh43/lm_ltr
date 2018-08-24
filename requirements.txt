@@ -1,5 +1,6 @@
 git+https://github.com/fastai/fastai.git@master#egg=fastai
-torch>=0.4.0
+torch<0.4.0
 fire>=0.1.0
 pymysql>=0.9.0
 ipdb>=0.10
+pydash>=4.7.0
