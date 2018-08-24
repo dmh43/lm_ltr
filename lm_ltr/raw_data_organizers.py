@@ -12,7 +12,7 @@ def get_raw_train_test(rows, size=0.8):
       documents.append(row['document'])
   samples = _.to_pairs(query_label_lookup)
   shuffle(samples)
-  queries, labels = zip(*samples)
+  queries, labels = list(zip(*samples))
   return {'train_queries': queries[:num_train_rows],
           'test_queries': queries[num_train_rows:],
           'train_labels': labels[:num_train_rows],
