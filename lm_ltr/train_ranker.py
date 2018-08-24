@@ -2,6 +2,8 @@ import fire
 from fastai.text import *
 from fastai.lm_rnn import *
 
+from lm_ranker import get_lm_ranker
+
 
 def freeze_all_but(learner, n):
   c=learner.get_layer_groups()
@@ -58,7 +60,7 @@ def train_ranker(dir_path,
   #dps = np.array([0.65,0.48,0.039,0.335,0.34])*dropmult
   #dps = np.array([0.6,0.5,0.04,0.3,0.4])*dropmult
 
-  m = get_rnn_classifier(bptt, 20*70, c, vs, emb_sz=em_sz, n_hid=nh, n_layers=nl, pad_token=1,
+  m = get_lm_ranker(bptt, 20*70, vs, emb_sz=em_sz, n_hid=nh, n_layers=nl, pad_token=1,
         layers=[em_sz*3, 50, c], drops=[dps[4], 0.1],
         dropouti=dps[0], wdrop=dps[1], dropoute=dps[2], dropouth=dps[3])
 
