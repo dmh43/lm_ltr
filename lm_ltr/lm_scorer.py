@@ -9,7 +9,7 @@ from document_encoder import DocumentEncoder
 
 class LMScorer(nn.Module):
   def __init__(self,
-               query_term_embeds,
+               query_token_embeds,
                bptt=70,
                max_seq=140,
                n_tok=30000,
@@ -29,7 +29,7 @@ class LMScorer(nn.Module):
                document_embed_len=100):
     super().__init__()
     self.document_encoder = DocumentEncoder(document_embed_len)
-    self.query_encoder = QueryEncoder(query_term_embeds, query_embed_len)
+    self.query_encoder = QueryEncoder(query_token_embeds, query_embed_len)
     hidden_len = document_embed_len + query_embed_len
     self.to_logits = nn.Linear(hidden_len, 2)
 

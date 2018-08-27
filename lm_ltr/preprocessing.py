@@ -22,11 +22,11 @@ def tokens_to_indexes(tokens: List[List[str]], lookup=None):
     result.append(chunk_result)
   return result, lookup
 
-def preprocess_texts(texts: List[str], term_lookup=None):
+def preprocess_texts(texts: List[str], token_lookup=None):
   tokenizer = Tokenizer()
   tokenized = [tokenizer.proc_text(q) for q in texts]
-  idx_texts, term_lookup = tokens_to_indexes(tokenized, term_lookup)
-  return idx_texts, term_lookup
+  idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup)
+  return idx_texts, token_lookup
 
 def pad_to_max_len(elems: List[List[int]]):
   max_len = max(map(len, elems))

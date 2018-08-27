@@ -6,7 +6,7 @@ from torch.utils.data.sampler import RandomSampler, BatchSampler
 from preprocessing import collate
 
 class QueryDataset(Dataset):
-  def __init__(self, documents: List[int], queries: List[int], labels: List[int]) -> None:
+  def __init__(self, documents: List[int], queries: List[int], labels: List[List[int]]) -> None:
     assert len(queries) == len(labels)
     self.labels = labels
     self.queries = queries

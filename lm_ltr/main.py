@@ -19,9 +19,9 @@ def count_unique_tokens(texts: List[str]) -> int:
     tokens = tokens.union(tokenizer.proc_text(text))
   return len(tokens)
 
-def get_model(num_query_terms: int, query_term_embed_len: int) -> nn.Module:
-  query_term_embeds = nn.Embedding(num_query_terms, query_term_embed_len)
-  return LMScorer(query_term_embeds)
+def get_model(num_query_tokens: int, query_token_embed_len: int) -> nn.Module:
+  query_token_embeds = nn.Embedding(num_query_tokens, query_token_embed_len)
+  return LMScorer(query_token_embeds)
 
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
@@ -55,9 +55,9 @@ def main():
   except:
     rows = read_rows_from_file('./rows')
   raw_data = get_raw_train_test(rows)
-  query_term_embed_len = 100
-  num_query_terms = count_unique_tokens(raw_data['train_queries'])
-  model = get_model(num_query_terms, query_term_embed_len)
+  query_token_embed_len = 100
+  num_query_tokens = count_unique_tokens(raw_data['train_queries'])
+  model = get_model(num_query_tokens + 2, query_token_embed_len)
   train_model(model, raw_data)
   eval_model(model, raw_data)
 
