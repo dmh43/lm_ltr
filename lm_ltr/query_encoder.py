@@ -10,5 +10,5 @@ class QueryEncoder(nn.Module):
     self.query_embed_len = query_embed_len
 
   def forward(self, query: List[List[int]]) -> torch.Tensor:
-    query_terms = self.query_term_embeds(torch.tensor(query))
+    query_terms = self.query_term_embeds(query)
     return torch.sum(query_terms, 1)
