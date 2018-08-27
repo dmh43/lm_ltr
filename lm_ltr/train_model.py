@@ -12,7 +12,7 @@ from preprocessing import preprocess_texts
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []
   for i in range(num_negative_samples):
-    query_len = random.randint(0, max_len)
+    query_len = random.randint(1, max_len)
     query = random.choices(range(2, num_query_tokens), k=query_len)
     result.append(query)
   return result

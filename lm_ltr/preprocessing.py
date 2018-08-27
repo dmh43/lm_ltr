@@ -15,7 +15,7 @@ def tokens_to_indexes(tokens: List[List[str]], lookup=None):
     chunk_result = []
     for token in tokens_chunk:
       if is_test:
-        chunk_result.append(unk_token_idx)
+        chunk_result.append(lookup.get(token) or unk_token_idx)
       else:
         lookup[token] = lookup.get(token) or len(lookup)
         chunk_result.append(lookup[token])
