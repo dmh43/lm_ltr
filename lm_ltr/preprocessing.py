@@ -35,4 +35,4 @@ def pad_to_max_len(elems: List[List[int]]):
 def collate(samples):
   x, y = list(zip(*samples))
   x = list(zip(*x))
-  return x[0], pad_to_max_len(x[1]), torch.tensor(y)
+  return torch.tensor(pad_to_max_len(x[0])), x[1], torch.tensor(y)

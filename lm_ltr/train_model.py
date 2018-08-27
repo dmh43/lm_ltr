@@ -2,6 +2,7 @@ import random
 
 from fastai.model import fit
 from fastai.dataset import ModelData
+from fastai.metrics import accuracy
 import pydash as _
 from torch.optim import Adam
 import torch.nn.functional as F
@@ -44,4 +45,5 @@ def train_model(model, raw_data) -> None:
       model_data,
       1,
       Adam(model.parameters()),
-      F.cross_entropy)
+      F.cross_entropy,
+      metrics=[accuracy])
