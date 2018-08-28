@@ -1,8 +1,8 @@
-from fastai.model import fit
 from fastai.dataset import ModelData
 from fastai.metrics import accuracy
-import pydash as _
+from fastai.model import fit
 from torch.optim import Adam
+import pydash as _
 import torch.nn.functional as F
 
 from data_wrappers import build_dataloader
