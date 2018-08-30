@@ -1,8 +1,7 @@
 from typing import List
 
 from torch.utils.data import Dataset, DataLoader
-# from torch.utils.data.sampler import RandomSampler, BatchSampler
-from torch.utils.data.sampler import SequentialSampler, BatchSampler
+from torch.utils.data.sampler import RandomSampler, BatchSampler
 
 from preprocessing import collate
 
@@ -23,6 +22,5 @@ class QueryDataset(Dataset):
 def build_dataloader(documents: List[int], queries: List[int], document_ids: List[int], labels: List[int]) -> DataLoader:
   dataset = QueryDataset(documents, queries, document_ids, labels)
   return DataLoader(dataset,
-                    # batch_sampler=BatchSampler(RandomSampler(dataset), 100, False),
-                    batch_sampler=BatchSampler(SequentialSampler(dataset), 100, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), 100, False),
                     collate_fn=collate)

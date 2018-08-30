@@ -31,7 +31,6 @@ def get_model(query_token_embed_len: int,
 def main():
   print('Getting dataset')
   try:
-    raise ValueError
     preprocessed_data = read_from_file('./processed')
   except:
     try:

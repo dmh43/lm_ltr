@@ -3,6 +3,7 @@ from typing import List
 from fastai.lm_rnn import MultiBatchRNN
 import torch
 import torch.nn as nn
+from toolz import pipe
 
 from query_encoder import QueryEncoder
 from document_encoder import DocumentEncoder
@@ -31,8 +32,8 @@ class LMScorer(nn.Module):
     super().__init__()
     self.document_encoder = DocumentEncoder(document_token_embeds, document_embed_len)
     self.query_encoder = QueryEncoder(query_token_embeds, query_embed_len)
-    hidden_len = document_embed_len + query_embed_len
-    self.to_logits = nn.Linear(hidden_len, 2)
+    concat_len = document_embed_len + query_embed_len
+    self.to_logits = nn.Linear(concat_len, 2)
 
   def forward(self,
               query: List[List[int]],
@@ -40,4 +41,5 @@ class LMScorer(nn.Module):
     hidden = torch.cat([self.document_encoder(document),
                         self.query_encoder(query)],
                        1)
-    return self.to_logits(hidden)
+    return pipe(hidden,
+                self.to_logits)
