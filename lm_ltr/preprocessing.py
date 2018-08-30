@@ -1,6 +1,8 @@
 from typing import List
 import random
 
+import pydash as _
+
 import torch
 from fastai.text import Tokenizer
 
@@ -53,7 +55,9 @@ def pad_to_max_len(elems: List[List[int]]):
 def collate(samples):
   x, y = list(zip(*samples))
   x = list(zip(*x))
-  return torch.tensor(pad_to_max_len(x[0])), x[1], torch.tensor(y)
+  query = pad_to_max_len(x[0])
+  documents = pad_to_max_len(x[1])
+  return torch.tensor(query), torch.tensor(documents), torch.tensor(y)
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []
@@ -70,20 +74,24 @@ def preprocess_raw_data(raw_data):
                                                                                                       'test_queries',
                                                                                                       'test_document_ids'],
                                                                                                      lambda key: raw_data[key])
-  num_negative_train_samples = len(raw_train_queries) * 10
-  num_negative_test_samples = len(raw_test_queries) * 10
+  # num_negative_train_samples = len(raw_train_queries) * 10
+  # num_negative_test_samples = len(raw_test_queries) * 10
+  num_negative_train_samples = len(raw_train_queries)
+  num_negative_test_samples = len(raw_test_queries)
   documents, document_token_lookup = preprocess_texts(raw_documents)
   processed_train_queries, query_token_lookup = preprocess_texts(raw_train_queries)
   processed_test_queries, __ = preprocess_texts(raw_test_queries, query_token_lookup)
-  train_queries = processed_train_queries + get_negative_samples(len(query_token_lookup),
-                                                                 num_negative_train_samples)
-  test_queries = processed_test_queries + get_negative_samples(len(query_token_lookup),
-                                                               num_negative_test_samples)
+  train_document_ids = list(train_document_ids) + random.choices(range(len(documents)), k=num_negative_train_samples)
+  test_document_ids = list(test_document_ids) + random.choices(range(len(documents)), k=num_negative_test_samples)
+  train_queries = processed_train_queries + processed_train_queries * int(num_negative_train_samples / len(raw_train_queries))
+  test_queries = processed_test_queries + processed_test_queries * int(num_negative_test_samples / len(raw_test_queries))
   train_labels = [1] * len(processed_train_queries) + [0] * num_negative_train_samples
   test_labels = [1] * len(processed_test_queries) + [0] * num_negative_test_samples
   return {'documents':             documents,
           'document_token_lookup': document_token_lookup,
           'query_token_lookup':    query_token_lookup,
+          'train_document_ids':    train_document_ids,
+          'test_document_ids':     test_document_ids,
           'train_queries':         train_queries,
           'train_labels':          train_labels,
           'test_queries':          test_queries,

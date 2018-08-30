@@ -36,8 +36,8 @@ class LMScorer(nn.Module):
 
   def forward(self,
               query: List[List[int]],
-              candidate_documents: List[List[int]]) -> torch.Tensor:
-    hidden = torch.cat([self.document_encoder(candidate_documents),
+              document: List[List[int]]) -> torch.Tensor:
+    hidden = torch.cat([self.document_encoder(document),
                         self.query_encoder(query)],
                        1)
     return self.to_logits(hidden)

@@ -15,4 +15,4 @@ class DocumentEncoder(nn.Module):
 
   def forward(self, document: List[List[int]]) -> torch.Tensor:
     document_tokens = self.document_token_embeds(document)
-    return torch.sum(document_tokens, 1)
+    return torch.sum(document_tokens, 1) / len(document_tokens)

@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import math
 
 def get_glove_lookup(path='./glove/glove.6B.100d.txt', embedding_dim=100):

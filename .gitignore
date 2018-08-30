@@ -35,3 +35,5 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+/glove.6B.zip
+/glove
