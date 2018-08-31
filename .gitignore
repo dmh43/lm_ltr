@@ -37,3 +37,5 @@ nosetests.xml
 .pydevproject
 /glove.6B.zip
 /glove
+/indri/in
+indri/out/*
