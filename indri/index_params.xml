@@ -1,0 +1,9 @@
+<parameters>
+    <index>/home/dany/lm_ltr/indri/out</index>
+    <memory>4G</memory>
+    <corpus>
+        <path>/home/dany/lm_ltr/indri/in</path>
+        <class>trectext</class>
+    </corpus>
+    <stemmer><name>krovetz</name></stemmer>
+</parameters>
