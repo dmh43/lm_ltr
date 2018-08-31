@@ -20,6 +20,7 @@ def train_model(model, documents, train_queries, train_document_ids, train_label
   fit(model,
       model_data,
       100,
-      Adam(list(filter(lambda p: p.requires_grad, model.parameters()))),
+      Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
+           weight_decay=1.0),
       F.cross_entropy,
       metrics=[accuracy])

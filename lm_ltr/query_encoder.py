@@ -8,7 +8,8 @@ class QueryEncoder(nn.Module):
     super().__init__()
     self.query_token_embeds = query_token_embeds
     self.query_embed_len = query_embed_len
+    self.linear = nn.Linear(self.query_embed_len, self.query_embed_len, bias=False)
 
   def forward(self, query: List[List[int]]) -> torch.Tensor:
     query_tokens = self.query_token_embeds(query)
-    return torch.sum(query_tokens, 1) / len(query_tokens)
+    return self.linear(torch.sum(query_tokens, 1))
