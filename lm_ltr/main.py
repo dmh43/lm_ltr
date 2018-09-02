@@ -7,7 +7,7 @@ import torch.nn as nn
 from embedding_loaders import get_glove_lookup, init_embedding
 from eval_model import eval_model
 from fetchers import get_rows, read_from_file, write_to_file
-from lm_scorer import LMScorer
+from pointwise_scorer import PointwiseScorer
 from preprocessing import preprocess_raw_data, get_raw_train_test
 from train_model import train_model
 
@@ -26,7 +26,7 @@ def get_model(query_token_embed_len: int,
                                          document_token_index_lookup,
                                          num_document_tokens,
                                          document_token_embed_len)
-  return LMScorer(query_token_embeds, document_token_embeds)
+  return PointwiseScorer(query_token_embeds, document_token_embeds)
 
 def main():
   print('Getting dataset')
@@ -71,4 +71,4 @@ if __name__ == "__main__":
   except: # pylint: disable=bare-except
     extype, value, tb = sys.exc_info()
     traceback.print_exc()
-ipdb.post_mortem(tb)
+  ipdb.post_mortem(tb)

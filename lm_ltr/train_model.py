@@ -1,5 +1,5 @@
 from fastai.dataset import ModelData
-from fastai.metrics import accuracy
+from fastai.metrics import accuracy_thresh
 from fastai.model import fit
 
 import torch
@@ -9,18 +9,28 @@ import pydash as _
 import torch.nn.functional as F
 
 from data_wrappers import build_dataloader
+from metrics import RankingMetricRecorder, recall, precision, f1
+from preprocessing import pad_to_max_len
 
 def train_model(model, documents, train_queries, train_document_ids, train_labels, test_document_ids, test_queries, test_labels) -> None:
   print('Training')
+  train_dl = build_dataloader(documents, train_queries, train_document_ids, train_labels)
+  test_dl = build_dataloader(documents, test_queries, test_document_ids, test_labels)
   model_data = ModelData('./rows',
-                         build_dataloader(documents, train_queries, train_document_ids, train_labels),
-                         build_dataloader(documents, test_queries, test_document_ids, test_labels))
+                         train_dl,
+                         test_dl)
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model = nn.DataParallel(model).to(device)
+  metric_callback = RankingMetricRecorder(model,
+                                          torch.tensor(pad_to_max_len(documents)),
+                                          train_dl,
+                                          test_dl,
+                                          k=10)
   fit(model,
       model_data,
       100,
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
            weight_decay=1.0),
-      F.cross_entropy,
-      metrics=[accuracy])
+      F.binary_cross_entropy_with_logits,
+      metrics=[accuracy_thresh(0.5), recall, precision, f1],
+      callbacks=[metric_callback])

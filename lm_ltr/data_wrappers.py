@@ -17,7 +17,7 @@ class QueryDataset(Dataset):
     return len(self.queries)
 
   def __getitem__(self, idx):
-    return ((self.queries[idx], self.documents[self.document_ids[idx]]), self.labels[idx])
+    return ((self.queries[idx], self.documents[self.document_ids[idx]], self.document_ids[idx]), self.labels[idx])
 
 def build_dataloader(documents: List[int], queries: List[int], document_ids: List[int], labels: List[int]) -> DataLoader:
   dataset = QueryDataset(documents, queries, document_ids, labels)

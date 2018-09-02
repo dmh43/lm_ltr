@@ -57,7 +57,8 @@ def collate(samples):
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   documents = pad_to_max_len(x[1])
-  return torch.tensor(query), torch.tensor(documents), torch.tensor(y)
+  document_ids = x[2]
+  return torch.tensor(query), torch.tensor(documents), torch.tensor(document_ids), torch.tensor(y, dtype=torch.float32)
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []
