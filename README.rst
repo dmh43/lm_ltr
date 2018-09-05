@@ -1,18 +1,17 @@
-lm_ltr
+Weak Supervision for Document Retrieval
 ======
-
-.. image:: https://img.shields.io/pypi/v/lm_ltr.svg
-    :target: https://pypi.python.org/pypi/lm_ltr
-    :alt: Latest PyPI version
-
-.. image:: none.png
-   :target: none
-   :alt: Latest Travis CI build status
 
 Learning to rank by fine tuning an LM
 
 Usage
 -----
+If the db is not available, create `./rows` or `./preprocessed` by running `main.py` wherever the db is available and loaded. Then transfer via `ssh` etc.
+
+Create `indri/in` by running `create_trectext.py`
+Create `query_params.xml` by running `create_query_params_for_dataset.py`
+Run `IndriBuildIndex index_params.xml` to build the Indri index of the documents in `in`
+Run `IndriRunQuery query_params.xml -count=10 -index=PATH_TO_PROJECT/lm_ltr/indri/out -trecFormat=true > query_result` to query the Indri index and save results to `query_result`
+Run `read_query_results.py` to process the results and save them to `./indri_results.pkl`
 
 Installation
 ------------
@@ -20,11 +19,10 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-Compatibility
--------------
 
 Licence
 -------
+GNU GPL v3
 
 Authors
 -------

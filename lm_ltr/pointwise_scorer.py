@@ -1,5 +1,3 @@
-from typing import List
-
 from fastai.lm_rnn import MultiBatchRNN
 import torch
 import torch.nn as nn
@@ -23,10 +21,7 @@ class PointwiseScorer(nn.Module):
     self.b = nn.Parameter(torch.tensor(0, dtype=torch.float))
     self.c = nn.Parameter(torch.tensor(1, dtype=torch.float))
 
-  def forward(self,
-              query: List[List[int]],
-              document: List[List[List[int]]],
-              document_ids) -> torch.Tensor:
+  def forward(self, query, document, document_ids):
     # hidden = torch.cat([self.document_encoder(document),
     #                     self.query_encoder(query)],
     #                    1)

@@ -1,3 +1,6 @@
+import os
+import pickle
+
 from fetchers import get_rows
 
 def main():
@@ -6,10 +9,13 @@ def main():
     os.remove(path)
   except OSError:
     pass
+  rows = get_rows()
+  with open('./document_ids.pkl', 'rb') as fh:
+    document_title_id_mapping = pickle.load(fh)
   with open(path, 'a+') as fh:
-    for i, row in enumerate(get_rows()):
+    for row in rows:
       fh.write('<DOC>\n')
-      fh.write('<DOCNO>' + str(i + 1) + '</DOCNO>\n')
+      fh.write('<DOCNO>' + str(document_title_id_mapping[row['document_title']] + 1) + '</DOCNO>\n')
       fh.write('<TEXT>\n')
       fh.write(row['document'] + '\n')
       fh.write('</TEXT>\n')

@@ -1,5 +1,3 @@
-from typing import List
-
 import torch
 import torch.nn as nn
 
@@ -10,6 +8,6 @@ class QueryEncoder(nn.Module):
     self.query_embed_len = query_embed_len
     self.linear = nn.Linear(self.query_embed_len, self.query_embed_len, bias=False)
 
-  def forward(self, query: List[List[int]]) -> torch.Tensor:
+  def forward(self, query):
     query_tokens = self.query_token_embeds(query)
     return self.linear(torch.sum(query_tokens, 1))

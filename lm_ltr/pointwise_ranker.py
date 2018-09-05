@@ -1,5 +1,3 @@
-from typing import List
-
 import torch
 import torch.nn as nn
 
@@ -10,7 +8,7 @@ class PointwiseRanker:
     if not self.expect_all_documents:
       raise NotImplementedError
 
-  def __call__(self, query: List[List[int]], documents: List[List[List[int]]]):
+  def __call__(self, query, documents):
     documents_to_score = documents
     ranks = []
     for query in query:

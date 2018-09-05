@@ -1,5 +1,3 @@
-from typing import List
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -48,10 +46,7 @@ class RankingMetricRecorder(MetricRecorder):
     self.test_data = next(iter(test_dl))
     self.all_documents = all_documents
 
-  def in_top_k(self,
-               query: List[List[int]],
-               documents: List[List[List[int]]],
-               relevant_document_index: List[int]):
+  def in_top_k(self, query, documents, relevant_document_index):
     top_k = self.ranker(query, documents)[:, :self.k]
     acc = 0
     for i, doc in enumerate(relevant_document_index):

@@ -12,10 +12,10 @@ from data_wrappers import build_dataloader
 from metrics import RankingMetricRecorder, recall, precision, f1
 from preprocessing import pad_to_max_len
 
-def train_model(model, documents, train_queries, train_document_ids, train_labels, test_document_ids, test_queries, test_labels) -> None:
+def train_model(model, documents, train_data, test_data):
   print('Training')
-  train_dl = build_dataloader(documents, train_queries, train_document_ids, train_labels)
-  test_dl = build_dataloader(documents, test_queries, test_document_ids, test_labels)
+  train_dl = build_dataloader(documents, train_data)
+  test_dl = build_dataloader(documents, test_data)
   model_data = ModelData('./rows',
                          train_dl,
                          test_dl)
