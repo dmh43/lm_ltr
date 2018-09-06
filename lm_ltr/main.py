@@ -10,6 +10,7 @@ from fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_da
 from pointwise_scorer import PointwiseScorer
 from preprocessing import preprocess_raw_data, preprocess_texts
 from train_model import train_model
+from utils import with_negative_samples
 
 def get_model(query_token_embed_len: int,
               document_token_embed_len: int,
@@ -28,33 +29,27 @@ def get_model(query_token_embed_len: int,
                                          document_token_embed_len)
   return PointwiseScorer(query_token_embeds, document_token_embeds)
 
-def with_negative_samples(samples, num_negative_samples, num_documents):
-  def _get_neg_samples(sample, num_negative_samples, num_documents):
-    return [_.assign({},
-                     sample,
-                     {'title_id': random.randint(0, num_documents - 1),
-                      'rel': 0.0}) for i in range(num_negative_samples)]
-  result = samples
-  for sample in samples:
-    result += _get_neg_samples(sample, num_negative_samples, num_documents)
-  return result
-
 def main():
+  print('Loading mappings')
   with open('./document_ids.pkl', 'rb') as fh:
     document_title_id_mapping = pickle.load(fh)
+    id_document_title_mapping = {document_title_id: document_title for document_title, document_title_id in _.to_pairs(document_title_id_mapping)}
   with open('./query_ids.pkl', 'rb') as fh:
     query_id_mapping = pickle.load(fh)
     id_query_mapping = {query_id: query for query, query_id in _.to_pairs(query_id_mapping)}
+  print('Loading raw documents')
   raw_documents = read_or_cache('./raw_documents.pkl',
-                                lambda: get_raw_documents(document_title_id_mapping))
-  document_token_lookup, documents = preprocess_texts(raw_documents)
+                                lambda: get_raw_documents(id_document_title_mapping))
+  documents, document_token_lookup = preprocess_texts(raw_documents)
   size_train_queries = 0.8
   train_query_ids = random.sample(list(id_query_mapping.keys()),
-                                  size_train_queries * len(id_query_mapping))
+                                  int(size_train_queries * len(id_query_mapping)))
+  print('Loading weak data (from Indri output)')
   weak_raw_data = read_or_cache('./weak_raw_data.pkl',
                                 lambda: get_weak_raw_data(id_query_mapping, train_query_ids))
   train_data, query_token_lookup = preprocess_raw_data(weak_raw_data)
   test_queries = [id_query_mapping[id] for id in set(id_query_mapping.keys()) - set(train_query_ids)]
+  print('Loading supervised data (from mention-entity pairs)')
   supervised_raw_data = read_or_cache('./supervised_raw_data.pkl',
                                       lambda: get_supervised_raw_data(document_title_id_mapping, test_queries))
   preprocessed_test_data, __ = preprocess_raw_data(supervised_raw_data,

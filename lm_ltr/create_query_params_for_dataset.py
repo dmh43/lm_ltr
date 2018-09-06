@@ -5,7 +5,8 @@ import re
 from fetchers import get_rows
 
 def clean_string(query):
-  return re.sub('[^a-zA-Z0-9-]', '', query).strip()
+  cleaned = re.sub('[^a-zA-Z0-9]', '', query)
+  return re.sub('-', ' ', cleaned).strip()
 
 def main():
   path = './indri/query_params.xml'
@@ -19,6 +20,7 @@ def main():
   with open(path, 'a+') as fh:
     fh.write('<parameters>\n')
     for row in rows:
+      if row['query'] not in query_id_mapping: continue
       query_id = query_id_mapping[row['query']]
       query = clean_string(row['query'])
       if len(query) == 0: continue
