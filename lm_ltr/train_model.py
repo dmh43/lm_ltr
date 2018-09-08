@@ -10,7 +10,6 @@ import torch.nn.functional as F
 
 from data_wrappers import build_dataloader
 from metrics import RankingMetricRecorder, recall, precision, f1
-from preprocessing import pad_to_max_len
 
 def train_model(model, documents, train_data, test_data):
   print('Training')
@@ -25,5 +24,5 @@ def train_model(model, documents, train_data, test_data):
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
            weight_decay=1.0),
       F.binary_cross_entropy_with_logits,
-      metrics=[accuracy_thresh(0.5), recall, precision, f1],
+      metrics=[accuracy_thresh(0.5), recall, precision, f1])
   torch.save(model.state_dict(), './model_save')
