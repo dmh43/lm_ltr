@@ -25,5 +25,5 @@ class PointwiseScorer(nn.Module):
     #                    1)
     # return pipe(hidden,
     #             self.to_logits)
-    return F.sigmoid(torch.sum(self.document_encoder(document) * self.query_encoder(query),
-                               dim=1))
+    return torch.sum(self.document_encoder(document) * self.query_encoder(query),
+                     dim=1)
