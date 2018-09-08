@@ -19,11 +19,11 @@ class PointwiseScorer(nn.Module):
     # concat_len = document_embed_len + query_embed_len
     # self.to_logits = nn.Linear(concat_len, 2)
 
-  def forward(self, query, document, document_ids):
+  def forward(self, query, document):
     # hidden = torch.cat([self.document_encoder(document),
     #                     self.query_encoder(query)],
     #                    1)
     # return pipe(hidden,
     #             self.to_logits)
-    return torch.sum(self.document_encoder(document) * self.query_encoder(query),
-                    dim=1)
+    return F.sigmoid(torch.sum(self.document_encoder(document) * self.query_encoder(query),
+                               dim=1))

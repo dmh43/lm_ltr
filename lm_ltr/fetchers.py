@@ -64,13 +64,17 @@ def get_supervised_raw_data(document_title_id_mapping, queries):
   rows = get_rows()
   queries_to_keep = set(queries)
   result = []
+  ctr = 0
   for row in rows:
-    if row['query'] not in queries_to_keep: break
+    if row['query'] not in queries_to_keep:
+      ctr += 1
+      continue
     if row['document_title'] in document_title_id_mapping:
       result.append({'query': row['query'],
                      'document_id': document_title_id_mapping[row['document_title']]})
     else:
-      print(row['document_title'], 'not in document_title_id_mapping')
+      ctr += 1
+  print('skipped', ctr, 'supervised queries')
   return result
 
 def get_weak_raw_data(id_query_mapping, queries):
@@ -80,8 +84,9 @@ def get_weak_raw_data(id_query_mapping, queries):
       line = fh.readline()
       if line:
         query_num, __, doc_num, doc_rank, doc_score, ___ = line.strip().split(' ')
-        query = id_query_mapping[int(query_num) - 1]
-        if query not in queries: continue
+        query_id = int(query_num) - 1
+        query = id_query_mapping[query_id]
+        if query_id not in queries: continue
         results.append({'query': query,
                         'document_id': int(doc_num) - 1})
       else:
@@ -101,4 +106,12 @@ def read_or_cache(path, fn):
     write_to_file(path, data)
   except (FileNotFoundError, pymysql.err.OperationalError):
     data = read_from_file(path)
+  return data
+
+def read_cache(path, fn):
+  try:
+    data= read_from_file(path)
+  except FileNotFoundError:
+    data = fn()
+    write_to_file(path, data)
   return data
