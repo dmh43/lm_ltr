@@ -10,7 +10,7 @@ class QueryDataset(Dataset):
   def __init__(self, documents, data):
     self.documents = documents
     self.data = data
-    self.num_negative_samples = 10
+    self.num_negative_samples = 0
     self.relevant_docs = {}
     for row in self.data:
       query = row['query']

@@ -1,3 +1,5 @@
+from random import shuffle
+
 from fastai.dataset import ModelData
 from fastai.metrics import accuracy_thresh
 from fastai.model import fit
@@ -24,14 +26,12 @@ def train_model(model, documents, train_data, test_data):
       1,
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
            weight_decay=1.0),
-      F.binary_cross_entropy_with_logits,
-      metrics=[accuracy_thresh(0.5), recall, precision, f1])
+      F.mse_loss)
   print("Training:")
   fit(model,
       model_data,
       100,
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
            weight_decay=1.0),
-      F.binary_cross_entropy_with_logits,
-      metrics=[accuracy_thresh(0.5), recall, precision, f1])
+      F.mse_loss)
   torch.save(model.state_dict(), './model_save')

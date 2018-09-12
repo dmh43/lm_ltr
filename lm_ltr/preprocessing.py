@@ -1,8 +1,10 @@
 import random
 
 import pydash as _
+import numpy as np
 
 import torch
+import torch.nn.functional as F
 from fastai.text import Tokenizer
 
 pad_token_idx = 1
@@ -49,11 +51,23 @@ def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
     result.append(query)
   return result
 
-def preprocess_raw_data(raw_data, query_token_lookup=None):
+def inv_log_rank(raw_info):
+  return 1.0 / np.log(int(raw_info['rank']) + 1)
+
+def score(raw_info):
+  return float(raw_info['score'])
+
+def sigmoid_score(raw_info):
+  return F.sigmoid(float(raw_info['score']))
+
+def all_ones(raw_info):
+  return 1.0
+
+def preprocess_raw_data(raw_data, query_token_lookup=None, rel_method=score):
   queries = [sample['query'] for sample in raw_data]
   tokens, lookup = preprocess_texts(queries, query_token_lookup)
   preprocessed_data = [_.assign({},
                                 sample,
                                 {'query': query_tokens,
-                                 'rel': 1.0}) for query_tokens, sample in zip(tokens, raw_data)]
+                                 'rel': rel_method(sample)}) for query_tokens, sample in zip(tokens, raw_data)]
   return preprocessed_data, lookup
