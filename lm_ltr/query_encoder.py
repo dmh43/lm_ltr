@@ -1,13 +1,15 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class QueryEncoder(nn.Module):
-  def __init__(self, query_token_embeds: nn.Embedding, query_embed_len: int) -> None:
+  def __init__(self, query_token_embeds):
     super().__init__()
     self.query_token_embeds = query_token_embeds
-    self.query_embed_len = query_embed_len
-    self.linear = nn.Linear(self.query_embed_len, self.query_embed_len, bias=False)
+    self.weights = nn.Embedding(len(query_token_embeds.weight), 1)
 
   def forward(self, query):
     query_tokens = self.query_token_embeds(query)
-    return self.linear(torch.sum(query_tokens, 1))
+    token_weights = self.weights(query)
+    normalized_weights = F.softmax(token_weights, 1)
+    return torch.sum(normalized_weights * query_tokens, 1)

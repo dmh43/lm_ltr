@@ -26,7 +26,7 @@ class QueryDataset(Dataset):
   def __getitem__(self, idx):
     if idx >= len(self.data):
       idx_to_use = idx % len(self.data)
-      doc_id = idx
+      doc_id = self.data[idx_to_use]['document_id']
       while doc_id in self.relevant_docs[str(self.data[idx_to_use]['query'])]:
         doc_id = random.choice(self.idxs)
       return ((self.data[idx_to_use]['query'], self.documents[doc_id]), 0.0)

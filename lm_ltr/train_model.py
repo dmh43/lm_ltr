@@ -18,6 +18,15 @@ def train_model(model, documents, train_data, test_data):
   model_data = ModelData('./rows', train_dl, test_dl)
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model = nn.DataParallel(model).to(device)
+  print("Untrained Model:")
+  fit(model,
+      ModelData('./rows', build_dataloader(documents, train_data[:1]), test_dl),
+      1,
+      Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
+           weight_decay=1.0),
+      F.binary_cross_entropy_with_logits,
+      metrics=[accuracy_thresh(0.5), recall, precision, f1])
+  print("Training:")
   fit(model,
       model_data,
       100,
