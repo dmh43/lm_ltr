@@ -38,12 +38,11 @@ class MetricRecorder(Callback):
     pass
 
 class RankingMetricRecorder(MetricRecorder):
-  def __init__(self, model, all_documents, train_dl, test_dl, k=10):
+  def __init__(self, model, all_documents, train_ranking_dl, test_ranking_dl):
     super().__init__(model)
-    self.k = k
     self.ranker = PointwiseRanker(model, True)
-    self.train_data = next(iter(train_dl))
-    self.test_data = next(iter(test_dl))
+    self.train_ranking_dl = train_ranking_dl
+    self.test_ranking_dl = test_ranking_dl
     self.all_documents = all_documents
 
   def in_top_k(self, query, documents, relevant_document_index):
@@ -53,6 +52,8 @@ class RankingMetricRecorder(MetricRecorder):
       if int(doc) in top_k[i]: acc += 1
     return acc / self.k
 
+  def precision_at_k(dataset, k=10)
+
   def on_epoch_end(self, other_metrics):
     self.epoch += 1
     self.epochs.append(self.iteration)
@@ -60,8 +61,8 @@ class RankingMetricRecorder(MetricRecorder):
       candidate_documents = self.train_data[1]
     else:
       candidate_documents = self.all_documents
-    # print(self.in_top_k(self.train_data[0], candidate_documents, self.train_data[2]))
-    # print(self.in_top_k(self.test_data[0], candidate_documents, self.test_data[2]))
+    print(self.precision_at_k(self.train_dl))
+    print(self.precision_at_k(self.test_dl))
 
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):

@@ -58,7 +58,7 @@ def prepare_data():
   return documents, train_data, test_data, query_token_lookup, document_token_lookup
 
 def main():
-  documents, train_data, test_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', prepare_data)
+  documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', prepare_data)
   documents = [doc[:100] for doc in documents]
   query_token_embed_len = 100
   document_token_embed_len = 100
@@ -66,6 +66,8 @@ def main():
                     document_token_embed_len,
                     query_token_lookup,
                     document_token_lookup)
+  train_data = weak_data[:int(len(weak_data) * 0.8)]
+  test_data = weak_data[int(len(weak_data) * 0.8):]
   train_model(model, documents, train_data, test_data)
 
 if __name__ == "__main__":

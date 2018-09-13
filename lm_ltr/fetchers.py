@@ -89,8 +89,8 @@ def get_weak_raw_data(id_query_mapping, queries):
         if query_id not in queries: continue
         results.append({'query': query,
                         'document_id': int(doc_num) - 1,
-                        'score': doc_score,
-                        'rank': doc_rank})
+                        'score': float(doc_score),
+                        'rank': int(doc_rank)})
       else:
         return results
 

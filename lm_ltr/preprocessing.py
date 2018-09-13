@@ -1,3 +1,4 @@
+import ast
 import random
 
 import pydash as _
@@ -6,6 +7,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from fastai.text import Tokenizer
+
+from utils import append_at
 
 pad_token_idx = 1
 unk_token_idx = 0
@@ -52,13 +55,13 @@ def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   return result
 
 def inv_log_rank(raw_info):
-  return 1.0 / np.log(int(raw_info['rank']) + 1)
+  return 1.0 / np.log(raw_info['rank'] + 1)
 
 def score(raw_info):
-  return float(raw_info['score'])
+  return raw_info['score']
 
 def sigmoid_score(raw_info):
-  return F.sigmoid(float(raw_info['score']))
+  return F.sigmoid(raw_info['score'])
 
 def all_ones(raw_info):
   return 1.0
@@ -71,3 +74,15 @@ def preprocess_raw_data(raw_data, query_token_lookup=None, rel_method=score):
                                 {'query': query_tokens,
                                  'rel': rel_method(sample)}) for query_tokens, sample in zip(tokens, raw_data)]
   return preprocessed_data, lookup
+
+def sort_by_first(pairs):
+  return sorted(pairs, key=lambda val: val[0])
+
+def to_query_rankings_pairs(data):
+  queries = {}
+  for row in data:
+    append_at(queries, str(row['query']), [row['rank'], row['document_id']])
+  sorted_queries = _.map_values(queries, sort_by_first)
+  query_to_ranking = _.map_values(sorted_queries, lambda pairs: _.map_(pairs, _.last))
+  querystr_ranking_pairs = _.to_pairs(query_to_ranking)
+  return [[ast.literal_eval(pair[0]), pair[1]] for pair in querystr_ranking_pairs]
