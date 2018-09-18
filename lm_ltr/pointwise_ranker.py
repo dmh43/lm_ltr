@@ -9,7 +9,8 @@ class PointwiseRanker:
   def __call__(self, query):
     ranks = []
     for query in query:
-      scores = self.pointwise_scorer(torch.unsqueeze(query, 0), self.documents, 0)
-      _, sort_idx = torch.sort(scores)
+      scores = self.pointwise_scorer(torch.unsqueeze(query, 0),
+                                     self.documents)
+      _, sort_idx = torch.sort(scores, descending=True)
       ranks.append(sort_idx)
     return torch.stack(ranks)
