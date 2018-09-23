@@ -90,7 +90,7 @@ def get_weak_raw_data(id_query_mapping, queries):
         results.append({'query': query,
                         'document_id': int(doc_num) - 1,
                         'score': float(doc_score),
-                        'rank': int(doc_rank)})
+                        'rank': int(doc_rank) - 1})
       else:
         return results
 
