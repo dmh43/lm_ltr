@@ -35,16 +35,24 @@ def preprocess_texts(texts, token_lookup=None):
   idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup)
   return idx_texts, token_lookup
 
-def pad_to_max_len(elems):
+def pad_to_max_len(elems, pad_wit=None):
+  pad_with = pad_with or pad_token_idx
   max_len = max(map(len, elems))
-  return [elem + [pad_token_idx] * (max_len - len(elem)) if len(elem) < max_len else elem for elem in elems]
+  return [elem + [pad_with] * (max_len - len(elem)) if len(elem) < max_len else elem for elem in elems]
 
-def collate(samples):
+def collate_query_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   documents = pad_to_max_len(x[1])
   return torch.tensor(query), torch.tensor(documents), torch.tensor(rel)
+
+def collate_term_matching_samples(samples):
+  x, rel = list(zip(*samples))
+  x = list(zip(*x))
+  counts = pad_to_max_len(x[0], pad_with=0)
+  terms = pad_to_max_len(x[1])
+  return torch.tensor(counts), torch.tensor(terms), torch.tensor(rel)
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []
@@ -81,8 +89,17 @@ def sort_by_first(pairs):
 def to_query_rankings_pairs(data):
   queries = {}
   for row in data:
-    append_at(queries, str(row['query']), [row['rank'], row['document_id']])
+    append_at(queries, str(row['query'])[1:-1], [row['rank'], row['document_id']])
   sorted_queries = _.map_values(queries, sort_by_first)
   query_to_ranking = _.map_values(sorted_queries, lambda pairs: _.map_(pairs, _.last))
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
-  return [[ast.literal_eval(pair[0]), pair[1]] for pair in querystr_ranking_pairs]
+  return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]
+
+def get_term_matching(query_document_token_mapping, query, document):
+  counts = torch.zeros(len(query), dtype=torch.long)
+  terms = torch.zeros(len(query), dtype=torch.long)
+  for i, token in enumerate(query):
+    token_to_match = query_document_token_mapping[token.item()]
+    counts[i] = torch.sum(token_to_match == document)
+    terms[i] = token_to_match
+  return counts, terms
