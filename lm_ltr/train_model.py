@@ -10,15 +10,14 @@ import torch.nn as nn
 import pydash as _
 import torch.nn.functional as F
 
-from data_wrappers import build_query_dataloader
+from data_wrappers import build_query_dataloader, RankingDataset
 from metrics import RankingMetricRecorder, recall, precision, f1
 from validate_model import validate_model
 
-def train_model(model, documents, train_data, test_data):
+def train_model(model, documents, train_dl, test_dl):
   print('Training')
-  train_dl = build_query_dataloader(documents, train_data)
-  test_dl = build_query_dataloader(documents, test_data)
-  ranking_test_dl = build_ranking_dataloader(documents, test_data)
+  train_ranking_dataset = RankingDataset(documents, train_dl.dataset)
+  test_ranking_dataset = RankingDataset(documents, test_dl.dataset)
   model_data = ModelData('./rows', train_dl, test_dl)
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model = nn.DataParallel(model).to(device)
@@ -31,5 +30,6 @@ def train_model(model, documents, train_data, test_data):
       100,
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
            weight_decay=1.0),
-      F.mse_loss)
+      F.mse_loss,
+      callbacks=[RankingMetricRecorder(model, train_ranking_dataset, test_ranking_dataset)])
   torch.save(model.state_dict(), './model_save')
