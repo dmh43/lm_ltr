@@ -6,10 +6,10 @@ def test_pointwise_ranker():
   batch_size = 10
   num_docs = 15
   embed_size = 100
-  scorer = lambda query, documents: torch.sum(query * documents, dim=1)
-  query = torch.randn(batch_size, embed_size)
-  documents = torch.cat([query,
-                         torch.randn(num_docs - batch_size, embed_size)], dim=0)
-  ranker = PointwiseRanker(scorer, documents)
-  ranking = ranker(query)
+  scorer = lambda encoded_query, encoded_documents: torch.sum(encoded_query * encoded_documents, dim=1)
+  encoded_query = torch.randn(batch_size, embed_size)
+  encoded_documents = torch.cat([encoded_query,
+                                 torch.randn(num_docs - batch_size, embed_size)], dim=0)
+  ranker = PointwiseRanker(scorer)
+  ranking = ranker(encoded_query, encoded_documents)
   assert torch.equal(ranking[:, 0], torch.arange(batch_size, dtype=torch.long))
