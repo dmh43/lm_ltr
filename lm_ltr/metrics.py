@@ -38,31 +38,36 @@ class MetricRecorder(Callback):
     pass
 
 class RankingMetricRecorder(MetricRecorder):
-  def __init__(self, model, all_documents, train_ranking_dl, test_ranking_dl):
+  def __init__(self, model, train_ranking_dl, test_ranking_dl):
     super().__init__(model)
-    self.ranker = PointwiseRanker(model, True)
+    self.ranker = PointwiseRanker(model)
     self.train_ranking_dl = train_ranking_dl
     self.test_ranking_dl = test_ranking_dl
-    self.all_documents = all_documents
 
-  def in_top_k(self, query, documents, relevant_document_index):
-    top_k = self.ranker(query, documents)[:, :self.k]
+  def in_top_k(self, query, documents, relevant_document_index, k=10):
+    top_k = self.ranker(query, documents)[:, :k]
     acc = 0
     for i, doc in enumerate(relevant_document_index):
       if int(doc) in top_k[i]: acc += 1
-    return acc / self.k
+    return acc / k
 
-  def precision_at_k(dataset, k=10)
+  def precision_at_k(self, dataset, k=10):
+    correct = 0
+    num_rankings_considered = 0
+    for to_rank in dataset:
+      assert len(to_rank['documents']) >= k, "specified k is greater than the number of documents to rank"
+      ranking = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
+                                          to_rank['documents']))
+      for doc_id in ranking[:k].tolist():
+        correct += doc_id in to_rank['relevant']
+      num_rankings_considered += 1
+    return correct / (k * num_rankings_considered)
 
   def on_epoch_end(self, other_metrics):
     self.epoch += 1
     self.epochs.append(self.iteration)
-    if len(self.train_data[1].shape) == 3:
-      candidate_documents = self.train_data[1]
-    else:
-      candidate_documents = self.all_documents
-    print(self.precision_at_k(self.train_dl))
-    print(self.precision_at_k(self.test_dl))
+    print(self.precision_at_k(self.train_ranking_dl))
+    print(self.precision_at_k(self.test_ranking_dl))
 
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
