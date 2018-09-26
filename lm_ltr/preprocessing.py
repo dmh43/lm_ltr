@@ -96,11 +96,20 @@ def to_query_rankings_pairs(data):
   return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]
 
 def get_term_matching(query_document_token_mapping, query, document):
-  counts = np.zeros(len(query), dtype=np.int)
-  terms = np.zeros(len(query), dtype=np.int)
+  counts = []
+  terms = []
   document = np.array(document)
-  for i, token in enumerate(query):
+  for token in query:
     token_to_match = query_document_token_mapping[token]
-    counts[i] = np.sum(token_to_match == document)
-    terms[i] = token_to_match
-  return counts.tolist(), terms.tolist()
+    counts.append(np.sum(token_to_match == document))
+    terms.append(token_to_match)
+  return counts, terms
+
+def get_term_matching_tensor(query_document_token_mapping, query, document):
+  counts = []
+  terms = []
+  for token in query:
+    token_to_match = query_document_token_mapping[token.item()]
+    counts.append(len((token_to_match == document).nonzero()))
+    terms.append(token_to_match)
+  return counts, terms

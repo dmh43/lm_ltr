@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from preprocessing import get_term_matching
-
 class PointwiseRanker:
   def __init__(self, pointwise_scorer):
     self.pointwise_scorer = pointwise_scorer

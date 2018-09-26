@@ -4,7 +4,7 @@ from lm_ltr.metrics import RankingMetricRecorder
 def test_precision_at_k():
   train_ranking_dl = None
   test_ranking_dl = None
-  scorer = lambda query, document: - (query[:, 0] - document.nonzero()[:, 0]) ** 2
+  scorer = lambda query, documents: - (query[:, 0] - documents.nonzero()[:, 0]) ** 2
   metric = RankingMetricRecorder(scorer, train_ranking_dl, test_ranking_dl)
   num_documents = 10
   num_queries = 10
