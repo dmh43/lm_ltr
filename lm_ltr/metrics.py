@@ -51,23 +51,28 @@ class RankingMetricRecorder(MetricRecorder):
       if int(doc) in top_k[i]: acc += 1
     return acc / k
 
-  def precision_at_k(self, dataset, k=10):
+  def metrics_at_k(self, dataset, k=10):
     correct = 0
+    num_relevant = 0
     num_rankings_considered = 0
     for to_rank in dataset:
+      if num_rankings_considered > 10: break
       assert len(to_rank['documents']) >= k, "specified k is greater than the number of documents to rank"
       ranking = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
                                           to_rank['documents']))
       for doc_id in ranking[:k].tolist():
         correct += doc_id in to_rank['relevant']
+      num_relevant += len(to_rank['relevant'])
       num_rankings_considered += 1
-    return correct / (k * num_rankings_considered)
-
+    precision_k = correct / (k * num_rankings_considered)
+    recall_k = correct / num_relevant
+    return precision_k, recall_k
+o
   def on_epoch_end(self, other_metrics):
     self.epoch += 1
     self.epochs.append(self.iteration)
-    print(self.precision_at_k(self.train_ranking_dl))
-    print(self.precision_at_k(self.test_ranking_dl))
+    print(self.metrics_at_k(self.train_ranking_dl))
+    print(self.metrics_at_k(self.test_ranking_dl))
 
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
