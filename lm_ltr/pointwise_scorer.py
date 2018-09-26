@@ -16,13 +16,23 @@ class PointwiseScorer(nn.Module):
     self.query_encoder = QueryEncoder(query_token_embeds)
     concat_len = 200
     self.to_logits = nn.Linear(concat_len, 1)
+    self.lin1 = nn.Linear(concat_len, int(concat_len/2))
+    self.relu1 = nn.ReLU()
+    self.lin2 = nn.Linear(int(concat_len/2), int(concat_len/4))
+    self.relu2 = nn.ReLU()
+    self.lin3 = nn.Linear(int(concat_len/4), 1)
 
   def forward(self, query, document):
-    hidden = torch.cat([self.document_encoder(document),
-                        self.query_encoder(query)],
-                       1)
-    return pipe(hidden,
-                self.to_logits,
-                torch.squeeze)
-    # return torch.sum(self.document_encoder(document) * self.query_encoder(query),
-    #                  dim=1)
+    # hidden = torch.cat([self.document_encoder(document),
+    #                     self.query_encoder(query)],
+    #                    1)
+    # return pipe(hidden,
+    #             self.to_logits,
+    #             # self.lin1,
+    #             # self.relu1,
+    #             # self.lin2,
+    #             # self.relu2,
+    #             # self.lin3,
+    #             torch.squeeze)
+    return torch.sum(self.document_encoder(document) * self.query_encoder(query),
+                     dim=1)

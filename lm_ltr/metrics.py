@@ -56,7 +56,7 @@ class RankingMetricRecorder(MetricRecorder):
     num_relevant = 0
     num_rankings_considered = 0
     for to_rank in dataset:
-      if num_rankings_considered > 10: break
+      if num_rankings_considered > 100: break
       assert len(to_rank['documents']) >= k, "specified k is greater than the number of documents to rank"
       ranking = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
                                           to_rank['documents']))
@@ -67,7 +67,7 @@ class RankingMetricRecorder(MetricRecorder):
     precision_k = correct / (k * num_rankings_considered)
     recall_k = correct / num_relevant
     return precision_k, recall_k
-o
+
   def on_epoch_end(self, other_metrics):
     self.epoch += 1
     self.epochs.append(self.iteration)

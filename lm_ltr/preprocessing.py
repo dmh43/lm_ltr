@@ -47,13 +47,6 @@ def collate_query_samples(samples):
   documents = pad_to_max_len(x[1])
   return torch.tensor(query), torch.tensor(documents), torch.tensor(rel)
 
-def collate_term_matching_samples(samples):
-  x, rel = list(zip(*samples))
-  x = list(zip(*x))
-  counts = pad_to_max_len(x[0], pad_with=0)
-  terms = pad_to_max_len(x[1])
-  return torch.tensor(counts, dtype=torch.long), torch.tensor(terms, dtype=torch.long), torch.tensor(rel)
-
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []
   for i in range(num_negative_samples):
@@ -94,22 +87,3 @@ def to_query_rankings_pairs(data):
   query_to_ranking = _.map_values(sorted_queries, lambda pairs: _.map_(pairs, _.last))
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]
-
-def get_term_matching(query_document_token_mapping, query, document):
-  counts = []
-  terms = []
-  document = np.array(document)
-  for token in query:
-    token_to_match = query_document_token_mapping[token]
-    counts.append(np.sum(token_to_match == document))
-    terms.append(token_to_match)
-  return counts, terms
-
-def get_term_matching_tensor(query_document_token_mapping, query, document):
-  counts = []
-  terms = []
-  for token in query:
-    token_to_match = query_document_token_mapping[token.item()]
-    counts.append(len((token_to_match == document).nonzero()))
-    terms.append(token_to_match)
-  return counts, terms

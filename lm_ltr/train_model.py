@@ -27,9 +27,9 @@ def train_model(model, documents, train_dl, test_dl):
   print("Training:")
   fit(model,
       model_data,
-      100,
+      10000,
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
-           weight_decay=1.0),
+           weight_decay=0.0),
       F.mse_loss,
       callbacks=[RankingMetricRecorder(model, train_ranking_dataset, test_ranking_dataset)])
   torch.save(model.state_dict(), './model_save')
