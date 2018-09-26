@@ -15,7 +15,7 @@ from metrics import RankingMetricRecorder, recall, precision, f1
 from validate_model import validate_model
 
 def train_model(model, documents, train_dl, test_dl):
-  print('Training')
+  print('Creating ranking datasets')
   train_ranking_dataset = RankingDataset(documents, train_dl.dataset.data)
   test_ranking_dataset = RankingDataset(documents, test_dl.dataset.data)
   model_data = ModelData('./rows', train_dl, test_dl)

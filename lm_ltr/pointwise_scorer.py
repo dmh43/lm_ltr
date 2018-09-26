@@ -23,16 +23,16 @@ class PointwiseScorer(nn.Module):
     self.lin3 = nn.Linear(int(concat_len/4), 1)
 
   def forward(self, query, document):
-    # hidden = torch.cat([self.document_encoder(document),
-    #                     self.query_encoder(query)],
-    #                    1)
-    # return pipe(hidden,
-    #             self.to_logits,
-    #             # self.lin1,
-    #             # self.relu1,
-    #             # self.lin2,
-    #             # self.relu2,
-    #             # self.lin3,
-    #             torch.squeeze)
-    return torch.sum(self.document_encoder(document) * self.query_encoder(query),
-                     dim=1)
+    hidden = torch.cat([self.document_encoder(document),
+                        self.query_encoder(query)],
+                       1)
+    return pipe(hidden,
+                # self.to_logits,
+                self.lin1,
+                self.relu1,
+                self.lin2,
+                self.relu2,
+                self.lin3,
+                torch.squeeze)
+    # return torch.sum(self.document_encoder(document) * self.query_encoder(query),
+    #                  dim=1)

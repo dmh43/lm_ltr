@@ -8,7 +8,7 @@ import torch.nn as nn
 from embedding_loaders import get_glove_lookup, init_embedding
 from fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache
 from pointwise_scorer import PointwiseScorer
-from preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score
+from preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score
 from data_wrappers import build_query_dataloader
 from train_model import train_model
 from utils import with_negative_samples

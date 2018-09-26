@@ -58,8 +58,14 @@ def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
 def inv_log_rank(raw_info):
   return 1.0 / np.log(raw_info['rank'] + 1)
 
+def inv_rank(raw_info):
+  return 1.0 / (raw_info['rank'] + 1)
+
 def score(raw_info):
   return raw_info['score']
+
+def exp_score(raw_info):
+  return 2 ** raw_info['score']
 
 def sigmoid_score(raw_info):
   return F.sigmoid(raw_info['score'])
@@ -79,9 +85,10 @@ def preprocess_raw_data(raw_data, query_token_lookup=None, rel_method=score):
 def sort_by_first(pairs):
   return sorted(pairs, key=lambda val: val[0])
 
-def to_query_rankings_pairs(data):
+def to_query_rankings_pairs(data, k=None):
   queries = {}
   for row in data:
+    if k is not None and len(queries.get(str(row['query'])[1:-1]) or []) >= k: continue
     append_at(queries, str(row['query'])[1:-1], [row['rank'], row['document_id']])
   sorted_queries = _.map_values(queries, sort_by_first)
   query_to_ranking = _.map_values(sorted_queries, lambda pairs: _.map_(pairs, _.last))

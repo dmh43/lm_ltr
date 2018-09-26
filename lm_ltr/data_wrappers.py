@@ -19,18 +19,20 @@ class QueryDataset(Dataset):
             self.data[idx]['rel'])
 
 class RankingDataset(Dataset):
-  def __init__(self, documents, data):
+  def __init__(self, documents, data, k=10):
     self.documents = torch.tensor(pad_to_max_len(documents), dtype=torch.long)
-    self.rankings = to_query_rankings_pairs(data)
+    self.k = k
+    self.rankings = to_query_rankings_pairs(data, k=self.k)
 
   def __len__(self):
     return len(self.rankings)
 
   def __getitem__(self, idx):
     query, ranking = self.rankings[idx]
+    ranking = torch.tensor(ranking, dtype=torch.long)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': self.documents,
-            'ranking': torch.tensor(ranking, dtype=torch.long),
+            'ranking': ranking,
             'relevant': ranking}
 
 def build_query_dataloader(documents, data) -> DataLoader:
