@@ -16,8 +16,8 @@ from validate_model import validate_model
 
 def train_model(model, documents, train_dl, test_dl):
   print('Training')
-  train_ranking_dataset = RankingDataset(documents, train_dl.dataset)
-  test_ranking_dataset = RankingDataset(documents, test_dl.dataset)
+  train_ranking_dataset = RankingDataset(documents, train_dl.dataset.data)
+  test_ranking_dataset = RankingDataset(documents, test_dl.dataset.data)
   model_data = ModelData('./rows', train_dl, test_dl)
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model = nn.DataParallel(model).to(device)

@@ -35,8 +35,8 @@ def preprocess_texts(texts, token_lookup=None):
   idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup)
   return idx_texts, token_lookup
 
-def pad_to_max_len(elems, pad_wit=None):
-  pad_with = pad_with or pad_token_idx
+def pad_to_max_len(elems, pad_with=None):
+  pad_with = pad_with if pad_with is not None else pad_token_idx
   max_len = max(map(len, elems))
   return [elem + [pad_with] * (max_len - len(elem)) if len(elem) < max_len else elem for elem in elems]
 
@@ -52,7 +52,7 @@ def collate_term_matching_samples(samples):
   x = list(zip(*x))
   counts = pad_to_max_len(x[0], pad_with=0)
   terms = pad_to_max_len(x[1])
-  return torch.tensor(counts), torch.tensor(terms), torch.tensor(rel)
+  return torch.tensor(counts, dtype=torch.long), torch.tensor(terms, dtype=torch.long), torch.tensor(rel)
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []
@@ -96,10 +96,11 @@ def to_query_rankings_pairs(data):
   return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]
 
 def get_term_matching(query_document_token_mapping, query, document):
-  counts = torch.zeros(len(query), dtype=torch.long)
-  terms = torch.zeros(len(query), dtype=torch.long)
+  counts = np.zeros(len(query), dtype=np.int)
+  terms = np.zeros(len(query), dtype=np.int)
+  document = np.array(document)
   for i, token in enumerate(query):
-    token_to_match = query_document_token_mapping[token.item()]
-    counts[i] = torch.sum(token_to_match == document)
+    token_to_match = query_document_token_mapping[token]
+    counts[i] = np.sum(token_to_match == document)
     terms[i] = token_to_match
-  return counts, terms
+  return counts.tolist(), terms.tolist()
