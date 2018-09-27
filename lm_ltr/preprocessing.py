@@ -73,13 +73,12 @@ def sigmoid_score(raw_info):
 def all_ones(raw_info):
   return 1.0
 
-def preprocess_raw_data(raw_data, query_token_lookup=None, rel_method=score):
+def preprocess_raw_data(raw_data, query_token_lookup=None):
   queries = [sample['query'] for sample in raw_data]
   tokens, lookup = preprocess_texts(queries, query_token_lookup)
   preprocessed_data = [_.assign({},
                                 sample,
-                                {'query': query_tokens,
-                                 'rel': rel_method(sample)}) for query_tokens, sample in zip(tokens, raw_data)]
+                                {'query': query_tokens}) for query_tokens, sample in zip(tokens, raw_data)]
   return preprocessed_data, lookup
 
 def sort_by_first(pairs):

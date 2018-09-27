@@ -7,16 +7,17 @@ from torch.utils.data.sampler import RandomSampler, BatchSampler
 from preprocessing import collate_query_samples, to_query_rankings_pairs, pad_to_max_len
 
 class QueryDataset(Dataset):
-  def __init__(self, documents, data):
+  def __init__(self, documents, data, rel_method=score):
     self.documents = documents
     self.data = data
+    self.rel_method = rel_method
 
   def __len__(self):
     return len(self.data)
 
   def __getitem__(self, idx):
     return ((self.data[idx]['query'], self.documents[self.data[idx]['document_id']]),
-            self.data[idx]['rel'])
+            self.rel_method(self.data[idx]))
 
 class RankingDataset(Dataset):
   def __init__(self, documents, data, k=10):
@@ -35,8 +36,8 @@ class RankingDataset(Dataset):
             'ranking': ranking,
             'relevant': ranking}
 
-def build_query_dataloader(documents, data) -> DataLoader:
-  dataset = QueryDataset(documents, data)
+def build_query_dataloader(documents, data, rel_method=score) -> DataLoader:
+  dataset = QueryDataset(documents, data, rel_method=rel_method)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(RandomSampler(dataset), 100, False),
                     collate_fn=collate_query_samples)

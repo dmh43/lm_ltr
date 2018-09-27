@@ -32,8 +32,8 @@ def get_model_and_dls(query_token_embed_len,
                                          document_token_embed_len)
   train_data = weak_data[:int(len(weak_data) * 0.8)]
   test_data = weak_data[int(len(weak_data) * 0.8):]
-  train_dl = build_query_dataloader(documents, train_data)
-  test_dl = build_query_dataloader(documents, test_data)
+  train_dl = build_query_dataloader(documents, train_data, rel_method=score)
+  test_dl = build_query_dataloader(documents, test_data, rel_method=score)
   scorer = PointwiseScorer(query_token_embeds, document_token_embeds)
   return scorer, train_dl, test_dl
 
@@ -55,14 +55,13 @@ def prepare_data():
   print('Loading weak data (from Indri output)')
   weak_raw_data = read_or_cache('./weak_raw_data.pkl',
                                 lambda: get_weak_raw_data(id_query_mapping, train_query_ids))
-  train_data, query_token_lookup = preprocess_raw_data(weak_raw_data, rel_method=score)
+  train_data, query_token_lookup = preprocess_raw_data(weak_raw_data)
   test_queries = [id_query_mapping[id] for id in set(id_query_mapping.keys()) - set(train_query_ids)]
   print('Loading supervised data (from mention-entity pairs)')
   supervised_raw_data = read_or_cache('./supervised_raw_data.pkl',
                                       lambda: get_supervised_raw_data(document_title_id_mapping, test_queries))
   test_data, __ = preprocess_raw_data(supervised_raw_data,
-                                      query_token_lookup=query_token_lookup,
-                                      rel_method=all_ones)
+                                      query_token_lookup=query_token_lookup)
   return documents, train_data, test_data, query_token_lookup, document_token_lookup
 
 def main():
