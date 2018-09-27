@@ -44,13 +44,6 @@ class RankingMetricRecorder(MetricRecorder):
     self.train_ranking_dl = train_ranking_dl
     self.test_ranking_dl = test_ranking_dl
 
-  def in_top_k(self, query, documents, relevant_document_index, k=10):
-    top_k = self.ranker(query, documents)[:, :k]
-    acc = 0
-    for i, doc in enumerate(relevant_document_index):
-      if int(doc) in top_k[i]: acc += 1
-    return acc / k
-
   def metrics_at_k(self, dataset, k=10):
     correct = 0
     num_relevant = 0
