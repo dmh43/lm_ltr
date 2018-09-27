@@ -1,5 +1,6 @@
 import pickle
 import random
+import time
 
 import pydash as _
 import torch
@@ -64,7 +65,9 @@ def prepare_data():
                                       query_token_lookup=query_token_lookup)
   return documents, train_data, test_data, query_token_lookup, document_token_lookup
 
+model_to_save = None
 def main():
+  global model_to_save
   documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', prepare_data)
   documents = [doc[:100] for doc in documents]
   query_token_embed_len = 100
@@ -75,6 +78,7 @@ def main():
                                                document_token_lookup,
                                                documents,
                                                weak_data)
+  model_to_save = model
   train_model(model, documents, train_dl, test_dl)
 
 if __name__ == "__main__":
@@ -85,6 +89,7 @@ if __name__ == "__main__":
   try:
     main()
   except: # pylint: disable=bare-except
+    torch.save(model_to_save.state_dict(), './model_save_debug' + str(time.time()))
     extype, value, tb = sys.exc_info()
     traceback.print_exc()
   ipdb.post_mortem(tb)
