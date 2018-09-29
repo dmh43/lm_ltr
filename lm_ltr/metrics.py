@@ -51,8 +51,9 @@ class RankingMetricRecorder(MetricRecorder):
     for to_rank in dataset:
       if num_rankings_considered > 100: break
       assert len(to_rank['documents']) >= k, "specified k is greater than the number of documents to rank"
-      ranking = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
-                                          to_rank['documents']))
+      ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
+                                                        to_rank['documents']))
+      ranking = to_rank['doc_ids'][ranking_ids_for_batch]
       for doc_id in ranking[:k].tolist():
         correct += doc_id in to_rank['relevant']
       num_relevant += len(to_rank['relevant'])

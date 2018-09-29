@@ -69,7 +69,6 @@ model_to_save = None
 def main():
   global model_to_save
   documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', prepare_data)
-  documents = [doc[:100] for doc in documents]
   query_token_embed_len = 100
   document_token_embed_len = 100
   model, train_dl, test_dl = get_model_and_dls(query_token_embed_len,
@@ -78,8 +77,9 @@ def main():
                                                document_token_lookup,
                                                documents,
                                                weak_data)
+  query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
   model_to_save = model
-  train_model(model, documents, train_dl, test_dl)
+  train_model(model, documents, train_dl, test_dl, query_document_token_mapping)
 
 if __name__ == "__main__":
   import ipdb

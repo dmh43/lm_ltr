@@ -87,7 +87,7 @@ def sort_by_first(pairs):
 def to_query_rankings_pairs(data, k=None):
   queries = {}
   for row in data:
-    if k is not None and len(queries.get(str(row['query'])[1:-1]) or []) >= k: continue
+    if k is not None and ((len(queries.get(str(row['query'])[1:-1]) or []) >= k) or row['rank'] >= k): continue
     append_at(queries, str(row['query'])[1:-1], [row['rank'], row['document_id']])
   sorted_queries = _.map_values(queries, sort_by_first)
   query_to_ranking = _.map_values(sorted_queries, lambda pairs: _.map_(pairs, _.last))

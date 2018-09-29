@@ -12,3 +12,12 @@ def test_to_ranking_per_query_at_k():
            'document_id': i*10,
            'rank': i} for i in range(10)]
   assert p.to_query_rankings_pairs(data, k=4) == [[[1, 2], list(range(0, 40, 10))]]
+
+def test_to_ranking_per_query_at_k_multiple():
+  data = [{'query': [1, 2],
+           'document_id': i*10,
+           'rank': i} for i in range(10)] + [{'query': [3],
+                                              'document_id': i*10,
+                                              'rank': i} for i in range(10)]
+  assert p.to_query_rankings_pairs(data, k=4) == [[[1, 2], list(range(0, 40, 10))],
+                                                  [[3], list(range(0, 40, 10))]]

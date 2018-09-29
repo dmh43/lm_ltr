@@ -21,7 +21,7 @@ class QueryDataset(Dataset):
     return len(self.data)
 
   def __getitem__(self, idx):
-    return ((self.data[idx]['query'], self.documents[self.data[idx]['document_id']]),
+    return ((self.data[idx]['query'], self.documents[self.data[idx]['document_id']][:100]),
             self.rel_method(self.data[idx]))
 
 def _get_tfidf_transformer_and_matrix(documents):
@@ -33,15 +33,9 @@ def _get_tfidf_transformer_and_matrix(documents):
     counts[doc_num, nonzero] = doc_counts[nonzero]
   return transformer, transformer.fit_transform(counts)
 
-def _get_top_scoring(tfidf_docs, query, k=1000):
-  subset = tfidf_docs[:, query]
-  scores = torch.tensor(subset.sum(1).T.tolist()).squeeze()
-  sorted_scores, idxs = torch.sort(scores, descending=True)
-  return idxs[:k]
-
 def score_documents_tfidf(query_document_token_mapping, tfidf_docs, query):
   mapped_query = [query_document_token_mapping[token] for token in query]
-  subset = tfidf_docs[:, mapped_query] / tfidf_docs.sum(1)
+  subset = tfidf_docs[:, mapped_query] / (tfidf_docs.sum(1) + 0.0001)
   return torch.tensor(subset.sum(1).T.tolist()).squeeze()
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
@@ -76,10 +70,12 @@ class RankingDataset(Dataset):
 
   def __getitem__(self, idx):
     query, ranking = self.rankings[idx]
-    remapped_query = torch.tensor([self.query_document_token_mapping[token] for token in query], dtype=torch.long)
     ranking = torch.tensor(ranking, dtype=torch.long)
+    scores = score_documents_tfidf(self.query_document_token_mapping, self.tfidf_docs, query)
+    doc_ids = get_top_k(scores)
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': self.documents[_get_top_scoring(self.tfidf_docs, remapped_query)],
+            'documents': self.documents[doc_ids],
+            'doc_ids': doc_ids,
             'ranking': ranking,
             'relevant': ranking}
 
