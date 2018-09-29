@@ -41,7 +41,7 @@ def _get_top_scoring(tfidf_docs, query, k=1000):
 
 def score_documents_tfidf(query_document_token_mapping, tfidf_docs, query):
   mapped_query = [query_document_token_mapping[token] for token in query]
-  subset = tfidf_docs[:, mapped_query]
+  subset = tfidf_docs[:, mapped_query] / tfidf_docs.sum(1)
   return torch.tensor(subset.sum(1).T.tolist()).squeeze()
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
