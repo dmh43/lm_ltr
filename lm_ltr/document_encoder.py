@@ -14,4 +14,5 @@ class DocumentEncoder(nn.Module):
     document_tokens = self.document_token_embeds(document)
     token_weights = self.weights(document)
     normalized_weights = F.softmax(token_weights, 1)
-    return torch.sum(normalized_weights * document_tokens, 1)
+    doc_vecs = torch.sum(normalized_weights * document_tokens, 1)
+    return doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)

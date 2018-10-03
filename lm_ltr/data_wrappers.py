@@ -70,14 +70,16 @@ class RankingDataset(Dataset):
 
   def __getitem__(self, idx):
     query, ranking = self.rankings[idx]
-    ranking = torch.tensor(ranking, dtype=torch.long)
+    relevant = set(ranking)
     scores = score_documents_tfidf(self.query_document_token_mapping, self.tfidf_docs, query)
     doc_ids = get_top_k(scores)
+    doc_ids = torch.tensor(list(set(doc_ids.tolist()).union(relevant)),
+                           dtype=torch.long)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': self.documents[doc_ids],
             'doc_ids': doc_ids,
             'ranking': ranking,
-            'relevant': ranking}
+            'relevant': relevant}
 
 def build_query_dataloader(documents, data, rel_method=score) -> DataLoader:
   dataset = QueryDataset(documents, data, rel_method=rel_method)

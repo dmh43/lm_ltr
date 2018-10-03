@@ -12,4 +12,5 @@ class QueryEncoder(nn.Module):
     query_tokens = self.query_token_embeds(query)
     token_weights = self.weights(query)
     normalized_weights = F.softmax(token_weights, 1)
-    return torch.sum(normalized_weights * query_tokens, 1)
+    query_vecs = torch.sum(normalized_weights * query_tokens, 1)
+    return query_vecs / (torch.norm(query_vecs, 2, 1).unsqueeze(1) + 0.0001)

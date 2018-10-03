@@ -1,3 +1,5 @@
+from time import time
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -43,6 +45,8 @@ class RankingMetricRecorder(MetricRecorder):
     self.ranker = PointwiseRanker(model)
     self.train_ranking_dl = train_ranking_dl
     self.test_ranking_dl = test_ranking_dl
+    self.log = open('./results', 'a+')
+    self.log.write(f'New train run at: {time()}\n')
 
   def metrics_at_k(self, dataset, k=10):
     correct = 0
@@ -55,7 +59,7 @@ class RankingMetricRecorder(MetricRecorder):
                                                         to_rank['documents']))
       ranking = to_rank['doc_ids'][ranking_ids_for_batch]
       for doc_id in ranking[:k].tolist():
-        correct += doc_id in to_rank['relevant']
+        correct += (doc_id in to_rank['relevant'])
       num_relevant += len(to_rank['relevant'])
       num_rankings_considered += 1
     precision_k = correct / (k * num_rankings_considered)
@@ -65,8 +69,15 @@ class RankingMetricRecorder(MetricRecorder):
   def on_epoch_end(self, other_metrics):
     self.epoch += 1
     self.epochs.append(self.iteration)
-    print(self.metrics_at_k(self.train_ranking_dl))
-    print(self.metrics_at_k(self.test_ranking_dl))
+    train_results = self.metrics_at_k(self.train_ranking_dl)
+    test_results = self.metrics_at_k(self.test_ranking_dl)
+    report = '\n'.join(['Train: ' + str(train_results),
+                        'Test: ' + str(test_results)])
+    self.log.write(report)
+    print(report)
+
+  def on_train_end(self):
+    self.log.close()
 
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
