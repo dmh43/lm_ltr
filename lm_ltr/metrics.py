@@ -54,7 +54,7 @@ class RankingMetricRecorder(MetricRecorder):
     num_relevant = 0
     num_rankings_considered = 0
     dcg = 0
-    idcg = np.array([1.0/np.log2(rank + 2) for rank in range(k)]).sum()
+    idcg = 0
     for to_rank in dataset:
       if num_rankings_considered > 100: break
       if len(to_rank['documents']) < k: continue
@@ -66,10 +66,12 @@ class RankingMetricRecorder(MetricRecorder):
         correct += rel
         dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
       num_relevant += len(to_rank['relevant'])
-      num_rankings_considered += 1
+      idcg += np.array([1.0/np.log2(rank + 2) for rank in range(min(k, len(to_rank['relevant'])))]).sum()
+      if len(to_rank['relevant']) > 0:
+        num_rankings_considered += 1
     precision_k = correct / (k * num_rankings_considered)
     recall_k = correct / num_relevant
-    ndcg = dcg / (num_rankings_considered * idcg)
+    ndcg = dcg / idcg
     return precision_k, recall_k, ndcg
 
   def on_epoch_end(self, other_metrics):

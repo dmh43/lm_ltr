@@ -13,6 +13,6 @@ def test_metrics_at_k():
               'documents': documents,
               'relevant': list(range(num_documents))[i - 1 : i + 2],
               'doc_ids': torch.arange(len(documents), dtype=torch.long)} for i in range(num_queries)]
-  assert metric.metrics_at_k(dataset, k=1) == (0.9, 9.0 / 26)
-  assert metric.metrics_at_k(dataset, k=3) == (26.0 / 30, 1.0)
-  assert metric.metrics_at_k(dataset, k=6) == (26.0 / 60, 1.0)
+  assert metric.metrics_at_k(dataset, k=1) == (1.0, 9.0 / 26, 1.0)
+  assert metric.metrics_at_k(dataset, k=3) == (26.0 / 27, 1.0, 1.0)
+  assert metric.metrics_at_k(dataset, k=6) == (26.0 / 54, 1.0, 1.0)
