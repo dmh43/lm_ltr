@@ -2,11 +2,11 @@ import random
 
 import pydash as _
 
-def append_at(obj, path, val):
-  if _.has(obj, path):
-    _.update(obj, path, lambda coll: coll + [val])
+def append_at(obj, key, val):
+  if key in obj:
+    obj[key].append(val)
   else:
-    _.set_(obj, path, [val])
+    obj[key] = [val]
 
 def with_negative_samples(samples, num_negative_samples, num_documents):
   def _get_neg_samples(sample, num_negative_samples, num_documents):

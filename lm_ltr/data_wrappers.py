@@ -61,7 +61,7 @@ class RankingDataset(Dataset):
   def __init__(self, documents, data, query_document_token_mapping, k=10):
     self.documents = torch.tensor(pad_to_max_len(documents), dtype=torch.long)
     self.k = k
-    self.rankings = to_query_rankings_pairs(data, k=self.k)
+    self.rankings = to_query_rankings_pairs(data)
     self.tfidf_transformer, self.tfidf_docs = _get_tfidf_transformer_and_matrix(self.documents)
     self.query_document_token_mapping = query_document_token_mapping
 
@@ -70,15 +70,11 @@ class RankingDataset(Dataset):
 
   def __getitem__(self, idx):
     query, ranking = self.rankings[idx]
-    relevant = set(ranking)
-    scores = score_documents_tfidf(self.query_document_token_mapping, self.tfidf_docs, query)
-    doc_ids = get_top_k(scores)
-    doc_ids = torch.tensor(list(set(doc_ids.tolist()).union(relevant)),
-                           dtype=torch.long)
+    relevant = set(ranking[:self.k])
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': self.documents[doc_ids],
-            'doc_ids': doc_ids,
-            'ranking': ranking,
+            'documents': self.documents[ranking][:, :100],
+            'doc_ids': torch.tensor(ranking, dtype=torch.long),
+            'ranking': ranking[:self.k],
             'relevant': relevant}
 
 def build_query_dataloader(documents, data, rel_method=score) -> DataLoader:

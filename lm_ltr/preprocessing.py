@@ -84,12 +84,9 @@ def preprocess_raw_data(raw_data, query_token_lookup=None):
 def sort_by_first(pairs):
   return sorted(pairs, key=lambda val: val[0])
 
-def to_query_rankings_pairs(data, k=None):
-  queries = {}
+def to_query_rankings_pairs(data):
+  query_to_ranking = {}
   for row in data:
-    if k is not None and ((len(queries.get(str(row['query'])[1:-1]) or []) >= k) or row['rank'] >= k): continue
-    append_at(queries, str(row['query'])[1:-1], [row['rank'], row['document_id']])
-  sorted_queries = _.map_values(queries, sort_by_first)
-  query_to_ranking = _.map_values(sorted_queries, lambda pairs: _.map_(pairs, _.last))
+    append_at(query_to_ranking, str(row['query'])[1:-1], row['document_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]

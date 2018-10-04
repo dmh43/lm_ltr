@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from fastai.sgdr import Callback
+import numpy as np
 
 from pointwise_ranker import PointwiseRanker
 
@@ -52,19 +53,24 @@ class RankingMetricRecorder(MetricRecorder):
     correct = 0
     num_relevant = 0
     num_rankings_considered = 0
+    dcg = 0
+    idcg = np.array([1.0/np.log2(rank + 2) for rank in range(k)]).sum()
     for to_rank in dataset:
       if num_rankings_considered > 100: break
-      assert len(to_rank['documents']) >= k, "specified k is greater than the number of documents to rank"
+      if len(to_rank['documents']) < k: continue
       ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
                                                         to_rank['documents']))
       ranking = to_rank['doc_ids'][ranking_ids_for_batch]
-      for doc_id in ranking[:k].tolist():
-        correct += (doc_id in to_rank['relevant'])
+      for doc_rank, doc_id in enumerate(ranking[:k].tolist()):
+        rel = doc_id in to_rank['relevant']
+        correct += rel
+        dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
       num_relevant += len(to_rank['relevant'])
       num_rankings_considered += 1
     precision_k = correct / (k * num_rankings_considered)
     recall_k = correct / num_relevant
-    return precision_k, recall_k
+    ndcg = dcg / (num_rankings_considered * idcg)
+    return precision_k, recall_k, ndcg
 
   def on_epoch_end(self, other_metrics):
     self.epoch += 1
