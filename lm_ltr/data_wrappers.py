@@ -55,28 +55,20 @@ class RankingDataset(Dataset):
             'ranking': ranking[:self.k],
             'relevant': relevant}
 
-offset_to_tuple = {}
-
-def _get_nth_pair(rankings, idx):
-  offset = idx
-  for query, doc_ids in rankings:
-    num_doc_ids = len(doc_ids)
-    num_pairs_for_query = num_doc_ids ** 2 - num_doc_ids
-    if offset < num_pairs_for_query:
-      if offset in offset_to_tuple:
-        doc_1_idx, doc_2_idx = offset_to_tuple[offset]
-      else:
-        doc_1_idx = offset // (num_doc_ids - 1)
-        doc_2_idx = offset % (num_doc_ids - 1)
-        if doc_2_idx >= doc_1_idx:
-          doc_2_idx += 1
-        offset = (doc_1_idx, doc_2_idx)
-      return {'query': query,
-              'doc_id_1': doc_ids[doc_1_idx],
-              'doc_id_2': doc_ids[doc_2_idx],
-              'order_int': 1 if doc_1_idx < doc_2_idx else -1}
-    offset -= num_pairs_for_query
-  raise IndexError(f'index {idx} out of range for rankings list')
+def _get_nth_pair(rankings, cumu_num_pairs, idx):
+  ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
+  offset = idx - cumu_num_pairs[ranking_idx - 1] if ranking_idx != 0 else idx
+  query = rankings[ranking_idx][0]
+  doc_ids = rankings[ranking_idx][1]
+  num_doc_ids = len(doc_ids)
+  doc_1_idx = offset // (num_doc_ids - 1)
+  doc_2_idx = offset % (num_doc_ids - 1)
+  if doc_2_idx >= doc_1_idx:
+    doc_2_idx += 1
+  return {'query': query,
+          'doc_id_1': doc_ids[doc_1_idx],
+          'doc_id_2': doc_ids[doc_2_idx],
+          'order_int': 1 if doc_1_idx < doc_2_idx else -1}
 
 def _get_num_pairs(rankings):
   return reduce(lambda acc, ranking: acc + len(ranking[1]) ** 2 - len(ranking[1]),
@@ -89,12 +81,14 @@ class QueryPairwiseDataset(QueryDataset):
     self.lowest_rank_doc_to_consider = 100
     self.rankings = _.map_(self.rankings,
                            lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
+    num_pairs_per_ranking = _.map_(self.rankings, lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
+    self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
 
   def __len__(self):
     return _get_num_pairs(self.rankings)
 
-  def __getitem__(self, idxs):
-    elem = _get_nth_pair(self.rankings, idx)
+  def __getitem__(self, idx):
+    elem = _get_nth_pair(self.rankings, self.cumu_ranking_lengths, idx)
     return ((elem['query'],
              self.documents[elem['doc_id_1']][:self.num_doc_tokens],
              self.documents[elem['doc_id_2']][:self.num_doc_tokens]),

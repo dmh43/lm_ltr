@@ -5,7 +5,8 @@ def test_metrics_at_k():
   train_ranking_dl = None
   test_ranking_dl = None
   scorer = lambda query, documents: - (query[:, 0] - documents.nonzero()[:, 0]) ** 2
-  metric = RankingMetricRecorder(scorer, train_ranking_dl, test_ranking_dl)
+  device = torch.device('cpu')
+  metric = RankingMetricRecorder(device, scorer, train_ranking_dl, test_ranking_dl)
   num_documents = 10
   num_queries = 10
   documents = torch.eye(num_documents)

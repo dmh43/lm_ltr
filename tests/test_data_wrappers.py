@@ -1,7 +1,9 @@
 import lm_ltr.data_wrappers as df
+import pydash as _
 
 import scipy.sparse as sp
 import torch
+import numpy as np
 
 def test__get_top_scoring():
   tfidf_docs = sp.lil_matrix((10, 10))
@@ -19,31 +21,12 @@ def test__get_top_scoring():
 def test__get_nth_pair():
   rankings = [[[1], [3, 4, 1]],
               [[2, 3], [8, 9, 4]]]
-  assert df._get_nth_pair(rankings, 0) == {'query': [1],
-                                           'doc_id_1': 3,
-                                           'doc_id_2': 4,
-                                           'rel': 1}
-  assert df._get_nth_pair(rankings, 1) == {'query': [1],
-                                           'doc_id_1': 3,
-                                           'doc_id_2': 1,
-                                           'rel': 1}
-  assert df._get_nth_pair(rankings, 2) == {'query': [1],
-                                           'doc_id_1': 4,
-                                           'doc_id_2': 3,
-                                           'rel': -1}
-  assert df._get_nth_pair(rankings, 3) == {'query': [1],
-                                           'doc_id_1': 4,
-                                           'doc_id_2': 1,
-                                           'rel': 1}
-  assert df._get_nth_pair(rankings, 4) == {'query': [1],
-                                           'doc_id_1': 1,
-                                           'doc_id_2': 3,
-                                           'rel': -1}
-  assert df._get_nth_pair(rankings, 5) == {'query': [1],
-                                           'doc_id_1': 1,
-                                           'doc_id_2': 4,
-                                           'rel': -1}
-  assert df._get_nth_pair(rankings, 6) == {'query': [2, 3],
-                                           'doc_id_1': 8,
-                                           'doc_id_2': 9,
-                                           'rel': 1}
+  num_pairs_per_ranking = _.map_(rankings, lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
+  cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
+  assert df._get_num_pairs(rankings) == (3 ** 2 - 3) * 2
+  for i in range(df._get_num_pairs(rankings)):
+    pair = df._get_nth_pair(rankings, cumu_ranking_lengths, i)
+    assert isinstance(pair['query'], list)
+    assert isinstance(pair['order_int'], int)
+    assert isinstance(pair['doc_id_1'], int)
+    assert isinstance(pair['doc_id_2'], int)
