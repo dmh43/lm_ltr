@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_sequence
 
+from preprocessing import pack
+
 class PointwiseRanker:
   def __init__(self, device, pointwise_scorer):
     self.device = device
@@ -12,13 +14,7 @@ class PointwiseRanker:
   def __call__(self, query, documents):
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
     ranks = []
-    doc_lengths = torch.tensor(_.map_(documents, len), dtype=torch.long, device=self.device)
-    sorted_doc_lengths, doc_order = torch.sort(doc_lengths, descending=True)
-    doc_range, unsorted_doc_order = torch.sort(doc_order)
-    sorted_doc = _.map_(doc_order, lambda idx: torch.tensor(documents[idx],
-                                                            dtype=torch.long,
-                                                            device=self.device))
-    packed_doc_and_order = (pack_sequence(sorted_doc), unsorted_doc_order)
+    packed_doc_and_order = pack(documents)
     for query in query.to(self.device):
       scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
                                      packed_doc_and_order)

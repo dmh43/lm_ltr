@@ -48,20 +48,19 @@ def collate_query_samples(samples):
   documents = pad_to_max_len(x[1])
   return torch.tensor(query), torch.tensor(documents), torch.tensor(rel)
 
+def pack(batch):
+  batch_lengths = torch.tensor(_.map_(batch, len), dtype=torch.long)
+  sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
+  batch_range, unsort_batch_order = torch.sort(batch_order)
+  sorted_batch = _.map_(batch_order, lambda idx: torch.tensor(batch[idx], dtype=torch.long))
+  return (pack_sequence(sorted_batch), unsort_batch_order)
+
 def collate_query_pairwise_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  doc_1_lengths = torch.tensor(_.map_(x[1], len), dtype=torch.long)
-  doc_2_lengths = torch.tensor(_.map_(x[2], len), dtype=torch.long)
-  sorted_doc_1_lengths, doc_1_order = torch.sort(doc_1_lengths, descending=True)
-  sorted_doc_2_lengths, doc_2_order = torch.sort(doc_2_lengths, descending=True)
-  doc_1_range, unsorted_doc_1_order = torch.sort(doc_1_order)
-  doc_2_range, unsorted_doc_2_order = torch.sort(doc_2_order)
-  sorted_doc_1 = _.map_(doc_1_order, lambda idx: torch.tensor(x[1][idx], dtype=torch.long))
-  sorted_doc_2 = _.map_(doc_2_order, lambda idx: torch.tensor(x[2][idx], dtype=torch.long))
-  packed_doc_1_and_order = (pack_sequence(sorted_doc_1), unsorted_doc_1_order)
-  packed_doc_2_and_order = (pack_sequence(sorted_doc_2), unsorted_doc_2_order)
+  packed_doc_1_and_order = pack(x[1])
+  packed_doc_2_and_order = pack(x[2])
   return (torch.tensor(query),
           packed_doc_1_and_order,
           packed_doc_2_and_order,
