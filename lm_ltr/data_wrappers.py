@@ -78,17 +78,18 @@ def _get_num_pairs(rankings):
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self, documents, data, rel_method=score):
     super().__init__(documents, data)
-    self.lowest_rank_doc_to_consider = 100
-    self.rankings = _.map_(self.rankings,
-                           lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
-    num_pairs_per_ranking = _.map_(self.rankings, lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
+    self.lowest_rank_doc_to_consider = 10
+    self.rankings_for_train = _.map_(self.rankings,
+                                     lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
+    num_pairs_per_ranking = _.map_(self.rankings_for_train,
+                                   lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
 
   def __len__(self):
-    return _get_num_pairs(self.rankings)
+    return _get_num_pairs(self.rankings_for_train)
 
   def __getitem__(self, idx):
-    elem = _get_nth_pair(self.rankings, self.cumu_ranking_lengths, idx)
+    elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
     return ((elem['query'],
              self.documents[elem['doc_id_1']][:self.num_doc_tokens],
              self.documents[elem['doc_id_2']][:self.num_doc_tokens]),
