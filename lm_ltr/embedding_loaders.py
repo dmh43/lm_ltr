@@ -23,6 +23,6 @@ def init_embedding(glove_lookup, token_index_lookup, num_tokens, embed_len):
   for token, index in token_index_lookup.items():
     if token in glove_lookup:
       token_embed_weights.data[index] = glove_lookup[token]
-  embedding = nn.Embedding(num_tokens, embed_len)
+  embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
   embedding.weight = token_embed_weights
   return embedding

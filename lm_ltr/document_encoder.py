@@ -20,7 +20,7 @@ class DocumentEncoder(nn.Module):
     # last_out, last_cell_state = last_out_and_last_cell
     # return last_out.squeeze()[order]
     document = pad_packed_sequence(torch.nn.utils.rnn.PackedSequence(packed_document),
-                                   padding_value=1.0,
+                                   padding_value=1,
                                    batch_first=True)[0][order]
     document_tokens = self.document_token_embeds(document)
     token_weights = self.weights(document)
