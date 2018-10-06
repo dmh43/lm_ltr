@@ -48,11 +48,15 @@ def collate_query_samples(samples):
   documents = pad_to_max_len(x[1])
   return torch.tensor(query), torch.tensor(documents), torch.tensor(rel)
 
-def pack(batch):
-  batch_lengths = torch.tensor(_.map_(batch, len), dtype=torch.long)
+def pack(batch, device=torch.device('cpu')):
+  batch_lengths = torch.tensor(_.map_(batch, len),
+                               dtype=torch.long,
+                               device=device)
   sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
   batch_range, unsort_batch_order = torch.sort(batch_order)
-  sorted_batch = _.map_(batch_order, lambda idx: torch.tensor(batch[idx], dtype=torch.long))
+  sorted_batch = _.map_(batch_order, lambda idx: torch.tensor(batch[idx],
+                                                              dtype=torch.long,
+                                                              device=device))
   return (pack_sequence(sorted_batch), unsort_batch_order)
 
 def collate_query_pairwise_samples(samples):
