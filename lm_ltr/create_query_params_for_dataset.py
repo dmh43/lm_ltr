@@ -19,10 +19,10 @@ def main():
   rows = get_rows()
   with open(path, 'a+') as fh:
     fh.write('<parameters>\n')
-    for row in rows:
-      if row['query'] not in query_id_mapping: continue
-      query_id = query_id_mapping[row['query']]
-      query = clean_string(row['query'])
+    queries = set((clean_string(row['query']) for row in rows))
+    for query in queries:
+      if query not in query_id_mapping: continue
+      query_id = query_id_mapping[query]
       if len(query) == 0: continue
       fh.write('<query>\n')
       fh.write('<number>' + str(query_id + 1) + '</number>\n')
