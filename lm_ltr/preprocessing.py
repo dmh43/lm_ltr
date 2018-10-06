@@ -56,10 +56,12 @@ def collate_query_pairwise_samples(samples):
   doc_2_lengths = torch.tensor(_.map_(x[2], len), dtype=torch.long)
   sorted_doc_1_lengths, doc_1_order = torch.sort(doc_1_lengths, descending=True)
   sorted_doc_2_lengths, doc_2_order = torch.sort(doc_2_lengths, descending=True)
+  doc_1_range, unsorted_doc_1_order = torch.sort(doc_1_order)
+  doc_2_range, unsorted_doc_2_order = torch.sort(doc_2_order)
   sorted_doc_1 = _.map_(doc_1_order, lambda idx: torch.tensor(x[1][idx], dtype=torch.long))
   sorted_doc_2 = _.map_(doc_2_order, lambda idx: torch.tensor(x[2][idx], dtype=torch.long))
-  packed_doc_1_and_order = (pack_sequence(sorted_doc_1), doc_1_order)
-  packed_doc_2_and_order = (pack_sequence(sorted_doc_2), doc_2_order)
+  packed_doc_1_and_order = (pack_sequence(sorted_doc_1), unsorted_doc_1_order)
+  packed_doc_2_and_order = (pack_sequence(sorted_doc_2), unsorted_doc_2_order)
   return (torch.tensor(query),
           packed_doc_1_and_order,
           packed_doc_2_and_order,
