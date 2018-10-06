@@ -41,8 +41,9 @@ class MetricRecorder(Callback):
     pass
 
 class RankingMetricRecorder(MetricRecorder):
-  def __init__(self, model, train_ranking_dl, test_ranking_dl):
+  def __init__(self, device, model, train_ranking_dl, test_ranking_dl):
     super().__init__(model)
+    self.device = device
     self.ranker = PointwiseRanker(model)
     self.train_ranking_dl = train_ranking_dl
     self.test_ranking_dl = test_ranking_dl
@@ -58,8 +59,8 @@ class RankingMetricRecorder(MetricRecorder):
     for to_rank in dataset:
       if num_rankings_considered > 100: break
       if len(to_rank['documents']) < k: continue
-      ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
-                                                        to_rank['documents']))
+      ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'].to(self.device), 0),
+                                                        to_rank['documents'].to(self.device)))
       ranking = to_rank['doc_ids'][ranking_ids_for_batch]
       for doc_rank, doc_id in enumerate(ranking[:k].tolist()):
         rel = doc_id in to_rank['relevant']

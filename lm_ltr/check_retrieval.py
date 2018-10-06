@@ -31,14 +31,14 @@ def check_embed_method():
   documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', _raise_exception)
   glove_lookup = get_glove_lookup()
   num_query_tokens = len(query_token_lookup)
-  num_document_tokens = len(document_token_lookup)
+  num_doc_tokens = len(document_token_lookup)
   query_token_embeds = init_embedding(glove_lookup,
                                       query_token_lookup,
                                       num_query_tokens,
                                       100)
   document_token_embeds = init_embedding(glove_lookup,
                                          document_token_lookup,
-                                         num_document_tokens,
+                                         num_doc_tokens,
                                          100)
   documents = torch.tensor(pad_to_max_len(documents), dtype=torch.long)
   query_top_doc_pairs = [[row['query'], row['document_id']] for row in weak_data if row['rank'] == 0]
