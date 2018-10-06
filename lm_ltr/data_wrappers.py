@@ -38,7 +38,7 @@ class RankingDataset(Dataset):
                num_doc_tokens=100,
                k=10):
     self.rankings = rankings
-    self.documents = torch.tensor(pad_to_max_len(documents), dtype=torch.long)
+    self.documents = documents
     self.k = k
     self.query_document_token_mapping = query_document_token_mapping
     self.num_doc_tokens = num_doc_tokens
@@ -50,7 +50,7 @@ class RankingDataset(Dataset):
     query, ranking = self.rankings[idx]
     relevant = set(ranking[:self.k])
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': self.documents[ranking][:, :self.num_doc_tokens],
+            'documents': [self.documents[idx][:self.num_doc_tokens] for idx in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),
             'ranking': ranking[:self.k],
             'relevant': relevant}

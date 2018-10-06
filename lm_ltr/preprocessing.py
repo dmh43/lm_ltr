@@ -6,6 +6,7 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
+from torch.nn.utils.rnn import pack_sequence
 from fastai.text import Tokenizer
 
 from utils import append_at
@@ -51,9 +52,18 @@ def collate_query_pairwise_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  documents_1 = pad_to_max_len(x[1])
-  documents_2 = pad_to_max_len(x[2])
-  return torch.tensor(query), torch.tensor(documents_1), torch.tensor(documents_2), torch.tensor(rel)
+  doc_1_lengths = torch.tensor(_.map_(x[1], len), dtype=torch.long)
+  doc_2_lengths = torch.tensor(_.map_(x[2], len), dtype=torch.long)
+  sorted_doc_1_lengths, doc_1_order = torch.sort(doc_1_lengths, descending=True)
+  sorted_doc_2_lengths, doc_2_order = torch.sort(doc_2_lengths, descending=True)
+  sorted_doc_1 = _.map_(doc_1_order, lambda idx: torch.tensor(x[1][idx], dtype=torch.long))
+  sorted_doc_2 = _.map_(doc_2_order, lambda idx: torch.tensor(x[2][idx], dtype=torch.long))
+  packed_doc_1_and_order = (pack_sequence(sorted_doc_1), doc_1_order)
+  packed_doc_2_and_order = (pack_sequence(sorted_doc_2), doc_2_order)
+  return (torch.tensor(query),
+          packed_doc_1_and_order,
+          packed_doc_2_and_order,
+          torch.tensor(rel))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []

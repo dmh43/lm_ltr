@@ -1,7 +1,8 @@
 from random import shuffle
 
 from fastai.metrics import accuracy_thresh
-from fastai.model import fit
+# from fastai.model import fit
+from fastai_train import fit
 
 import torch
 from torch.optim import Adam
