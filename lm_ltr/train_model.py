@@ -32,7 +32,7 @@ def train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, 
            weight_decay=0.01),
       loss,
       callbacks=[RankingMetricRecorder(device,
-                                       model.module.pointwise_scorer,
+                                       model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
                                        train_ranking_dataset,
                                        test_ranking_dataset)])
   torch.save(model.state_dict(), './model_save')
