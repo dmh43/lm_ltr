@@ -30,10 +30,11 @@ def train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, 
       model_data,
       10000,
       Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
-           weight_decay=0.01),
+           weight_decay=0.0),
       loss,
       callbacks=[RankingMetricRecorder(device,
                                        model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
                                        train_ranking_dataset,
-                                       test_ranking_dataset)])
+                                       test_ranking_dataset)],
+      clip=0.1)
   torch.save(model.state_dict(), './model_save')
