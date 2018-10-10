@@ -1,4 +1,3 @@
-from fastai.lm_rnn import MultiBatchRNN
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,11 +9,15 @@ from document_encoder import DocumentEncoder
 class PointwiseScorer(nn.Module):
   def __init__(self,
                query_token_embeds,
-               document_token_embeds):
+               document_token_embeds,
+               doc_encoder):
     super().__init__()
-    self.document_encoder = DocumentEncoder(document_token_embeds)
+    self.document_encoder = DocumentEncoder(document_token_embeds, doc_encoder)
     self.query_encoder = QueryEncoder(query_token_embeds)
-    concat_len = 200
+    if doc_encoder:
+      concat_len = 1300
+    else:
+      concat_len = 200
     self.to_logits = nn.Linear(concat_len, 1)
     self.lin1 = nn.Linear(concat_len, int(concat_len/2))
     self.relu1 = nn.ReLU()

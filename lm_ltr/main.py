@@ -5,15 +5,16 @@ import time
 import pydash as _
 import torch
 import torch.nn as nn
-from fastai.dataset import ModelData
+from fastai.data import DataBunch
 
 from embedding_loaders import get_glove_lookup, init_embedding
 from fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache
 from pointwise_scorer import PointwiseScorer
 from pairwise_scorer import PairwiseScorer
-from preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score
+from preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples
 from data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from train_model import train_model
+from pretrained import get_doc_encoder_and_embeddings
 
 def get_model_and_dls(query_token_embed_len,
                       document_token_embed_len,
@@ -21,7 +22,8 @@ def get_model_and_dls(query_token_embed_len,
                       document_token_index_lookup,
                       documents,
                       weak_data,
-                      use_pairwise_loss):
+                      use_pairwise_loss,
+                      use_pretrained_doc_encoder):
   glove_lookup = get_glove_lookup()
   num_query_tokens = len(query_token_index_lookup)
   num_doc_tokens = len(document_token_index_lookup)
@@ -35,14 +37,18 @@ def get_model_and_dls(query_token_embed_len,
                                          document_token_embed_len)
   train_data = weak_data[:int(len(weak_data) * 0.8)]
   test_data = weak_data[int(len(weak_data) * 0.8):]
+  doc_encoder = None
+  if use_pretrained_doc_encoder:
+    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_index_lookup)
+    doc_encoder.requires_grad = False
   if use_pairwise_loss:
     train_dl = build_query_pairwise_dataloader(documents, train_data, rel_method=score)
     test_dl = build_query_pairwise_dataloader(documents, test_data, rel_method=score)
-    scorer = PairwiseScorer(query_token_embeds, document_token_embeds)
+    scorer = PairwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
   else:
     train_dl = build_query_dataloader(documents, train_data, rel_method=score)
     test_dl = build_query_dataloader(documents, test_data, rel_method=score)
-    scorer = PointwiseScorer(query_token_embeds, document_token_embeds)
+    scorer = PointwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
   return scorer, train_dl, test_dl
 
 def prepare_data():
@@ -79,13 +85,15 @@ def main():
   query_token_embed_len = 100
   document_token_embed_len = 100
   use_pairwise_loss = True
+  use_pretrained_doc_encoder = True
   model, train_dl, test_dl = get_model_and_dls(query_token_embed_len,
                                                document_token_embed_len,
                                                query_token_lookup,
                                                document_token_lookup,
                                                documents,
                                                weak_data,
-                                               use_pairwise_loss)
+                                               use_pairwise_loss,
+                                               use_pretrained_doc_encoder)
   query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
   print('Creating ranking datasets')
   num_doc_tokens = 100
@@ -99,7 +107,10 @@ def main():
                                         query_document_token_mapping,
                                         k=1,
                                         num_doc_tokens=num_doc_tokens)
-  model_data = ModelData('./rows', train_dl, test_dl)
+  model_data = DataBunch(train_dl,
+                         test_dl,
+                         collate_fn=collate_query_pairwise_samples if use_pairwise_loss else collate_query_samples,
+                         device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   model_to_save = model
   train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, use_pairwise_loss)
 

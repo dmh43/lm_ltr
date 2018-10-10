@@ -46,7 +46,7 @@ def collate_query_samples(samples):
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   documents = pad_to_max_len(x[1])
-  return torch.tensor(query), torch.tensor(documents), torch.tensor(rel)
+  return (torch.tensor(query), torch.tensor(documents)), torch.tensor(rel)
 
 def pack(batch, device=torch.device('cpu')):
   batch_lengths = torch.tensor(_.map_(batch, len),
@@ -65,9 +65,9 @@ def collate_query_pairwise_samples(samples):
   query = pad_to_max_len(x[0])
   packed_doc_1_and_order = pack(x[1])
   packed_doc_2_and_order = pack(x[2])
-  return (torch.tensor(query),
-          packed_doc_1_and_order,
-          packed_doc_2_and_order,
+  return ((torch.tensor(query),
+           packed_doc_1_and_order,
+           packed_doc_2_and_order),
           torch.tensor(rel))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):

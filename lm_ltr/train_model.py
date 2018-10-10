@@ -1,8 +1,8 @@
 from random import shuffle
+from functools import partial
 
 from fastai.metrics import accuracy_thresh
-# from fastai.model import fit
-from fastai_train import fit
+from fastai import fit, GradientClipping, Learner
 
 import torch
 from torch.optim import Adam
@@ -11,7 +11,6 @@ import pydash as _
 import torch.nn.functional as F
 
 from metrics import RankingMetricRecorder, recall, precision, f1
-from validate_model import validate_model
 from losses import hinge_loss
 
 def _get_loss_function(use_pairwise_loss):
@@ -21,20 +20,23 @@ def _get_loss_function(use_pairwise_loss):
     return F.mse_loss
 
 def train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, use_pairwise_loss):
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-  model = nn.DataParallel(model).to(device)
+  model = nn.DataParallel(model)
   loss = _get_loss_function(use_pairwise_loss)
   metrics = []
+  num_epochs = 10000
+  callbacks = [RankingMetricRecorder(model_data.device,
+                                     model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
+                                     train_ranking_dataset,
+                                     test_ranking_dataset)]
+  callback_fns=[partial(GradientClipping, clip=0.1)]
   print("Training:")
-  fit(model,
-      model_data,
-      10000,
-      Adam(list(filter(lambda p: p.requires_grad, model.parameters())),
-           weight_decay=0.0),
-      loss,
-      callbacks=[RankingMetricRecorder(device,
-                                       model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
-                                       train_ranking_dataset,
-                                       test_ranking_dataset)],
-      clip=0.1)
+  learner = Learner(model_data,
+                    model,
+                    opt_fn=Adam,
+                    loss_fn=loss,
+                    metrics=metrics,
+                    callbacks=callbacks,
+                    callback_fns=callback_fns,
+                    wd=0.0)
+  learner.fit(num_epochs)
   torch.save(model.state_dict(), './model_save')

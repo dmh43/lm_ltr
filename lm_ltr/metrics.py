@@ -3,7 +3,7 @@ from time import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from fastai.sgdr import Callback
+from fastai import Callback
 import numpy as np
 
 from pointwise_ranker import PointwiseRanker
@@ -16,29 +16,6 @@ class MetricRecorder(Callback):
   def __init__(self, model):
     super().__init__()
     self.model = model
-
-  def on_train_begin(self):
-    self.iterations, self.epochs = [],[]
-    self.rec_metrics = []
-    self.iteration = 0
-    self.epoch = 0
-
-  def on_epoch_end(self, other_metrics):
-    self.epoch += 1
-    self.epochs.append(self.iteration)
-
-  def on_batch_end(self, validation_loss):
-    self.iteration += 1
-    self.iterations.append(self.iteration)
-
-  def save_metrics(self, other_metrics):
-    pass
-
-  def plot_loss(self, n_skip=10, n_skip_end=5):
-    pass
-
-  def plot_lr(self):
-    pass
 
 class RankingMetricRecorder(MetricRecorder):
   def __init__(self, device, model, train_ranking_dl, test_ranking_dl):
@@ -75,9 +52,7 @@ class RankingMetricRecorder(MetricRecorder):
     ndcg = dcg / idcg
     return precision_k, recall_k, ndcg
 
-  def on_epoch_end(self, other_metrics):
-    self.epoch += 1
-    self.epochs.append(self.iteration)
+  def on_epoch_begin(self, **kwargs):
     train_results = self.metrics_at_k(self.train_ranking_dl)
     test_results = self.metrics_at_k(self.test_ranking_dl)
     report = '\n'.join(['Train: ' + str(train_results),
@@ -85,7 +60,7 @@ class RankingMetricRecorder(MetricRecorder):
     self.log.write(report)
     print(report)
 
-  def on_train_end(self):
+  def on_train_end(self, **kwargs):
     self.log.close()
 
 
