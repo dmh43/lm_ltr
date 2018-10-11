@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_packed_sequence
 
 class DocumentEncoder(nn.Module):
-  def __init__(self, document_token_embeds, doc_encoder):
+  def __init__(self, document_token_embeds, doc_encoder=None):
     super().__init__()
     self.document_token_embeds = document_token_embeds
     self.use_lm = False
