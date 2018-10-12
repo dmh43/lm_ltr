@@ -32,7 +32,7 @@ def tokens_to_indexes(tokens, lookup=None):
 
 def preprocess_texts(texts, token_lookup=None):
   tokenizer = Tokenizer()
-  tokenized = [tokenizer.proc_text(q) for q in texts]
+  tokenized = tokenizer.process_all(texts)
   idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup)
   return idx_texts, token_lookup
 
