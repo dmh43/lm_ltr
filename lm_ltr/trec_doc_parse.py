@@ -19,7 +19,7 @@ def _parse_xml_docs(path):
     text = reduce(lambda acc, p: acc + re.sub('\n', '', p.text.strip() + ' '),
                   list(texts),
                   '')
-    docs[doc.find('DOCID').text.strip()] = text
+    docs[doc.find('DOCNO').text.strip()] = text
   return docs
 
 def _parse_qrels(qrels_path):
@@ -55,14 +55,14 @@ def parse_robust(query_token_lookup, qrels_path, test_set_path, doc_paths):
   docs = _.merge({}, *[_parse_xml_docs(doc_path) for doc_path in doc_paths])
   doc_id_lookup = dict(zip(docs.keys(), range(len(docs))))
   docs_by_index = map_docs(docs, doc_id_lookup)
-  query_doc_id_rels = _parse_qrels(qrels_path)
+  query_doc_no_rels = _parse_qrels(qrels_path)
   queries = _parse_test_set(test_set_path)
   queries_by_index = _.map_values(queries,
                                   lambda query: query_token_lookup.get(query) or query_token_lookup['<unk>'])
   query_doc_rels = []
   for query in queries:
-    if query not in query_doc_id_rels: continue
+    if query not in query_doc_no_rels: continue
     query_indexes = queries_by_index[query]
-    rel_doc_ids = [doc_id_lookup[doc_id] for doc_id in query_doc_id_rels[query] if doc_id in doc_id_lookup]
+    rel_doc_ids = [doc_id_lookup[doc_no] for doc_no in query_doc_no_rels[query] if doc_no in doc_id_lookup]
     query_doc_rels.append([query_indexes, rel_doc_ids])
   return query_doc_rels, docs_by_index
