@@ -114,17 +114,23 @@ def read_or_cache(path, fn):
 
 def read_cache(path, fn):
   try:
-    data= read_from_file(path)
+    data = read_from_file(path)
   except FileNotFoundError:
     data = fn()
     write_to_file(path, data)
   return data
 
 def load_robust04_data_and_docs(query_token_lookup, document_token_lookup, doc_first_index=0):
-  qrels_path, test_set_path, doc_paths = './data/robust04/qrels.robust2004.txt', './data/robust04/04.testset', ['./fbis', './la', './ft']
-  return parse_robust(query_token_lookup,
-                      document_token_lookup,
-                      qrels_path,
-                      test_set_path,
-                      doc_paths,
-                      doc_first_index=doc_first_index)
+  cache_path = './parsed_robust.pkl'
+  qrels_path,test_set_path, doc_paths = './data/robust04/qrels.robust2004.txt', './data/robust04/04.testset', ['./fbis', './la', './ft']
+  try:
+    data = read_from_file(cache_path)
+  except FileNotFoundError:
+    data = parse_robust(query_token_lookup,
+                        document_token_lookup,
+                        qrels_path,
+                        test_set_path,
+                        doc_paths,
+                        doc_first_index=doc_first_index)
+    write_to_file(cache_path, data)
+  return data
