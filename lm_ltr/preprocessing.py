@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_sequence
 from fastai.text import Tokenizer
 
-from utils import append_at
+from .utils import append_at
 
 pad_token_idx = 1
 unk_token_idx = 0

@@ -6,10 +6,10 @@ import pydash as _
 import torch
 import torch.nn as nn
 
-from embedding_loaders import get_glove_lookup, init_embedding
-from fetchers import read_cache
-from preprocessing import pad_to_max_len
-from data_wrappers import get_top_k, score_documents_tfidf, _get_tfidf_transformer_and_matrix, score_documents_embed
+from .embedding_loaders import get_glove_lookup, init_embedding
+from .fetchers import read_cache
+from .preprocessing import pad_to_max_len
+from .data_wrappers import get_top_k, score_documents_tfidf, _get_tfidf_transformer_and_matrix, score_documents_embed
 
 def _raise_exception():
   raise FileNotFoundError('make sure that prepared_data.pkl exists')

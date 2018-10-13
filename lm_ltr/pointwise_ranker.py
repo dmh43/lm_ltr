@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_sequence
 
-from preprocessing import pack
+from .preprocessing import pack
 
 class PointwiseRanker:
   def __init__(self, device, pointwise_scorer):

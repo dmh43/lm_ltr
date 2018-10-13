@@ -1,6 +1,6 @@
 import pickle
 
-from fetchers import get_rows, get_document_titles
+from .fetchers import get_rows, get_document_titles
 
 
 def main():

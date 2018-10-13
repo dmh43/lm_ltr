@@ -3,7 +3,7 @@ import pickle
 
 import pydash as _
 
-from fetchers import get_raw_documents
+from .fetchers import get_raw_documents
 
 def main():
   path = './indri/in'

@@ -1,6 +1,6 @@
 import pickle
 
-from utils import append_at
+from .utils import append_at
 
 def main():
   with open('./document_titles.pkl', 'rb') as fh:

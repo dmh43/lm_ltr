@@ -10,8 +10,8 @@ import torch.nn as nn
 import pydash as _
 import torch.nn.functional as F
 
-from metrics import RankingMetricRecorder, recall, precision, f1
-from losses import hinge_loss
+from .metrics import RankingMetricRecorder, recall, precision, f1
+from .losses import hinge_loss
 
 def _get_loss_function(use_pairwise_loss):
   if use_pairwise_loss:

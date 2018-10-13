@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from fastai import Callback
 import numpy as np
 
-from pointwise_ranker import PointwiseRanker
+from .pointwise_ranker import PointwiseRanker
 
 
 class MetricRecorder(Callback):

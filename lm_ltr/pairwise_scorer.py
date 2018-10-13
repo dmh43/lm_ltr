@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from pointwise_scorer import PointwiseScorer
+from .pointwise_scorer import PointwiseScorer
 
 class PairwiseScorer(nn.Module):
   def __init__(self,

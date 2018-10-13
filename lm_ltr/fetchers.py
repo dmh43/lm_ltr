@@ -3,6 +3,8 @@ import pickle
 
 import pydash as _
 
+from .trec_doc_parse import parse_robust
+
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
                                   user='danyhaddad',
@@ -117,3 +119,12 @@ def read_cache(path, fn):
     data = fn()
     write_to_file(path, data)
   return data
+
+def load_robust04_data_and_docs(query_token_lookup, document_token_lookup, doc_first_index=0):
+  qrels_path, test_set_path, doc_paths = './data/robust04/qrels.robust2004.txt', './data/robust04/04.testset', ['./fbis', './la', './ft']
+  return parse_robust(query_token_lookup,
+                      document_token_lookup,
+                      qrels_path,
+                      test_set_path,
+                      doc_paths,
+                      doc_first_index=doc_first_index)

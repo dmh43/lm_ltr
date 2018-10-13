@@ -4,8 +4,8 @@ from lxml import html
 
 import pydash as _
 
-from utils import append_at
-from preprocessing import preprocess_texts
+from .utils import append_at
+from .preprocessing import preprocess_texts
 
 def _parse_xml_docs(path):
   with open(path, 'rb') as fh:
@@ -44,25 +44,36 @@ def _parse_test_set(test_set_path):
         current_query = None
     return queries
 
-def map_docs(docs, doc_id_lookup):
-  doc_ids = list(doc_id_lookup.values())
+def map_docs(docs, doc_id_lookup, document_token_lookup=None):
+  doc_ids = sorted(list(doc_id_lookup.values()))
   old_doc_id_lookup = _.invert(doc_id_lookup)
   contents = [docs[old_doc_id_lookup[doc_id]] for doc_id in doc_ids]
-  indexed_docs, doc_token_lookup = preprocess_texts(contents)
-  return dict(zip(doc_ids, indexed_docs))
+  indexed_docs, document_token_lookup = preprocess_texts(contents, token_lookup=document_token_lookup)
+  return indexed_docs
 
-def parse_robust(query_token_lookup, qrels_path, test_set_path, doc_paths):
+def map_queries(queries, query_token_lookup=None):
+  query_ids = list(queries.keys())
+  query_strings = [queries[query_id] for query_id in query_ids]
+  indexed_queries, query_token_lookup = preprocess_texts(query_strings, token_lookup=query_token_lookup)
+  return dict(zip(query_ids, indexed_queries))
+
+def parse_robust(query_token_lookup,
+                 document_token_lookup,
+                 qrels_path,
+                 test_set_path,
+                 doc_paths,
+                 doc_first_index=0):
   docs = _.merge({}, *[_parse_xml_docs(doc_path) for doc_path in doc_paths])
-  doc_id_lookup = dict(zip(docs.keys(), range(len(docs))))
-  docs_by_index = map_docs(docs, doc_id_lookup)
+  doc_id_lookup = dict(zip(docs.keys(), range(doc_first_index, doc_first_index + len(docs))))
+  indexed_docs = map_docs(docs, doc_id_lookup, document_token_lookup)
   query_doc_no_rels = _parse_qrels(qrels_path)
   queries = _parse_test_set(test_set_path)
-  queries_by_index = _.map_values(queries,
-                                  lambda query: query_token_lookup.get(query) or query_token_lookup['<unk>'])
-  query_doc_rels = []
+  index_queries_by_id = map_queries(queries, query_token_lookup)
+  robust_data = []
   for query in queries:
     if query not in query_doc_no_rels: continue
-    query_indexes = queries_by_index[query]
-    rel_doc_ids = [doc_id_lookup[doc_no] for doc_no in query_doc_no_rels[query] if doc_no in doc_id_lookup]
-    query_doc_rels.append([query_indexes, rel_doc_ids])
-  return query_doc_rels, docs_by_index
+    query_indexes = index_queries_by_id[query]
+    for doc_no in query_doc_no_rels[query]:
+      if doc_no not in doc_id_lookup: continue
+      robust_data.append({'query': query_indexes, 'doc_id': doc_id_lookup[doc_no]})
+  return robust_data, indexed_docs

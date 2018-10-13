@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from toolz import pipe
 
-from query_encoder import QueryEncoder
-from document_encoder import DocumentEncoder
+from .query_encoder import QueryEncoder
+from .document_encoder import DocumentEncoder
 
 class PointwiseScorer(nn.Module):
   def __init__(self,

@@ -10,7 +10,7 @@ import numpy as np
 
 from sklearn.feature_extraction.text import TfidfTransformer
 
-from preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score
+from .preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score
 
 class QueryDataset(Dataset):
   def __init__(self, documents, data, rel_method=score, num_doc_tokens=100):
