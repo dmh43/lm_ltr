@@ -18,7 +18,7 @@ def check_tfidf_method():
   documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', _raise_exception)
   documents = torch.tensor(pad_to_max_len(documents), dtype=torch.long)
   query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
-  query_top_doc_pairs = [[row['query'], row['document_id']] for row in weak_data if row['rank'] == 0]
+  query_top_doc_pairs = [[row['query'], row['doc_id']] for row in weak_data if row['rank'] == 0]
   retrieved = 0
   xformer, tfidf_docs = _get_tfidf_transformer_and_matrix(documents)
   for query, doc_id in query_top_doc_pairs:
@@ -41,7 +41,7 @@ def check_embed_method():
                                          num_doc_tokens,
                                          100)
   documents = torch.tensor(pad_to_max_len(documents), dtype=torch.long)
-  query_top_doc_pairs = [[row['query'], row['document_id']] for row in weak_data if row['rank'] == 0]
+  query_top_doc_pairs = [[row['query'], row['doc_id']] for row in weak_data if row['rank'] == 0]
   queries, doc_ids = list(zip(*query_top_doc_pairs))
   queries = torch.tensor(pad_to_max_len(queries), dtype=torch.long)
   device = torch.device("cuda")

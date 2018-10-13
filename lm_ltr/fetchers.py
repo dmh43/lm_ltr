@@ -73,7 +73,7 @@ def get_supervised_raw_data(document_title_id_mapping, queries):
       continue
     if row['document_title'] in document_title_id_mapping:
       result.append({'query': row['query'],
-                     'document_id': document_title_id_mapping[row['document_title']]})
+                     'doc_id': document_title_id_mapping[row['document_title']]})
     else:
       ctr += 1
   print('skipped', ctr, 'supervised queries')
@@ -90,7 +90,7 @@ def get_weak_raw_data(id_query_mapping, queries):
         query = id_query_mapping[query_id]
         if query_id not in queries: continue
         results.append({'query': query,
-                        'document_id': int(doc_num) - 1,
+                        'doc_id': int(doc_num) - 1,
                         'score': float(doc_score),
                         'rank': int(doc_rank) - 1})
       else:

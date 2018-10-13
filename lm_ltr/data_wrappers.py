@@ -21,7 +21,7 @@ class QueryDataset(Dataset):
     self.num_doc_tokens = num_doc_tokens
 
   def _get_document(self, doc_idx):
-    return self.documents[self.data[doc_idx]['document_id']][:self.num_doc_tokens]
+    return self.documents[self.data[doc_idx]['doc_id']][:self.num_doc_tokens]
 
   def __len__(self):
     return len(self.data)

@@ -110,6 +110,6 @@ def sort_by_first(pairs):
 def to_query_rankings_pairs(data):
   query_to_ranking = {}
   for row in data:
-    append_at(query_to_ranking, str(row['query'])[1:-1], row['document_id'])
+    append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]

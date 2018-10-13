@@ -13,7 +13,7 @@ def main():
     pass
   with open('./document_ids.pkl', 'rb') as fh:
     document_title_id_mapping = pickle.load(fh)
-    id_document_title_mapping = {document_id: title for title, document_id in _.to_pairs(document_title_id_mapping)}
+    id_document_title_mapping = {doc_id: title for title, doc_id in _.to_pairs(document_title_id_mapping)}
   documents = get_raw_documents(id_document_title_mapping)
   with open(path, 'a+') as fh:
     for i, document in enumerate(documents):
