@@ -17,8 +17,8 @@ def test__parse_test_set():
 def test_parse_robust():
   qrels_path = './tests/fixtures/qrels'
   test_set_path = './tests/fixtures/test_set'
-  doc_paths = ['./tests/fixtures/fbis_sample']
-  num_docs_in_fbis_sample = 5
+  doc_paths = ['./tests/fixtures/fbis_sample', './tests/fixtures/la_sample']
+  num_docs_in_sample = 6
   query_token_lookup = {'international': 2, 'organized': 3}
   document_token_lookup = {}
   data, docs = parse.parse_robust(query_token_lookup,
@@ -27,10 +27,25 @@ def test_parse_robust():
                                   test_set_path,
                                   doc_paths,
                                   doc_first_index=1)
-  print(docs)
   assert all([row['doc_id'] >= 1 for row in data])
-  assert len(docs) == num_docs_in_fbis_sample
+  assert len(docs) == num_docs_in_sample
   assert data == [{'query': [2, 3, 0], 'doc_id': 4},
                   {'query': [2, 3, 0], 'doc_id': 3},
                   {'query': [2, 3, 0], 'doc_id': 2},
                   {'query': [2, 3, 0], 'doc_id': 1}]
+
+def test_trouble_parse_robust():
+  qrels_path = './tests/fixtures/qrels'
+  test_set_path = './tests/fixtures/test_set'
+  doc_paths = ['./tests/fixtures/trouble_fbis']
+  query_token_lookup = {'international': 2, 'organized': 3}
+  document_token_lookup = {}
+  data, docs = parse.parse_robust(query_token_lookup,
+                                  document_token_lookup,
+                                  qrels_path,
+                                  test_set_path,
+                                  doc_paths,
+                                  doc_first_index=1)
+  assert all([row['doc_id'] >= 1 for row in data])
+  assert len(docs) == 1
+  assert data == [{'query': [2, 3, 0], 'doc_id': 1}]

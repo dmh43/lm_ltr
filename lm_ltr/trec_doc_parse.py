@@ -7,6 +7,9 @@ import pydash as _
 from .utils import append_at
 from .preprocessing import preprocess_texts
 
+def clean_text(text):
+  return re.sub('\n', '', text.strip() + ' ')
+
 def _parse_xml_docs(path):
   with open(path, 'rb') as fh:
     text = str(fh.read().decode('latin-1'))
@@ -16,9 +19,12 @@ def _parse_xml_docs(path):
   for doc in tree:
     texts = doc.find('text')
     if texts is None: continue
-    text = reduce(lambda acc, p: acc + re.sub('\n', '', p.text.strip() + ' '),
-                  list(texts),
-                  '')
+    if len(texts.getchildren()) == 0:
+      text = clean_text(texts.text_content())
+    else:
+      text = reduce(lambda acc, p: acc + clean_text(p.text_content()),
+                    texts.getchildren(),
+                    '')
     docs[(doc.find('docno')).text.strip()] = text
   return docs
 
