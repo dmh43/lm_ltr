@@ -1,6 +1,6 @@
 from functools import reduce
 import re
-import xml.etree.ElementTree as ET
+from lxml import html
 
 import pydash as _
 
@@ -10,16 +10,16 @@ from preprocessing import preprocess_texts
 def _parse_xml_docs(path):
   with open(path, 'rb') as fh:
     text = str(fh.read().decode('latin-1'))
-  parser = ET.XMLParser(encoding='latin-1')
-  tree = ET.fromstring('<root>' + text + '</root>', parser=parser)
+  text_to_parse = text if '<root>' in text else '<root>' + text + '</root>'
+  tree = html.fromstring(text_to_parse)
   docs = {}
   for doc in tree:
-    texts = doc.find('TEXT')
+    texts = doc.find('text')
     if texts is None: continue
     text = reduce(lambda acc, p: acc + re.sub('\n', '', p.text.strip() + ' '),
                   list(texts),
                   '')
-    docs[doc.find('DOCNO').text.strip()] = text
+    docs[(doc.find('docno')).text.strip()] = text
   return docs
 
 def _parse_qrels(qrels_path):
