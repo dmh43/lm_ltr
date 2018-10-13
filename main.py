@@ -119,7 +119,7 @@ def main():
   test_ranking_dataset = RankingDataset(documents,
                                         test_dl.dataset.rankings,
                                         query_document_token_mapping,
-                                        k=1,
+                                        k=1 if test_set == 'wiki' else 10,
                                         num_doc_tokens=num_doc_tokens)
   model_data = DataBunch(train_dl,
                          test_dl,

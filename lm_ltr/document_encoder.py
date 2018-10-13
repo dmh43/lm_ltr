@@ -36,8 +36,6 @@ class DocumentEncoder(nn.Module):
                                                                    packed_document[1].to(torch.device('cpu')))
     out, last_out_and_last_cell = self.lstm(packed_seq_document_tokens)
     last_out, last_cell_state = last_out_and_last_cell
-    batch_size = last_out.shape[1]
-    hidden_size = last_out.shape[2]
     doc_vecs = self.projection(torch.cat([last_out[0], last_out[1]], 1)[order])
     return doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)
 

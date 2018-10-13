@@ -1,3 +1,4 @@
+from random import sample
 from functools import reduce
 import pydash as _
 
@@ -42,6 +43,7 @@ class RankingDataset(Dataset):
     self.k = k
     self.query_document_token_mapping = query_document_token_mapping
     self.num_doc_tokens = num_doc_tokens
+    self.num_to_rank = 1000
 
   def __len__(self):
     return len(self.rankings)
@@ -49,9 +51,15 @@ class RankingDataset(Dataset):
   def __getitem__(self, idx):
     query, ranking = self.rankings[idx]
     relevant = set(ranking[:self.k])
+    if len(ranking) < self.num_to_rank:
+      neg_samples = sample(set(range(self.num_to_rank)) - set(ranking),
+                           self.num_to_rank - len(ranking))
+      ranking_with_neg = ranking + neg_samples
+    else:
+      ranking_with_neg = ranking
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.documents[idx][:self.num_doc_tokens] for idx in ranking],
-            'doc_ids': torch.tensor(ranking, dtype=torch.long),
+            'documents': [self.documents[idx][:self.num_doc_tokens] for idx in ranking_with_neg],
+            'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
             'ranking': ranking[:self.k],
             'relevant': relevant}
 
