@@ -24,7 +24,8 @@ def get_model_and_dls(query_token_embed_len,
                       weak_data,
                       use_pairwise_loss,
                       use_pretrained_doc_encoder,
-                      test_set):
+                      test_set,
+                      train_set):
   glove_lookup = get_glove_lookup()
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
@@ -36,19 +37,27 @@ def get_model_and_dls(query_token_embed_len,
                                          document_token_lookup,
                                          num_doc_tokens,
                                          document_token_embed_len)
-  if test_set == 'wiki':
+  if test_set == 'wiki' and train_set == 'wiki':
     train_data = weak_data[:int(len(weak_data) * 0.8)]
     test_data = weak_data[int(len(weak_data) * 0.8):]
-  elif test_set == 'robust04':
+    additional_docs = []
+  elif test_set == 'robust04' and train_set == 'robust04':
+    robust_data, robust_docs = load_robust04_data_and_docs(query_token_lookup,
+                                                           document_token_lookup,
+                                                           len(documents))
+    additional_docs = robust_docs
+    train_data = robust_data[:int(len(robust_data) * 0.8)]
+    test_data = robust_data[int(len(robust_data) * 0.8):]
+  elif test_set == 'robust04' and train_set == 'wiki':
     train_data = weak_data
-    test_data, test_docs = load_robust04_data_and_docs(query_token_lookup,
-                                                       document_token_lookup,
-                                                       len(documents))
-    documents += test_docs
-  elif test_set == 'clueweb':
+    test_data, additional_docs = load_robust04_data_and_docs(query_token_lookup,
+                                                             document_token_lookup,
+                                                             len(documents))
+  elif test_set == 'clueweb' or train_set == 'clueweb':
     raise NotImplementedError
   else:
     raise ValueError(test_set + ' is not a valid test set name')
+  documents = documents + additional_docs
   doc_encoder = None
   if use_pretrained_doc_encoder:
     doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
@@ -61,7 +70,7 @@ def get_model_and_dls(query_token_embed_len,
     train_dl = build_query_dataloader(documents, train_data, rel_method=score)
     test_dl = build_query_dataloader(documents, test_data, rel_method=score)
     scorer = PointwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
-  return scorer, train_dl, test_dl
+  return scorer, train_dl, test_dl, additional_docs
 
 def prepare_data():
   print('Loading mappings')
@@ -97,26 +106,32 @@ def main():
   query_token_embed_len = 100
   document_token_embed_len = 100
   use_pairwise_loss = True
-  use_pretrained_doc_encoder = True
+  # use_pretrained_doc_encoder = True
+  use_pretrained_doc_encoder = False
   test_set = 'robust04'
-  model, train_dl, test_dl = get_model_and_dls(query_token_embed_len,
-                                               document_token_embed_len,
-                                               query_token_lookup,
-                                               document_token_lookup,
-                                               documents,
-                                               weak_data,
-                                               use_pairwise_loss,
-                                               use_pretrained_doc_encoder,
-                                               test_set)
+  # test_set = 'wiki'
+  train_set = 'robust04'
+  # train_set = 'wiki'
+  model, train_dl, test_dl, additional_docs = get_model_and_dls(query_token_embed_len,
+                                                          document_token_embed_len,
+                                                          query_token_lookup,
+                                                          document_token_lookup,
+                                                          documents,
+                                                          weak_data,
+                                                          use_pairwise_loss,
+                                                          use_pretrained_doc_encoder,
+                                                          test_set,
+                                                          train_set)
   query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
   print('Creating ranking datasets')
   num_doc_tokens = 100
-  train_ranking_dataset = RankingDataset(documents,
+  all_documents = documents + additional_docs
+  train_ranking_dataset = RankingDataset(all_documents,
                                          train_dl.dataset.rankings,
                                          query_document_token_mapping,
-                                         k=1,
+                                         k=1 if train_set == 'wiki' else 10,
                                          num_doc_tokens=num_doc_tokens)
-  test_ranking_dataset = RankingDataset(documents,
+  test_ranking_dataset = RankingDataset(all_documents,
                                         test_dl.dataset.rankings,
                                         query_document_token_mapping,
                                         k=1 if test_set == 'wiki' else 10,
