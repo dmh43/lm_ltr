@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from fastai.data import DataBunch
 
-from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding
+from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, load_robust04_data_and_docs
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
@@ -37,6 +37,8 @@ def get_model_and_dls(query_token_embed_len,
                                          document_token_lookup,
                                          num_doc_tokens,
                                          document_token_embed_len)
+  extend_token_lookup(glove_lookup.keys(), document_token_lookup)
+  extend_token_lookup(glove_lookup.keys(), query_token_lookup)
   if test_set == 'wiki' and train_set == 'wiki':
     train_data = weak_data[:int(len(weak_data) * 0.8)]
     test_data = weak_data[int(len(weak_data) * 0.8):]
@@ -100,7 +102,7 @@ def prepare_data():
   return documents, train_data, test_data, query_token_lookup, document_token_lookup
 
 model_to_save = None
-def main():
+def old_main():
   global model_to_save
   documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', prepare_data)
   query_token_embed_len = 100
@@ -135,6 +137,47 @@ def main():
                                         test_dl.dataset.rankings,
                                         query_document_token_mapping,
                                         k=1 if test_set == 'wiki' else 10,
+                                        num_doc_tokens=num_doc_tokens)
+  model_data = DataBunch(train_dl,
+                         test_dl,
+                         collate_fn=collate_query_pairwise_samples if use_pairwise_loss else collate_query_samples,
+                         device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+  model_to_save = model
+  train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, use_pairwise_loss)
+
+def main():
+  global model_to_save
+  robust_data, robust_docs = load_robust04_data_and_docs(query_token_lookup,
+                                                         document_token_lookup,
+                                                         len(documents))
+  query_token_embed_len = 100
+  document_token_embed_len = 100
+  use_pairwise_loss = True
+  # use_pretrained_doc_encoder = True
+  use_pretrained_doc_encoder = False
+  model, train_dl, test_dl, additional_docs = get_model_and_dls(query_token_embed_len,
+                                                          document_token_embed_len,
+                                                          query_token_lookup,
+                                                          document_token_lookup,
+                                                          documents,
+                                                          weak_data,
+                                                          use_pairwise_loss,
+                                                          use_pretrained_doc_encoder,
+                                                          test_set,
+                                                          train_set)
+  query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
+  print('Creating ranking datasets')
+  num_doc_tokens = 100
+  all_documents = documents + additional_docs
+  train_ranking_dataset = RankingDataset(all_documents,
+                                         train_dl.dataset.rankings,
+                                         query_document_token_mapping,
+                                         k=10,
+                                         num_doc_tokens=num_doc_tokens)
+  test_ranking_dataset = RankingDataset(all_documents,
+                                        test_dl.dataset.rankings,
+                                        query_document_token_mapping,
+                                        k=10,
                                         num_doc_tokens=num_doc_tokens)
   model_data = DataBunch(train_dl,
                          test_dl,

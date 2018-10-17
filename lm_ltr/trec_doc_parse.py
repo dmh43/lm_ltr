@@ -6,6 +6,7 @@ import pydash as _
 
 from .utils import append_at
 from .preprocessing import preprocess_texts
+from .fetchers import read_cache
 
 def clean_text(text):
   return re.sub('\n', '', text.strip() + ' ')
@@ -14,7 +15,11 @@ def _parse_xml_docs(path):
   with open(path, 'rb') as fh:
     text = str(fh.read().decode('latin-1'))
   text_to_parse = text if '<root>' in text else '<root>' + text + '</root>'
-  tree = html.fromstring(text_to_parse)
+  if len(text_to_parse) > 100000:
+    tree = read_cache('./tree_parse_' + re.sub('/', '', path) + '.pkl',
+                      lambda: html.fromstring(text_to_parse))
+  else:
+    tree = html.fromstring(text_to_parse)
   docs = {}
   for doc in tree:
     texts = doc.find('text')
@@ -62,6 +67,13 @@ def map_queries(queries, query_token_lookup=None):
   query_strings = [queries[query_id] for query_id in query_ids]
   indexed_queries, query_token_lookup = preprocess_texts(query_strings, token_lookup=query_token_lookup)
   return dict(zip(query_ids, indexed_queries))
+
+def load_robust04_documents_lookup(doc_paths):
+  return _.merge({}, *[_parse_xml_docs(doc_path) for doc_path in doc_paths])
+
+def get_robust_queries_lookup():
+  query_doc_no_rels = _parse_qrels(qrels_path)
+  queries = _parse_test_set(test_set_path)
 
 def parse_robust(query_token_lookup,
                  document_token_lookup,

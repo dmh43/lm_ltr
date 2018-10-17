@@ -1,8 +1,20 @@
 <parameters>
     <index>/home/dany/lm_ltr/indri/out</index>
-    <memory>4G</memory>
+    <memory>15G</memory>
+    <!-- <corpus> -->
+    <!--     <path>/home/dany/lm_ltr/indri/in</path> -->
+    <!--     <class>trectext</class> -->
+    <!-- </corpus> -->
     <corpus>
-        <path>/home/dany/lm_ltr/indri/in</path>
+        <path>/home/dany/lm_ltr/fbis</path>
+        <class>trectext</class>
+    </corpus>
+    <corpus>
+        <path>/home/dany/lm_ltr/la</path>
+        <class>trectext</class>
+    </corpus>
+    <corpus>
+        <path>/home/dany/lm_ltr/ft</path>
         <class>trectext</class>
     </corpus>
     <stemmer><name>krovetz</name></stemmer>

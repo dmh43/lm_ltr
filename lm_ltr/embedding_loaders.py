@@ -26,3 +26,8 @@ def init_embedding(glove_lookup, token_lookup, num_tokens, embed_len):
   embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
   embedding.weight = token_embed_weights
   return embedding
+
+def extend_token_lookup(tokens_to_insert, token_lookup) -> None:
+  for token in tokens_to_insert:
+    if token not in token_lookup:
+      token_lookup[token] = len(token_lookup)
