@@ -35,13 +35,11 @@ class RankingDataset(Dataset):
   def __init__(self,
                documents,
                rankings,
-               query_document_token_mapping,
                num_doc_tokens=100,
                k=10):
     self.rankings = rankings
     self.documents = documents
     self.k = k
-    self.query_document_token_mapping = query_document_token_mapping
     self.num_doc_tokens = num_doc_tokens
     self.num_to_rank = 1000
 
@@ -102,20 +100,6 @@ class QueryPairwiseDataset(QueryDataset):
              self.documents[elem['doc_id_1']][:self.num_doc_tokens],
              self.documents[elem['doc_id_2']][:self.num_doc_tokens]),
             elem['order_int'])
-
-def _get_tfidf_transformer_and_matrix(documents):
-  transformer = TfidfTransformer()
-  counts = sp.lil_matrix((len(documents), documents.max().item() + 1))
-  for doc_num, doc in enumerate(documents):
-    doc_counts = np.bincount(doc)
-    nonzero = doc_counts.nonzero()
-    counts[doc_num, nonzero] = doc_counts[nonzero]
-  return transformer, transformer.fit_transform(counts)
-
-def score_documents_tfidf(query_document_token_mapping, tfidf_docs, query):
-  mapped_query = [query_document_token_mapping[token] for token in query]
-  subset = tfidf_docs[:, mapped_query] / (tfidf_docs.sum(1) + 0.0001)
-  return torch.tensor(subset.sum(1).T.tolist()).squeeze()
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
   query_embeds = query_word_embeds(queries)

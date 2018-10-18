@@ -8,71 +8,13 @@ import torch.nn as nn
 from fastai.data import DataBunch
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup
-from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, load_robust04_data_and_docs
+from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_queries, get_robust_rels, read_query_result
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
 from lm_ltr.preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
-
-def get_model_and_dls(query_token_embed_len,
-                      document_token_embed_len,
-                      query_token_lookup,
-                      document_token_lookup,
-                      documents,
-                      weak_data,
-                      use_pairwise_loss,
-                      use_pretrained_doc_encoder,
-                      test_set,
-                      train_set):
-  glove_lookup = get_glove_lookup()
-  num_query_tokens = len(query_token_lookup)
-  num_doc_tokens = len(document_token_lookup)
-  query_token_embeds = init_embedding(glove_lookup,
-                                      query_token_lookup,
-                                      num_query_tokens,
-                                      query_token_embed_len)
-  document_token_embeds = init_embedding(glove_lookup,
-                                         document_token_lookup,
-                                         num_doc_tokens,
-                                         document_token_embed_len)
-  extend_token_lookup(glove_lookup.keys(), document_token_lookup)
-  extend_token_lookup(glove_lookup.keys(), query_token_lookup)
-  if test_set == 'wiki' and train_set == 'wiki':
-    train_data = weak_data[:int(len(weak_data) * 0.8)]
-    test_data = weak_data[int(len(weak_data) * 0.8):]
-    additional_docs = []
-  elif test_set == 'robust04' and train_set == 'robust04':
-    robust_data, robust_docs = load_robust04_data_and_docs(query_token_lookup,
-                                                           document_token_lookup,
-                                                           len(documents))
-    additional_docs = robust_docs
-    train_data = robust_data[:int(len(robust_data) * 0.8)]
-    test_data = robust_data[int(len(robust_data) * 0.8):]
-  elif test_set == 'robust04' and train_set == 'wiki':
-    train_data = weak_data
-    test_data, additional_docs = load_robust04_data_and_docs(query_token_lookup,
-                                                             document_token_lookup,
-                                                             len(documents))
-  elif test_set == 'clueweb' or train_set == 'clueweb':
-    raise NotImplementedError
-  else:
-    raise ValueError(test_set + ' is not a valid test set name')
-  documents = documents + additional_docs
-  doc_encoder = None
-  if use_pretrained_doc_encoder:
-    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
-    doc_encoder.requires_grad = False
-  if use_pairwise_loss:
-    train_dl = build_query_pairwise_dataloader(documents, train_data, rel_method=score)
-    test_dl = build_query_pairwise_dataloader(documents, test_data, rel_method=score)
-    scorer = PairwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
-  else:
-    train_dl = build_query_dataloader(documents, train_data, rel_method=score)
-    test_dl = build_query_dataloader(documents, test_data, rel_method=score)
-    scorer = PointwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
-  return scorer, train_dl, test_dl, additional_docs
 
 def prepare_data():
   print('Loading mappings')
@@ -101,84 +43,76 @@ def prepare_data():
                                       query_token_lookup=query_token_lookup)
   return documents, train_data, test_data, query_token_lookup, document_token_lookup
 
-model_to_save = None
-def old_main():
-  global model_to_save
-  documents, weak_data, sup_data, query_token_lookup, document_token_lookup = read_cache('./prepared_data.pkl', prepare_data)
-  query_token_embed_len = 100
-  document_token_embed_len = 100
-  use_pairwise_loss = True
-  # use_pretrained_doc_encoder = True
-  use_pretrained_doc_encoder = False
-  test_set = 'robust04'
-  # test_set = 'wiki'
-  train_set = 'robust04'
-  # train_set = 'wiki'
-  model, train_dl, test_dl, additional_docs = get_model_and_dls(query_token_embed_len,
-                                                          document_token_embed_len,
-                                                          query_token_lookup,
-                                                          document_token_lookup,
-                                                          documents,
-                                                          weak_data,
-                                                          use_pairwise_loss,
-                                                          use_pretrained_doc_encoder,
-                                                          test_set,
-                                                          train_set)
-  query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
-  print('Creating ranking datasets')
-  num_doc_tokens = 100
-  all_documents = documents + additional_docs
-  train_ranking_dataset = RankingDataset(all_documents,
-                                         train_dl.dataset.rankings,
-                                         query_document_token_mapping,
-                                         k=1 if train_set == 'wiki' else 10,
-                                         num_doc_tokens=num_doc_tokens)
-  test_ranking_dataset = RankingDataset(all_documents,
-                                        test_dl.dataset.rankings,
-                                        query_document_token_mapping,
-                                        k=1 if test_set == 'wiki' else 10,
-                                        num_doc_tokens=num_doc_tokens)
-  model_data = DataBunch(train_dl,
-                         test_dl,
-                         collate_fn=collate_query_pairwise_samples if use_pairwise_loss else collate_query_samples,
-                         device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-  model_to_save = model
-  train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, use_pairwise_loss)
+def create_id_lookup(names_or_titles):
+  return dict(zip(names_or_titles,
+                  range(len(names_or_titles))))
 
+def prepare(lookup, title_to_id):
+  id_to_title_lookup = _.invert(title_to_id)
+  ids = range(len(id_to_title_lookup))
+  contents = [lookup[id_to_title_lookup[id]] for id in ids]
+  numericalized, token_lookup = preprocess_texts(contents)
+  return numericalized, token_lookup
+
+def process_rels(query_name_document_title_rels, document_title_to_id, query_name_to_id, queries):
+  data = []
+  for query_name, doc_titles in query_name_document_title_rels.items():
+    if query_name not in query_name_to_id: continue
+    query_id = query_name_to_id[query_name]
+    query = queries[query_id]
+    if query is None: continue
+    data.extend([{'query': query,
+                  'doc_id': document_title_to_id[title]} for title in doc_titles if title in document_title_to_id])
+  return data
+
+model_to_save = None
 def main():
   global model_to_save
-  robust_data, robust_docs = load_robust04_data_and_docs(query_token_lookup,
-                                                         document_token_lookup,
-                                                         len(documents))
+  use_pretrained_doc_encoder = False
+  use_pairwise_loss = True
   query_token_embed_len = 100
   document_token_embed_len = 100
-  use_pairwise_loss = True
-  # use_pretrained_doc_encoder = True
-  use_pretrained_doc_encoder = False
-  model, train_dl, test_dl, additional_docs = get_model_and_dls(query_token_embed_len,
-                                                          document_token_embed_len,
-                                                          query_token_lookup,
-                                                          document_token_lookup,
-                                                          documents,
-                                                          weak_data,
-                                                          use_pairwise_loss,
-                                                          use_pretrained_doc_encoder,
-                                                          test_set,
-                                                          train_set)
-  query_document_token_mapping = {idx: document_token_lookup.get(token) or document_token_lookup['<unk>'] for token, idx in query_token_lookup.items()}
-  print('Creating ranking datasets')
-  num_doc_tokens = 100
-  all_documents = documents + additional_docs
-  train_ranking_dataset = RankingDataset(all_documents,
-                                         train_dl.dataset.rankings,
-                                         query_document_token_mapping,
-                                         k=10,
-                                         num_doc_tokens=num_doc_tokens)
-  test_ranking_dataset = RankingDataset(all_documents,
-                                        test_dl.dataset.rankings,
-                                        query_document_token_mapping,
-                                        k=10,
-                                        num_doc_tokens=num_doc_tokens)
+  document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
+  query_lookup = get_robust_queries()
+  query_name_document_title_rels = get_robust_rels()
+  query_name_to_id = create_id_lookup(query_lookup.keys())
+  document_title_to_id = create_id_lookup(document_lookup.keys())
+  documents, document_token_lookup = prepare(document_lookup, document_title_to_id)
+  queries, query_token_lookup = prepare(query_lookup, query_name_to_id)
+  test_data = process_rels(query_name_document_title_rels,
+                           document_title_to_id,
+                           query_name_to_id,
+                           queries)
+  train_data = read_query_result(query_name_to_id, document_title_to_id, queries)
+  glove_lookup = get_glove_lookup()
+  num_query_tokens = len(query_token_lookup)
+  num_doc_tokens = len(document_token_lookup)
+  query_token_embeds = init_embedding(glove_lookup,
+                                      query_token_lookup,
+                                      num_query_tokens,
+                                      query_token_embed_len)
+  document_token_embeds = init_embedding(glove_lookup,
+                                         document_token_lookup,
+                                         num_doc_tokens,
+                                         document_token_embed_len)
+  extend_token_lookup(glove_lookup.keys(), document_token_lookup)
+  extend_token_lookup(glove_lookup.keys(), query_token_lookup)
+  doc_encoder = None
+  if use_pretrained_doc_encoder:
+    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
+    doc_encoder.requires_grad = False
+  if use_pairwise_loss:
+    train_dl = build_query_pairwise_dataloader(documents, train_data, rel_method=score)
+    test_dl = build_query_pairwise_dataloader(documents, test_data, rel_method=score)
+    model = PairwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
+  else:
+    train_dl = build_query_dataloader(documents, train_data, rel_method=score)
+    test_dl = build_query_dataloader(documents, test_data, rel_method=score)
+    model = PointwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
+  train_ranking_dataset = RankingDataset(documents,
+                                         train_dl.dataset.rankings)
+  test_ranking_dataset = RankingDataset(documents,
+                                        test_dl.dataset.rankings)
   model_data = DataBunch(train_dl,
                          test_dl,
                          collate_fn=collate_query_pairwise_samples if use_pairwise_loss else collate_query_samples,
