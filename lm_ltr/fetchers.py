@@ -1,3 +1,4 @@
+import glob
 from functools import reduce
 import re
 from lxml import html
@@ -55,7 +56,7 @@ def parse_xml_docs(path):
   for doc in tree:
     texts = doc.find('text')
     if texts is None: continue
-    if len(texts.getchildren()) == 0:
+    if hasattr(texts, 'text_content'):
       text = clean_text(texts.text_content())
     else:
       text = reduce(lambda acc, p: acc + clean_text(p.text_content()),
@@ -128,8 +129,9 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
       line = fh.readline()
       if line:
         query_name, __, doc_title, doc_rank, doc_score, ___ = line.strip().split(' ')
+        if query_name not in query_name_to_id: continue
+        if doc_title not in document_title_to_id: continue
         query_id = query_name_to_id[query_name]
-        if query_id not in queries: continue
         results.append({'query': queries[query_id],
                         'doc_id': document_title_to_id[doc_title],
                         'score': float(doc_score),
@@ -165,8 +167,28 @@ def get_robust_documents():
   doc_paths = ['./fbis', './la', './ft']
   return _.merge({}, *[parse_xml_docs(doc_path) for doc_path in doc_paths])
 
-def get_robust_queries():
+def get_robust_test_queries():
   return parse_test_set('./data/robust04/04.testset')
+
+def get_robust_train_queries():
+  def _clean_string(query):
+    cleaned = re.sub('[^a-zA-Z0-9 ]', '', query)
+    return re.sub('-', ' ', cleaned).strip()
+  def _is_invalid(string):
+    for invalid_str in ['http', 'www.', '.com', '.net', '.org', '.edu']:
+      if invalid_str in string: return True
+    return False
+  paths = glob.glob('./data/aol/queries/user-ct-test-collection-[0-9][0-9].txt')
+  queries = {}
+  for path in paths:
+    with open(path) as fh:
+      for i, line in enumerate(fh):
+        if i == 0: continue
+        query_str = _clean_string(line.strip().split('\t')[1])
+        if _is_invalid(query_str): continue
+        query_name = str(len(queries) + 1)
+        queries[query_name] = query_str
+  return queries
 
 def get_robust_rels():
   return parse_qrels('./data/robust04/qrels.robust2004.txt')
