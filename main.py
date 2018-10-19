@@ -82,6 +82,8 @@ def main():
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
   train_data = read_query_result(train_query_name_to_id, document_title_to_id, train_queries)
   glove_lookup = get_glove_lookup()
+  extend_token_lookup(glove_lookup.keys(), document_token_lookup)
+  extend_token_lookup(glove_lookup.keys(), query_token_lookup)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   query_token_embeds = init_embedding(glove_lookup,
@@ -92,8 +94,6 @@ def main():
                                          document_token_lookup,
                                          num_doc_tokens,
                                          document_token_embed_len)
-  extend_token_lookup(glove_lookup.keys(), document_token_lookup)
-  extend_token_lookup(glove_lookup.keys(), query_token_lookup)
   test_query_lookup = get_robust_test_queries()
   test_query_name_document_title_rels = get_robust_rels()
   test_query_name_to_id = create_id_lookup(test_query_lookup.keys())

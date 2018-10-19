@@ -56,5 +56,5 @@ class DocumentEncoder(nn.Module):
     if self.use_lm:
       return self._lm_forward(packed_document_and_order)
     else:
-      # return self._weighted_forward(packed_document_and_order)
-      return self._lstm_forward(packed_document_and_order)
+      return self._weighted_forward(packed_document_and_order)
+      # return self._lstm_forward(packed_document_and_order)

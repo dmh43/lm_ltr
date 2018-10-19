@@ -173,6 +173,7 @@ def get_robust_test_queries():
 def get_robust_train_queries():
   def _clean_string(query):
     cleaned = re.sub('[^a-zA-Z0-9 ]', '', query)
+    cleaned = re.sub('\s+', ' ', cleaned)
     return re.sub('-', ' ', cleaned).strip()
   def _is_invalid(string):
     for invalid_str in ['http', 'www.', '.com', '.net', '.org', '.edu']:
@@ -180,14 +181,19 @@ def get_robust_train_queries():
     return False
   paths = glob.glob('./data/aol/queries/user-ct-test-collection-[0-9][0-9].txt')
   queries = {}
+  seen_queries = set()
   for path in paths:
     with open(path) as fh:
       for i, line in enumerate(fh):
         if i == 0: continue
-        query_str = _clean_string(line.strip().split('\t')[1])
+        query_str = line.strip().split('\t')[1]
         if _is_invalid(query_str): continue
+        query_str = _clean_string(query_str)
+        if len(query_str) == 0: continue
+        if query_str in seen_queries: continue
         query_name = str(len(queries) + 1)
         queries[query_name] = query_str
+        seen_queries.add(query_str)
   return queries
 
 def get_robust_rels():
