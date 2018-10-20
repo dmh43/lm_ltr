@@ -80,10 +80,13 @@ def main():
   train_query_name_to_id = create_id_lookup(train_query_lookup.keys())
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.pkl',
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
-  train_data = read_query_result(train_query_name_to_id, document_title_to_id, train_queries)
+  train_data = read_cache('./robust_train_query_results',
+                          lambda: read_query_result(train_query_name_to_id,
+                                                    document_title_to_id,
+                                                    train_queries))
   glove_lookup = get_glove_lookup()
-  extend_token_lookup(glove_lookup.keys(), document_token_lookup)
-  extend_token_lookup(glove_lookup.keys(), query_token_lookup)
+  # extend_token_lookup(glove_lookup.keys(), document_token_lookup)
+  # extend_token_lookup(glove_lookup.keys(), query_token_lookup)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   query_token_embeds = init_embedding(glove_lookup,
@@ -94,14 +97,20 @@ def main():
                                          document_token_lookup,
                                          num_doc_tokens,
                                          document_token_embed_len)
-  test_query_lookup = get_robust_test_queries()
-  test_query_name_document_title_rels = get_robust_rels()
+  test_query_lookup = read_cache('./robust_test_queries.pkl',
+                                 get_robust_test_queries)
+  test_query_name_document_title_rels = read_cache('./robust_rels.pkl',
+                                                   get_robust_rels)
   test_query_name_to_id = create_id_lookup(test_query_lookup.keys())
-  test_queries, __ = prepare(test_query_lookup, test_query_name_to_id, token_lookup=query_token_lookup)
-  test_data = process_rels(test_query_name_document_title_rels,
-                           document_title_to_id,
-                           test_query_name_to_id,
-                           test_queries)
+  test_queries, __ = read_cache('./parsed_test_robust_queries.pkl',
+                                lambda: prepare(test_query_lookup,
+                                                test_query_name_to_id,
+                                                token_lookup=query_token_lookup))
+  test_data = read_cache('./parsed_robust_rels.pkl',
+                         lambda: process_rels(test_query_name_document_title_rels,
+                                              document_title_to_id,
+                                              test_query_name_to_id,
+                                              test_queries))
   doc_encoder = None
   if use_pretrained_doc_encoder:
     doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)

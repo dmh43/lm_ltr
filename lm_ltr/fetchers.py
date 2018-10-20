@@ -132,9 +132,10 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
         if query_name not in query_name_to_id: continue
         if doc_title not in document_title_to_id: continue
         query_id = query_name_to_id[query_name]
+        score = float(doc_score)
         results.append({'query': queries[query_id],
                         'doc_id': document_title_to_id[doc_title],
-                        'score': float(doc_score),
+                        'score': score,
                         'rank': int(doc_rank) - 1})
       else:
         return results

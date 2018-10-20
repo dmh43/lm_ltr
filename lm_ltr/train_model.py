@@ -28,7 +28,8 @@ def train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, 
                                      model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
                                      train_ranking_dataset,
                                      test_ranking_dataset)]
-  callback_fns=[partial(GradientClipping, clip=0.1)]
+  # callback_fns=[partial(GradientClipping, clip=0.1)]
+  callback_fns=[]
   print("Training:")
   learner = Learner(model_data,
                     model,

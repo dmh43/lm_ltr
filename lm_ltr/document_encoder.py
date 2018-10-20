@@ -19,6 +19,7 @@ class DocumentEncoder(nn.Module):
                           bidirectional=True,
                           batch_first=True)
       self.projection = nn.Linear(hidden_size * 2, 100)
+      self.bias = nn.Parameter(torch.randn(hidden_size))
 
   def _lm_forward(self, packed_document_and_order):
     packed_document, order = packed_document_and_order
@@ -50,7 +51,8 @@ class DocumentEncoder(nn.Module):
     token_weights = self.weights(document)
     normalized_weights = F.softmax(token_weights, 1)
     doc_vecs = torch.sum(normalized_weights * document_tokens, 1)
-    return doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)
+    encoded = doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)
+    return encoded + self.bias
 
   def forward(self, packed_document_and_order):
     if self.use_lm:

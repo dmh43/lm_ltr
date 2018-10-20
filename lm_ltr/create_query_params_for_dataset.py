@@ -2,7 +2,7 @@ import os
 import pickle
 import re
 
-from .fetchers import get_rows
+from lm_ltr.fetchers import get_rows
 
 def clean_string(query):
   cleaned = re.sub('[^a-zA-Z0-9]', '', query)
