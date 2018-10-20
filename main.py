@@ -142,7 +142,7 @@ if __name__ == "__main__":
   try:
     main()
   except: # pylint: disable=bare-except
-    if model_to_save:
+    if model_to_save and input("save?") == 'y':
       torch.save(model_to_save.state_dict(), './model_save_debug' + str(time.time()))
     extype, value, tb = sys.exc_info()
     traceback.print_exc()
