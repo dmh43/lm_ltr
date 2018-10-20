@@ -123,11 +123,11 @@ def get_top_k(scores, k=1000):
 def build_query_dataloader(documents, data, rel_method=score) -> DataLoader:
   dataset = QueryDataset(documents, data, rel_method=rel_method)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(RandomSampler(dataset), 100, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), 1000, False),
                     collate_fn=collate_query_samples)
 
 def build_query_pairwise_dataloader(documents, data, rel_method=score) -> DataLoader:
   dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(RandomSampler(dataset), 100, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), 1000, False),
                     collate_fn=collate_query_pairwise_samples)
