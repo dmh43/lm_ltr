@@ -21,17 +21,22 @@ class PointwiseScorer(nn.Module):
     self.to_logits = nn.Linear(concat_len, 1)
     self.lin1 = nn.Linear(concat_len, int(concat_len/2))
     self.relu1 = nn.ReLU()
+    # self.dropout = nn.Dropout(0.5)
     self.lin2 = nn.Linear(int(concat_len/2), 1)
+    self.tanh = nn.Tanh()
 
 
   def forward(self, query, document):
+    return self.tanh(torch.sum(self.document_encoder(document) * self.query_encoder(query), 1))
     hidden = torch.cat([self.document_encoder(document),
                         self.query_encoder(query)],
                        1)
     return pipe(hidden,
                 self.lin1,
                 self.relu1,
+                # self.dropout,
                 self.lin2,
+                self.tanh,
                 torch.squeeze)
     # return torch.sum(self.document_encoder(document) * self.query_encoder(query),
     #                  dim=1)
