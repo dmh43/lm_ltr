@@ -199,3 +199,54 @@ def get_robust_train_queries():
 
 def get_robust_rels():
   return parse_qrels('./data/robust04/qrels.robust2004.txt')
+
+def get_wiki_pages():
+  el_connection = pymysql.connect(host='localhost' ,
+                                  user='danyhaddad',
+                                  db='el' ,
+                                  charset='utf8mb4',
+                                  use_unicode=True,
+                                  cursorclass=pymysql.cursors.DictCursor)
+  try:
+    with el_connection.cursor() as el_cursor:
+      el_cursor.execute("SET NAMES utf8mb4;")
+      el_cursor.execute("SET CHARACTER SET utf8mb4;")
+      el_cursor.execute("SET character_set_connection=utf8mb4;")
+      el_cursor.execute("select title, content from pages")
+      return {row['title']: row['content'] for row in el_cursor.fetchall()}
+  finally:
+    el_connection.close()
+
+def get_mention_page_title_pairs():
+  el_connection = pymysql.connect(host='localhost' ,
+                                  user='danyhaddad',
+                                  db='el' ,
+                                  charset='utf8mb4',
+                                  use_unicode=True,
+                                  cursorclass=pymysql.cursors.DictCursor)
+  try:
+    with el_connection.cursor() as el_cursor:
+      el_cursor.execute("SET NAMES utf8mb4;")
+      el_cursor.execute("SET CHARACTER SET utf8mb4;")
+      el_cursor.execute("SET character_set_connection=utf8mb4;")
+      el_cursor.execute("select distinct mention, entity from entity_mentions_text")
+      return [[row['mention'], row['entity']] for row in el_cursor.fetchall()]
+  finally:
+    el_connection.close()
+
+def get_wiki_mentions():
+  el_connection = pymysql.connect(host='localhost' ,
+                                  user='danyhaddad',
+                                  db='el' ,
+                                  charset='utf8mb4',
+                                  use_unicode=True,
+                                  cursorclass=pymysql.cursors.DictCursor)
+  try:
+    with el_connection.cursor() as el_cursor:
+      el_cursor.execute("SET NAMES utf8mb4;")
+      el_cursor.execute("SET CHARACTER SET utf8mb4;")
+      el_cursor.execute("SET character_set_connection=utf8mb4;")
+      el_cursor.execute("select distinct mention_id, mention from entity_mentions_text")
+      return {row['mention_id']: row['mention'] for row in el_cursor.fetchall()}
+  finally:
+    el_connection.close()
