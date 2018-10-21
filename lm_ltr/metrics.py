@@ -33,24 +33,25 @@ class RankingMetricRecorder(MetricRecorder):
     num_rankings_considered = 0
     dcg = 0
     idcg = 0
-    for to_rank in dataset:
-      if num_rankings_considered > 100: break
-      if len(to_rank['documents']) < k: continue
-      ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
-                                                        to_rank['documents']))
-      ranking = to_rank['doc_ids'][ranking_ids_for_batch]
-      for doc_rank, doc_id in enumerate(ranking[:k].tolist()):
-        rel = doc_id in to_rank['relevant']
-        correct += rel
-        dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
-      num_relevant += len(to_rank['relevant'])
-      idcg += np.array([1.0/np.log2(rank + 2) for rank in range(min(k, len(to_rank['relevant'])))]).sum()
-      if len(to_rank['relevant']) > 0:
-        num_rankings_considered += 1
-    precision_k = correct / (k * num_rankings_considered)
-    recall_k = correct / num_relevant
-    ndcg = dcg / idcg
-    return precision_k, recall_k, ndcg
+    with torch.no_grad():
+      for to_rank in dataset:
+        if num_rankings_considered > 100: break
+        if len(to_rank['documents']) < k: continue
+        ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
+                                                          to_rank['documents']))
+        ranking = to_rank['doc_ids'][ranking_ids_for_batch]
+        for doc_rank, doc_id in enumerate(ranking[:k].tolist()):
+          rel = doc_id in to_rank['relevant']
+          correct += rel
+          dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
+        num_relevant += len(to_rank['relevant'])
+        idcg += np.array([1.0/np.log2(rank + 2) for rank in range(min(k, len(to_rank['relevant'])))]).sum()
+        if len(to_rank['relevant']) > 0:
+          num_rankings_considered += 1
+      precision_k = correct / (k * num_rankings_considered)
+      recall_k = correct / num_relevant
+      ndcg = dcg / idcg
+      return precision_k, recall_k, ndcg
 
   def on_epoch_begin(self, **kwargs):
     train_results = self.metrics_at_k(self.train_ranking_dl)
@@ -61,6 +62,12 @@ class RankingMetricRecorder(MetricRecorder):
     print(report)
 
   def on_train_end(self, **kwargs):
+    train_results = self.metrics_at_k(self.train_ranking_dl)
+    test_results = self.metrics_at_k(self.test_ranking_dl)
+    report = '\n'.join(['Train: ' + str(train_results),
+                        'Test: ' + str(test_results)])
+    self.log.write(report)
+    print(report)
     self.log.close()
 
 

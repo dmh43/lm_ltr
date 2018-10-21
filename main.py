@@ -15,6 +15,7 @@ from lm_ltr.preprocessing import preprocess_raw_data, preprocess_texts, all_ones
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
+from lm_ltr.utils import dont_update
 
 def process_rels(query_name_document_title_rels, document_title_to_id, query_name_to_id, queries):
   data = []
@@ -32,6 +33,7 @@ def main():
   global model_to_save
   use_pretrained_doc_encoder = False
   use_pairwise_loss = True
+  use_deep_network = True
   query_token_embed_len = 100
   document_token_embed_len = 100
   document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
@@ -59,6 +61,8 @@ def main():
                                          document_token_lookup,
                                          num_doc_tokens,
                                          document_token_embed_len)
+  dont_update(document_token_embeds)
+  dont_update(query_token_embeds)
   test_query_lookup = read_cache('./robust_test_queries.pkl',
                                  get_robust_test_queries)
   test_query_name_document_title_rels = read_cache('./robust_rels.pkl',
@@ -80,11 +84,11 @@ def main():
   if use_pairwise_loss:
     train_dl = build_query_pairwise_dataloader(documents, train_data, rel_method=score)
     test_dl = build_query_pairwise_dataloader(documents, test_data, rel_method=score)
-    model = PairwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
+    model = PairwiseScorer(query_token_embeds, document_token_embeds, doc_encoder, use_deep_network)
   else:
     train_dl = build_query_dataloader(documents, train_data, rel_method=score)
     test_dl = build_query_dataloader(documents, test_data, rel_method=score)
-    model = PointwiseScorer(query_token_embeds, document_token_embeds, doc_encoder)
+    model = PointwiseScorer(query_token_embeds, document_token_embeds, doc_encoder, use_deep_network)
   train_ranking_dataset = RankingDataset(documents,
                                          train_dl.dataset.rankings)
   test_ranking_dataset = RankingDataset(documents,

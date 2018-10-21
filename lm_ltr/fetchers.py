@@ -229,8 +229,8 @@ def get_mention_page_title_pairs():
       el_cursor.execute("SET NAMES utf8mb4;")
       el_cursor.execute("SET CHARACTER SET utf8mb4;")
       el_cursor.execute("SET character_set_connection=utf8mb4;")
-      el_cursor.execute("select distinct mention, entity from entity_mentions_text")
-      return [[row['mention'], row['entity']] for row in el_cursor.fetchall()]
+      el_cursor.execute("select distinct mention_id, entity from entity_mentions_text")
+      return [[row['mention_id'], row['entity']] for row in el_cursor.fetchall()]
   finally:
     el_connection.close()
 

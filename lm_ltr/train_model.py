@@ -23,7 +23,7 @@ def train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, 
   model = nn.DataParallel(model)
   loss = _get_loss_function(use_pairwise_loss)
   metrics = []
-  num_epochs = 10000
+  num_epochs = 1
   callbacks = [RankingMetricRecorder(model_data.device,
                                      model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
                                      train_ranking_dataset,
