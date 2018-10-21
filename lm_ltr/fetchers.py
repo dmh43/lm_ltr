@@ -173,9 +173,9 @@ def get_robust_test_queries():
 
 def get_robust_train_queries():
   def _clean_string(query):
-    cleaned = re.sub('[^a-zA-Z0-9 ]', '', query)
-    cleaned = re.sub('\s+', ' ', cleaned)
-    return re.sub('-', ' ', cleaned).strip()
+    cleaned = re.sub(r'[^a-zA-Z0-9 ]', '', query)
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return re.sub(r'-', ' ', cleaned).strip()
   def _is_invalid(string):
     for invalid_str in ['http', 'www.', '.com', '.net', '.org', '.edu']:
       if invalid_str in string: return True

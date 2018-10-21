@@ -113,3 +113,14 @@ def to_query_rankings_pairs(data):
     append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]
+
+def create_id_lookup(names_or_titles):
+  return dict(zip(names_or_titles,
+                  range(len(names_or_titles))))
+
+def prepare(lookup, title_to_id, token_lookup=None):
+  id_to_title_lookup = _.invert(title_to_id)
+  ids = range(len(id_to_title_lookup))
+  contents = [lookup[id_to_title_lookup[id]] for id in ids]
+  numericalized, token_lookup = preprocess_texts(contents, token_lookup=token_lookup)
+  return numericalized, token_lookup
