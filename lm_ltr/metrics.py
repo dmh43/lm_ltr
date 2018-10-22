@@ -53,7 +53,7 @@ class RankingMetricRecorder(MetricRecorder):
       ndcg = dcg / idcg
       return precision_k, recall_k, ndcg
 
-  def on_epoch_begin(self, **kwargs):
+  def _check(self):
     train_results = self.metrics_at_k(self.train_ranking_dl)
     test_results = self.metrics_at_k(self.test_ranking_dl)
     report = '\n'.join(['Train: ' + str(train_results),
@@ -61,13 +61,16 @@ class RankingMetricRecorder(MetricRecorder):
     self.log.write(report)
     print(report)
 
+  def on_batch_end(self, num_batch, **kwargs):
+    if num_batch % 100 == 0:
+      print(num_batch)
+      self._check()
+
+  def on_epoch_begin(self, **kwargs):
+    self._check()
+
   def on_train_end(self, **kwargs):
-    train_results = self.metrics_at_k(self.train_ranking_dl)
-    test_results = self.metrics_at_k(self.test_ranking_dl)
-    report = '\n'.join(['Train: ' + str(train_results),
-                        'Test: ' + str(test_results)])
-    self.log.write(report)
-    print(report)
+    self._check()
     self.log.close()
 
 
