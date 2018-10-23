@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from fastai import Callback
 import numpy as np
+import pydash as _
 
 from .pointwise_ranker import PointwiseRanker
 
@@ -51,14 +52,15 @@ class RankingMetricRecorder(MetricRecorder):
       precision_k = correct / (k * num_rankings_considered)
       recall_k = correct / num_relevant
       ndcg = dcg / idcg
-      return precision_k, recall_k, ndcg
+      return {'precision': precision_k, 'recall': recall_k, 'ndcg': ndcg}
 
   def _check(self, batch_num=0):
     train_results = self.metrics_at_k(self.train_ranking_dl)
     test_results = self.metrics_at_k(self.test_ranking_dl)
-    report = '\n'.join(['Train: ' + str(train_results),
-                        'Test: ' + str(test_results)])
-    self.experiment.record_metrics(train_results + test_results, batch_num)
+    self.experiment.record_metrics(_.assign({},
+                                            _.map_keys(train_results, lambda val, key: 'train_' + key),
+                                            _.map_keys(test_results, lambda val, key: 'test_' + key)),
+                                   batch_num)
 
   def on_batch_end(self, num_batch, **kwargs):
     if num_batch % 100 == 0:
