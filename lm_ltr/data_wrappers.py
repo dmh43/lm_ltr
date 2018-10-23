@@ -129,7 +129,7 @@ def normalize_scores_query_wise(data):
   normalized_data = []
   for query_str, doc_infos in query_doc_info.items():
     scores = torch.tensor([doc_score for doc_id, doc_score in doc_infos])
-    query_score_total = torch.logsumexp(scores)
+    query_score_total = torch.logsumexp(scores, 0)
     query = ast.literal_eval('[' + query_str + ']')
     normalized_data.extend([{'query': query,
                              'doc_id': doc_id,
