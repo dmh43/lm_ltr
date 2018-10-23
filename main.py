@@ -32,26 +32,26 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': int,
           'default': 1},
-         {'name': 'freeze_word_embeds',
+         {'name': 'dont_freeze_word_embeds',
           'for': 'train_params',
           'type': 'flag',
-          'default': True},
+          'default': False},
          {'name': 'use_pretrained_doc_encoder',
           'for': 'model_params',
           'type': 'flag',
           'default': False},
-         {'name': 'freeze_pretrained_doc_encoder',
+         {'name': 'dont_freeze_pretrained_doc_encoder',
           'for': 'train_params',
           'type': 'flag',
-          'default': True},
+          'default': False},
          {'name': 'rel_method',
           'for': 'train_params',
           'type': eval,
           'default': score},
-         {'name': 'use_pairwise_loss',
+         {'name': 'use_pointwise_loss',
           'for': 'train_params',
           'type': 'flag',
-          'default': True},
+          'default': False},
          {'name': 'use_gradient_clipping',
           'for': 'train_params',
           'type': 'flag',
@@ -64,10 +64,10 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': float,
           'default': 0.0},
-         {'name': 'use_deep_network',
+         {'name': 'use_cosine_similarity',
           'for': 'model_params',
           'type': 'flag',
-          'default': True},
+          'default': False},
          {'name': 'hidden_layer_sizes',
           'for': 'model_params',
           'type': lambda string: [int(size) for size in string.split(',')],
@@ -122,7 +122,7 @@ def main():
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
-  use_pairwise_loss = rabbit.train_params.use_pairwise_loss
+  use_pointwise_loss = rabbit.train_params.use_pointwise_loss
   query_token_embed_len = rabbit.model_params.query_token_embed_len
   document_token_embed_len = rabbit.model_params.document_token_embed_len
   document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
@@ -150,7 +150,7 @@ def main():
                                          document_token_lookup,
                                          num_doc_tokens,
                                          document_token_embed_len)
-  if rabbit.train_params.freeze_word_embeds:
+  if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
     dont_update(query_token_embeds)
   test_query_lookup = read_cache('./robust_test_queries.pkl',
@@ -170,21 +170,9 @@ def main():
   doc_encoder = None
   if use_pretrained_doc_encoder:
     doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
-    if rabbit.train_params.freeze_pretrained_doc_encoder:
+    if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
-  if use_pairwise_loss:
-    train_dl = build_query_pairwise_dataloader(documents,
-                                               train_data,
-                                               rel_method=rabbit.train_params.rel_method)
-    test_dl = build_query_pairwise_dataloader(documents,
-                                              test_data,
-                                              rel_method=rabbit.train_params.rel_method)
-    model = PairwiseScorer(query_token_embeds,
-                           document_token_embeds,
-                           doc_encoder,
-                           rabbit.model_params,
-                           rabbit.train_params)
-  else:
+  if use_pointwise_loss:
     train_dl = build_query_dataloader(documents,
                                       train_data,
                                       rel_method=rabbit.train_params.rel_method)
@@ -196,13 +184,25 @@ def main():
                             doc_encoder,
                             rabbit.model_params,
                             rabbit.train_params)
+  else:
+    train_dl = build_query_pairwise_dataloader(documents,
+                                               train_data,
+                                               rel_method=rabbit.train_params.rel_method)
+    test_dl = build_query_pairwise_dataloader(documents,
+                                              test_data,
+                                              rel_method=rabbit.train_params.rel_method)
+    model = PairwiseScorer(query_token_embeds,
+                           document_token_embeds,
+                           doc_encoder,
+                           rabbit.model_params,
+                           rabbit.train_params)
   train_ranking_dataset = RankingDataset(documents,
                                          train_dl.dataset.rankings)
   test_ranking_dataset = RankingDataset(documents,
                                         test_dl.dataset.rankings)
   model_data = DataBunch(train_dl,
                          test_dl,
-                         collate_fn=collate_query_pairwise_samples if use_pairwise_loss else collate_query_samples,
+                         collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   model_to_save = model
   train_model(model,

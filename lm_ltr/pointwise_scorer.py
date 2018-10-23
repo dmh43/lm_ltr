@@ -26,26 +26,26 @@ class PointwiseScorer(nn.Module):
       concat_len = 1300
     else:
       concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
-    if model_params.use_deep_network:
+    if model_params.use_cosine_similarity:
+      self.to_logits = nn.Linear(concat_len, 1)
+    else:
       from_size = concat_len
       self.layers = nn.ModuleList()
       for to_size in model_params.hidden_layer_sizes:
         self.layers.extend(_get_layer(from_size, to_size, train_params.dropout_keep_prob))
         from_size = to_size
       self.layers.extend(_get_layer(from_size, 1, train_params.dropout_keep_prob, activation=Identity()))
-    else:
-      self.to_logits = nn.Linear(concat_len, 1)
     self.layers.append(nn.Tanh())
-    self.use_deep_network = model_params.use_deep_network
+    self.use_cosine_similarity = model_params.use_cosine_similarity
 
 
   def forward(self, query, document):
-    if self.use_deep_network:
+    if self.use_cosine_similarity:
+      return self.tanh(torch.sum(self.document_encoder(document) * self.query_encoder(query), 1))
+    else:
       hidden = torch.cat([self.document_encoder(document),
                           self.query_encoder(query)],
                          1)
       return pipe(hidden,
                   *self.layers,
                   torch.squeeze)
-    else:
-      return self.tanh(torch.sum(self.document_encoder(document) * self.query_encoder(query), 1))
