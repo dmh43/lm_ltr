@@ -1,3 +1,4 @@
+import ast
 from random import sample
 from functools import reduce
 import pydash as _
@@ -12,6 +13,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from .preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score
+from .utils import append_at
 
 class QueryDataset(Dataset):
   def __init__(self, documents, data, rel_method=score, num_doc_tokens=100):
@@ -21,8 +23,8 @@ class QueryDataset(Dataset):
     self.rankings = to_query_rankings_pairs(data)
     self.num_doc_tokens = num_doc_tokens
 
-  def _get_document(self, doc_idx):
-    return self.documents[self.data[doc_idx]['doc_id']][:self.num_doc_tokens]
+  def _get_document(self, elem_idx):
+    return self.documents[self.data[elem_idx]['doc_id']][:self.num_doc_tokens]
 
   def __len__(self):
     return len(self.data)
@@ -120,8 +122,24 @@ def get_top_k(scores, k=1000):
   sorted_scores, idxs = torch.sort(scores, descending=True)
   return idxs[:k]
 
+def normalize_scores_query_wise(data):
+  query_doc_info = {}
+  for row in data:
+    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], row['score']])
+  normalized_data = []
+  for query_str, doc_infos in query_doc_info.items():
+    scores = torch.tensor([doc_score for doc_id, doc_score in doc_infos])
+    query_score_total = torch.logsumexp(scores)
+    query = ast.literal_eval('[' + query_str + ']')
+    normalized_data.extend([{'query': query,
+                             'doc_id': doc_id,
+                             'score': doc_score - query_score_total}
+                            for doc_id, doc_score in doc_infos])
+  return normalized_data
+
 def build_query_dataloader(documents, data, rel_method=score) -> DataLoader:
-  dataset = QueryDataset(documents, data, rel_method=rel_method)
+  normalized_data = normalize_scores_query_wise(data)
+  dataset = QueryDataset(documents, normalized_data, rel_method=rel_method)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(RandomSampler(dataset), 1000, False),
                     collate_fn=collate_query_samples)
