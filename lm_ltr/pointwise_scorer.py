@@ -5,31 +5,37 @@ from toolz import pipe
 
 from .query_encoder import QueryEncoder
 from .document_encoder import DocumentEncoder
+from .utils import identity
+
+def _get_layer(from_size, to_size, dropout_keep_prob, activation=None):
+  return [nn.Linear(from_size, to_size),
+          nn.ReLU() if activation is None else activation,
+          nn.Dropout(1 - dropout_keep_prob)]
 
 class PointwiseScorer(nn.Module):
   def __init__(self,
                query_token_embeds,
                document_token_embeds,
                doc_encoder,
-               use_deep_network):
+               model_params,
+               train_params):
     super().__init__()
     self.document_encoder = DocumentEncoder(document_token_embeds, doc_encoder)
     self.query_encoder = QueryEncoder(query_token_embeds)
-    if doc_encoder:
+    if model_params.use_pretrained_doc_encoder:
       concat_len = 1300
     else:
-      concat_len = 200
-    self.to_logits = nn.Linear(concat_len, 1)
-    self.lin1 = nn.Linear(concat_len, 64)
-    self.relu1 = nn.ReLU()
-    # self.dropout = nn.Dropout(0.5)
-    self.lin2 = nn.Linear(64, 32)
-    self.relu2 = nn.ReLU()
-    self.lin3 = nn.Linear(32, 16)
-    self.relu3 = nn.ReLU()
-    self.lin4 = nn.Linear(16, 1)
-    self.tanh = nn.Tanh()
-    self.use_deep_network = use_deep_network
+      concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
+    if model_params.use_deep_network:
+      from_size = concat_len
+      for to_size in model_params.hidden_layer_sizes:
+        self.layers.extend(_get_layer(from_size, to_size, train_params.dropout_keep_prob))
+        from_size = to_size
+      self.layers.extend(_get_layer(from_size, 1, train_params.dropout_keep_prob, activation=identity))
+      self.layers.append(nn.Tanh())
+    else:
+      self.to_logits = nn.Linear(concat_len, 1)
+    self.use_deep_network = model_params.use_deep_network
 
 
   def forward(self, query, document):
@@ -38,14 +44,7 @@ class PointwiseScorer(nn.Module):
                           self.query_encoder(query)],
                          1)
       return pipe(hidden,
-                  self.lin1,
-                  self.relu1,
-                  self.lin2,
-                  self.relu2,
-                  self.lin3,
-                  self.relu3,
-                  self.lin4,
-                  self.tanh,
+                  *self.layers,
                   torch.squeeze)
     else:
       return self.tanh(torch.sum(self.document_encoder(document) * self.query_encoder(query), 1))

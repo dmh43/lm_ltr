@@ -47,7 +47,7 @@ def main():
   device = torch.device('cuda')
   query_token_embeds = query_token_embeds.to(device)
   document_token_embeds = document_token_embeds.to(device)
-  opt = torch.optim.Adam(query_token_embeds.parameters(), weight_decay=0.1)
+  opt = torch.optim.Adam(query_token_embeds.parameters())
   for batch in progressbar(dataloader, max_value=len(batch_sampler)):
     batch = batch[0]
     opt.zero_grad()

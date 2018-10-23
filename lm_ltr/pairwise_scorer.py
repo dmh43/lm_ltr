@@ -8,12 +8,14 @@ class PairwiseScorer(nn.Module):
                query_token_embeds,
                document_token_embeds,
                doc_encoder,
-               use_deep_network):
+               model_params,
+               train_params):
     super().__init__()
     self.pointwise_scorer = PointwiseScorer(query_token_embeds,
                                             document_token_embeds,
                                             doc_encoder,
-                                            use_deep_network)
+                                            model_params,
+                                            train_params)
 
   def forward(self, query, document_1, document_2):
     score_1 = self.pointwise_scorer(query, document_1)

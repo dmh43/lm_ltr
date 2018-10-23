@@ -34,3 +34,5 @@ def plots(model, im_path):
   plt.hist2d(no, w, bins=100)
   plt.savefig(im_path)
   plt.figure()
+
+def identity(val): return val
