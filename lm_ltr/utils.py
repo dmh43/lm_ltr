@@ -1,3 +1,5 @@
+import torch.nn as nn
+
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -35,4 +37,5 @@ def plots(model, im_path):
   plt.savefig(im_path)
   plt.figure()
 
-def identity(val): return val
+class Identity(nn.Module):
+  def forward(self, x): return x

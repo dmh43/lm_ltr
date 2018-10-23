@@ -5,7 +5,7 @@ from toolz import pipe
 
 from .query_encoder import QueryEncoder
 from .document_encoder import DocumentEncoder
-from .utils import identity
+from .utils import Identity
 
 def _get_layer(from_size, to_size, dropout_keep_prob, activation=None):
   return [nn.Linear(from_size, to_size),
@@ -32,7 +32,7 @@ class PointwiseScorer(nn.Module):
       for to_size in model_params.hidden_layer_sizes:
         self.layers.extend(_get_layer(from_size, to_size, train_params.dropout_keep_prob))
         from_size = to_size
-      self.layers.extend(_get_layer(from_size, 1, train_params.dropout_keep_prob, activation=identity))
+      self.layers.extend(_get_layer(from_size, 1, train_params.dropout_keep_prob, activation=Identity()))
     else:
       self.to_logits = nn.Linear(concat_len, 1)
     self.layers.append(nn.Tanh())
