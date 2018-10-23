@@ -121,7 +121,6 @@ def main():
   global model_to_save
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
-  experiment._write_details()
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
   use_pairwise_loss = rabbit.train_params.use_pairwise_loss
   query_token_embed_len = rabbit.model_params.query_token_embed_len
@@ -211,7 +210,8 @@ def main():
               train_ranking_dataset,
               test_ranking_dataset,
               rabbit.train_params,
-              rabbit.model_params)
+              rabbit.model_params,
+              experiment)
 
 if __name__ == "__main__":
   import ipdb

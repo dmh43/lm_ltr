@@ -18,14 +18,14 @@ class MetricRecorder(Callback):
     self.model = model
 
 class RankingMetricRecorder(MetricRecorder):
-  def __init__(self, device, model, train_ranking_dl, test_ranking_dl):
+  def __init__(self, device, model, train_ranking_dl, test_ranking_dl, experiment):
     super().__init__(model)
     self.device = device
     self.ranker = PointwiseRanker(device, model)
     self.train_ranking_dl = train_ranking_dl
     self.test_ranking_dl = test_ranking_dl
-    self.log = open('./results', 'a+')
-    self.log.write(f'New train run at: {time()}\n')
+    self.experiment_context = None
+    self.experiment = experiment
 
   def metrics_at_k(self, dataset, k=10):
     correct = 0
@@ -53,26 +53,29 @@ class RankingMetricRecorder(MetricRecorder):
       ndcg = dcg / idcg
       return precision_k, recall_k, ndcg
 
-  def _check(self):
+  def _check(self, batch_num=0):
     train_results = self.metrics_at_k(self.train_ranking_dl)
     test_results = self.metrics_at_k(self.test_ranking_dl)
     report = '\n'.join(['Train: ' + str(train_results),
                         'Test: ' + str(test_results)])
-    self.log.write(report)
-    print(report)
+    self.experiment.record_metrics(train_results + test_results, batch_num)
 
   def on_batch_end(self, num_batch, **kwargs):
     if num_batch % 100 == 0:
-      print(num_batch)
-      self._check()
+      self._check(num_batch)
 
-  def on_epoch_begin(self, **kwargs):
+  def on_epoch_begin(self, epoch, **kwargs):
+    self.experiment.update_epoch(epoch)
     self._check()
+
+  def on_train_begin(self, **kwargs):
+    self.experiment_context = self.experiment.train(['train_precision', 'train_recall', 'train_ndcg',
+                                                     'test_precision', 'test_recall', 'test_ndcg'])
+    self.experiment_context.__enter__()
 
   def on_train_end(self, **kwargs):
     self._check()
-    self.log.close()
-
+    self.experiment_context.__exit__()
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
   preds = F.sigmoid(logits) > thresh

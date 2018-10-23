@@ -19,14 +19,21 @@ def _get_loss_function(use_pairwise_loss):
   else:
     return F.mse_loss
 
-def train_model(model, model_data, train_ranking_dataset, test_ranking_dataset, train_params, model_params):
+def train_model(model,
+                model_data,
+                train_ranking_dataset,
+                test_ranking_dataset,
+                train_params,
+                model_params,
+                experiment):
   model = nn.DataParallel(model)
   loss = _get_loss_function(train_params.use_pairwise_loss)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
                                      model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
                                      train_ranking_dataset,
-                                     test_ranking_dataset)]
+                                     test_ranking_dataset,
+                                     experiment)]
   if train_params.use_gradient_clipping:
     callback_fns = [partial(GradientClipping, clip=train_params.gradient_clipping_norm)]
   else:
