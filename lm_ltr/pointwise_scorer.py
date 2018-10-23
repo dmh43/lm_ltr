@@ -28,7 +28,7 @@ class PointwiseScorer(nn.Module):
       concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
     if model_params.use_deep_network:
       from_size = concat_len
-      self.layers = []
+      self.layers = nn.ModuleList()
       for to_size in model_params.hidden_layer_sizes:
         self.layers.extend(_get_layer(from_size, to_size, train_params.dropout_keep_prob))
         from_size = to_size
