@@ -18,6 +18,7 @@ from lm_ltr.pretrained import get_doc_encoder_and_embeddings
 from lm_ltr.utils import dont_update
 
 from rabbit_ml.rabbit_ml import Rabbit
+from rabbit_ml.rabbit_ml.experiment import Experiment
 
 args =  [{'name': 'batch_size',
           'for': 'train_params',
@@ -115,6 +116,7 @@ model_to_save = None
 def main():
   global model_to_save
   rabbit = MyRabbit(args)
+  experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
   use_pairwise_loss = rabbit.train_params.use_pairwise_loss
   query_token_embed_len = rabbit.model_params.query_token_embed_len
