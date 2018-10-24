@@ -36,12 +36,13 @@ class RankingMetricRecorder(MetricRecorder):
     idcg = 0
     with torch.no_grad():
       for to_rank in dataset:
-        if num_rankings_considered > 100: break
+        if num_rankings_considered > 10000: break
         if len(to_rank['documents']) < k: continue
         ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
-                                                          to_rank['documents']))
+                                                          to_rank['documents'],
+                                                          k))
         ranking = to_rank['doc_ids'][ranking_ids_for_batch]
-        for doc_rank, doc_id in enumerate(ranking[:k].tolist()):
+        for doc_rank, doc_id in enumerate(ranking.tolist()):
           rel = doc_id in to_rank['relevant']
           correct += rel
           dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
