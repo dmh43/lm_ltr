@@ -128,7 +128,7 @@ def main():
   document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
   num_doc_tokens_to_consider = 100
   document_lookup = _.map_values(document_lookup, lambda document: document[:num_doc_tokens_to_consider])
-  document_lookup = _.filter_(document_lookup, lambda document: len(document) == num_doc_tokens_to_consider)
+  document_lookup = _.omit_by(document_lookup, lambda document: len(document) != num_doc_tokens_to_consider)
   document_title_to_id = create_id_lookup(document_lookup.keys())
   documents, document_token_lookup = read_cache('./parsed_docs_100_tokens.pkl',
                                                 lambda: prepare(document_lookup, document_title_to_id))

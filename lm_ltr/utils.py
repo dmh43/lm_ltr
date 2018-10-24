@@ -30,12 +30,24 @@ def dont_update(module):
     p.requires_grad = False
 
 def plots(model, im_path):
-  norms = model.pointwise_scorer.document_encoder.document_token_embeds.weight.norm(dim=1)
+  norms = model['pointwise_scorer.document_encoder.document_token_embeds.weight'].norm(dim=1)
   no = norms[norms > 2].cpu().numpy()
-  w = model.pointwise_scorer.document_encoder.weights.weight.detach().cpu().squeeze()[norms > 2].numpy()
+  w = model['pointwise_scorer.document_encoder.weights.weight'].detach().cpu().squeeze()[norms > 2].numpy()
   plt.hist2d(no, w, bins=100)
-  plt.savefig(im_path)
+  plt.savefig(im_path + '/doc.png')
+  plt.figure()
+  norms = model['pointwise_scorer.query_encoder.query_token_embeds.weight'].norm(dim=1)
+  no = norms[norms > 2].cpu().numpy()
+  w = model['pointwise_scorer.query_encoder.weights.weight'].detach().cpu().squeeze()[norms > 2].numpy()
+  plt.hist2d(no, w, bins=100)
+  plt.savefig(im_path + '/q.png')
   plt.figure()
 
 class Identity(nn.Module):
   def forward(self, x): return x
+
+def at_least_one_dim(tensor):
+  if len(tensor.shape) == 0:
+    return tensor.unsqueeze(0)
+  else:
+    return tensor

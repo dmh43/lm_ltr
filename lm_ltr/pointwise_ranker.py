@@ -11,8 +11,9 @@ class PointwiseRanker:
     self.device = device
     self.pointwise_scorer = pointwise_scorer
 
-  def __call__(self, query, documents, k):
+  def __call__(self, query, documents, k=None):
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
+    k = k if k is not None else len(documents)
     ranks = []
     packed_doc_and_order = pack(documents, self.device)
     for query in query.to(self.device):
