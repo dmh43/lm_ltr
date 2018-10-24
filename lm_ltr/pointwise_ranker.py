@@ -18,6 +18,7 @@ class PointwiseRanker:
     for query in query.to(self.device):
       scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
                                      packed_doc_and_order)
-      sorted_scores, sort_idx = torch.sort(torch.topk(scores, k), descending=True)
-      ranks.append(sort_idx)
+      topk_scores, topk_idxs = torch.topk(scores, k)
+      sorted_scores, sort_idx = torch.sort(topk_scores, descending=True)
+      ranks.append(topk_idxs[sort_idx])
     return torch.stack(ranks)

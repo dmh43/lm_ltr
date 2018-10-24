@@ -54,9 +54,9 @@ def pack(batch, device=torch.device('cpu')):
                                device=device)
   sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
   batch_range, unsort_batch_order = torch.sort(batch_order)
-  sorted_batch = _.map_(batch_order, lambda idx: torch.tensor(batch[idx],
-                                                              dtype=torch.long,
-                                                              device=device))
+  sorted_batch = [torch.tensor(batch[idx],
+                               dtype=torch.long,
+                               device=device) for idx in batch_order]
   return (pack_sequence(sorted_batch), unsort_batch_order)
 
 def collate_query_pairwise_samples(samples):
