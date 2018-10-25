@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 import matplotlib as mpl
@@ -51,3 +52,9 @@ def at_least_one_dim(tensor):
     return tensor.unsqueeze(0)
   else:
     return tensor
+
+def to_list(coll):
+  if isinstance(coll, torch.Tensor):
+    return coll.tolist()
+  else:
+    return list(coll)

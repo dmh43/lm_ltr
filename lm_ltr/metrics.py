@@ -3,12 +3,12 @@ from time import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from fastai import Callback, listify
+from fastai import Callback
 import numpy as np
 import pydash as _
 
 from .pointwise_ranker import PointwiseRanker
-from .utils import at_least_one_dim
+from .utils import at_least_one_dim, to_list
 
 
 class MetricRecorder(Callback):
@@ -106,7 +106,7 @@ def metrics_at_k(rankings_to_judge, relevant_doc_ids, k=10):
     if num_relevant_in_ranking == 0: continue
     avg_correct = 0
     correct_in_ranking = 0
-    for doc_rank, doc_id in enumerate(listify(ranking)):
+    for doc_rank, doc_id in enumerate(to_list(ranking)):
       rel = doc_id in relevant
       correct += rel
       correct_in_ranking += rel
