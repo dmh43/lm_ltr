@@ -37,6 +37,7 @@ def preprocess_texts(texts, token_lookup=None):
   return idx_texts, token_lookup
 
 def pad_to_max_len(elems, pad_with=None):
+  return elems
   pad_with = pad_with if pad_with is not None else pad_token_idx
   max_len = max(map(len, elems))
   return [elem + [pad_with] * (max_len - len(elem)) if len(elem) < max_len else elem for elem in elems]

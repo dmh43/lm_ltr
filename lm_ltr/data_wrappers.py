@@ -87,8 +87,9 @@ class QueryPairwiseDataset(QueryDataset):
   def __init__(self, documents, data, rel_method=score):
     super().__init__(documents, data)
     self.lowest_rank_doc_to_consider = 10
-    self.rankings_for_train = _.map_(self.rankings,
-                                     lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
+    # self.rankings_for_train = _.map_(self.rankings,
+    #                                  lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
+    self.rankings_for_train = self.rankings
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
