@@ -55,7 +55,7 @@ def pack(batch, device=torch.device('cpu')):
                                device=device)
   sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
   batch_range, unsort_batch_order = torch.sort(batch_order)
-  sorted_batch = torch.tensor(batch,
+  sorted_batch = torch.tensor(pad_to_max_len(batch),
                               dtype=torch.long,
                               device=device)[batch_order]
   return (pack_sequence(sorted_batch), unsort_batch_order)
