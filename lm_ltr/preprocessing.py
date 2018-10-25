@@ -6,7 +6,7 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_sequence
+from torch.nn.utils.rnn import pack_padded_sequence
 from fastai.text import Tokenizer
 
 from .utils import append_at
@@ -28,7 +28,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None):
       else:
         lookup[token] = lookup.get(token) or len(lookup)
         chunk_result.append(lookup[token])
-    result.append(chunk_result)
+    result.append(chunk_result if num_tokens is None else pad_to_len(chunk_result, num_tokens))
   return result, lookup
 
 def preprocess_texts(texts, token_lookup=None, num_tokens=None):
@@ -36,6 +36,10 @@ def preprocess_texts(texts, token_lookup=None, num_tokens=None):
   tokenized = tokenizer.process_all(texts)
   idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup, num_tokens=num_tokens)
   return idx_texts, token_lookup
+
+def pad_to_len(coll, max_len, pad_with=None):
+  pad_with = pad_with if pad_with is not None else pad_token_idx
+  return coll + [pad_with] * (max_len - len(coll)) if len(coll) < max_len else coll
 
 def pad_to_max_len(elems, pad_with=None):
   pad_with = pad_with if pad_with is not None else pad_token_idx
@@ -55,10 +59,11 @@ def pack(batch, device=torch.device('cpu')):
                                device=device)
   sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
   batch_range, unsort_batch_order = torch.sort(batch_order)
-  sorted_batch = torch.tensor(pad_to_max_len(batch),
+  sorted_batch = torch.tensor(batch,
                               dtype=torch.long,
                               device=device)[batch_order]
-  return (pack_sequence(sorted_batch), unsort_batch_order)
+  return (pack_padded_sequence(sorted_batch, [100] * len(batch), batch_first=True),
+          unsort_batch_order)
 
 def collate_query_pairwise_samples(samples):
   x, rel = list(zip(*samples))
