@@ -127,11 +127,11 @@ def main():
   document_token_embed_len = rabbit.model_params.document_token_embed_len
   document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
   num_doc_tokens_to_consider = 100
-  document_lookup = _.map_values(document_lookup, lambda document: document[:num_doc_tokens_to_consider])
-  document_lookup = _.omit_by(document_lookup, lambda document: len(document) != num_doc_tokens_to_consider)
   document_title_to_id = create_id_lookup(document_lookup.keys())
   documents, document_token_lookup = read_cache('./parsed_docs_100_tokens.pkl',
-                                                lambda: prepare(document_lookup, document_title_to_id))
+                                                lambda: prepare(document_lookup,
+                                                                document_title_to_id,
+                                                                num_doc_tokens_to_consider))
   train_query_lookup = read_cache('./robust_train_queries.pkl', get_robust_train_queries)
   train_query_name_to_id = create_id_lookup(train_query_lookup.keys())
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.pkl',

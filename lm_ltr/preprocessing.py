@@ -14,12 +14,13 @@ from .utils import append_at
 pad_token_idx = 1
 unk_token_idx = 0
 
-def tokens_to_indexes(tokens, lookup=None):
+def tokens_to_indexes(tokens, lookup=None, num_tokens=None):
   is_test = lookup is not None
   if lookup is None:
     lookup: dict = {'<unk>': unk_token_idx, '<pad>': pad_token_idx}
   result = []
-  for tokens_chunk in tokens:
+  tokens_to_parse = tokens if num_tokens is None else tokens[:num_tokens]
+  for tokens_chunk in tokens_to_parse:
     chunk_result = []
     for token in tokens_chunk:
       if is_test:
@@ -30,10 +31,10 @@ def tokens_to_indexes(tokens, lookup=None):
     result.append(chunk_result)
   return result, lookup
 
-def preprocess_texts(texts, token_lookup=None):
+def preprocess_texts(texts, token_lookup=None, num_tokens=None):
   tokenizer = Tokenizer()
   tokenized = tokenizer.process_all(texts)
-  idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup)
+  idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup, num_tokens=num_tokens)
   return idx_texts, token_lookup
 
 def pad_to_max_len(elems, pad_with=None):
@@ -55,9 +56,9 @@ def pack(batch, device=torch.device('cpu')):
                                device=device)
   sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
   batch_range, unsort_batch_order = torch.sort(batch_order)
-  sorted_batch = [torch.tensor(batch[idx],
-                               dtype=torch.long,
-                               device=device) for idx in batch_order]
+  sorted_batch = torch.tensor(batch,
+                              dtype=torch.long,
+                              device=device)[batch_order]
   return (pack_sequence(sorted_batch), unsort_batch_order)
 
 def collate_query_pairwise_samples(samples):
@@ -119,9 +120,9 @@ def create_id_lookup(names_or_titles):
   return dict(zip(names_or_titles,
                   range(len(names_or_titles))))
 
-def prepare(lookup, title_to_id, token_lookup=None):
+def prepare(lookup, title_to_id, token_lookup=None, num_tokens=None):
   id_to_title_lookup = _.invert(title_to_id)
   ids = range(len(id_to_title_lookup))
   contents = [lookup[id_to_title_lookup[id]] for id in ids]
-  numericalized, token_lookup = preprocess_texts(contents, token_lookup=token_lookup)
+  numericalized, token_lookup = preprocess_texts(contents, token_lookup=token_lookup, num_tokens=num_tokens)
   return numericalized, token_lookup
