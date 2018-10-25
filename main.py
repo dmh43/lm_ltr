@@ -208,6 +208,14 @@ def main():
                          collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   model_to_save = model
+  del document_lookup
+  del query_token_lookup
+  del document_token_lookup
+  del test_query_lookup
+  del train_query_lookup
+  del train_queries
+  del test_queries
+  del glove_lookup
   train_model(model,
               model_data,
               train_ranking_dataset,
