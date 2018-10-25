@@ -30,7 +30,7 @@ class RankingMetricRecorder(MetricRecorder):
     self.experiment = experiment
 
   def metrics_at_k(self, dataset, k=10):
-    relevant_doc_ids = [to_rank['relevant'] for to_rank in dataset]
+    relevant_doc_ids = (to_rank['relevant'] for to_rank in dataset)
     def rank_dataset_contents():
       num_rankings_considered = 0
       for to_rank in dataset:
