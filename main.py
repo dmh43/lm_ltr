@@ -131,7 +131,7 @@ def main():
   documents, document_token_lookup = read_cache('./parsed_docs_100_tokens.pkl',
                                                 lambda: prepare(document_lookup,
                                                                 document_title_to_id,
-                                                                num_doc_tokens_to_consider))
+                                                                num_tokens=num_doc_tokens_to_consider))
   train_query_lookup = read_cache('./robust_train_queries.pkl', get_robust_train_queries)
   train_query_name_to_id = create_id_lookup(train_query_lookup.keys())
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.pkl',
