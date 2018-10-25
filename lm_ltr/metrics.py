@@ -32,18 +32,19 @@ class RankingMetricRecorder(MetricRecorder):
   def metrics_at_k(self, dataset, k=10):
     relevant_doc_ids = (to_rank['relevant'] for to_rank in dataset)
     def rank_dataset_contents():
-      num_rankings_considered = 0
-      for to_rank in dataset:
-        if num_rankings_considered > 10000: break
-        if len(to_rank['documents']) < k:
-          yield None
-          continue
-        ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
-                                                          to_rank['documents'],
-                                                          k))
-        ranking = to_rank['doc_ids'][ranking_ids_for_batch]
-        yield at_least_one_dim(ranking)
-        num_rankings_considered += 1
+      with torch.no_grad():
+        num_rankings_considered = 0
+        for to_rank in dataset:
+          if num_rankings_considered > 10000: break
+          if len(to_rank['documents']) < k:
+            yield None
+            continue
+          ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
+                                                            to_rank['documents'],
+                                                            k))
+          ranking = to_rank['doc_ids'][ranking_ids_for_batch]
+          yield at_least_one_dim(ranking)
+          num_rankings_considered += 1
     return metrics_at_k(rank_dataset_contents(), relevant_doc_ids, k=k)
 
   def _check(self, batch_num=0):

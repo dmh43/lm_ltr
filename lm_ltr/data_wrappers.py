@@ -139,15 +139,15 @@ def normalize_scores_query_wise(data):
                             for doc_id, doc_score in doc_infos])
   return normalized_data
 
-def build_query_dataloader(documents, data, rel_method=score) -> DataLoader:
+def build_query_dataloader(documents, data, batch_size, rel_method=score) -> DataLoader:
   normalized_data = normalize_scores_query_wise(data)
   dataset = QueryDataset(documents, normalized_data, rel_method=rel_method)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(RandomSampler(dataset), 1000, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
 
-def build_query_pairwise_dataloader(documents, data, rel_method=score) -> DataLoader:
+def build_query_pairwise_dataloader(documents, data, batch_size, rel_method=score) -> DataLoader:
   dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(RandomSampler(dataset), 1000, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)

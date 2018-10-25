@@ -178,9 +178,11 @@ def main():
   if use_pointwise_loss:
     train_dl = build_query_dataloader(documents,
                                       train_data,
+                                      rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method)
     test_dl = build_query_dataloader(documents,
                                      test_data,
+                                     rabbit.train_params.batch_size,
                                      rel_method=rabbit.train_params.rel_method)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
@@ -190,9 +192,11 @@ def main():
   else:
     train_dl = build_query_pairwise_dataloader(documents,
                                                train_data,
+                                               rabbit.train_params.batch_size,
                                                rel_method=rabbit.train_params.rel_method)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
+                                              rabbit.train_params.batch_size,
                                               rel_method=rabbit.train_params.rel_method)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
