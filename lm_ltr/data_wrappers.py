@@ -58,7 +58,8 @@ class RankingDataset(Dataset):
     else:
       ranking_with_neg = ranking
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.documents[idx][:self.num_doc_tokens] for idx in ranking_with_neg],
+            # 'documents': [self.documents[idx][:self.num_doc_tokens] for idx in ranking_with_neg],
+            'documents': [self.documents[idx] for idx in ranking_with_neg],
             'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
             'ranking': ranking[:self.k],
             'relevant': relevant}
