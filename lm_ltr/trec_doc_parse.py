@@ -2,7 +2,7 @@ import pydash as _
 
 from .utils import append_at
 
-def parse_qrels(qrels_path):
+def parse_qrels(qrels_path='./data/robust04/qrels.robust2004.txt'):
   query_doc_id_rels = {}
   with open(qrels_path, 'r') as fh:
     for line in fh:

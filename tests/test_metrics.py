@@ -16,7 +16,7 @@ def test_ranking_metrics_at_k():
               'documents': documents,
               'relevant': list(range(num_documents))[i - 1 : i + 2],
               'doc_ids': torch.arange(len(documents), dtype=torch.long)} for i in range(num_queries)]
-  assert metric.metrics_at_k(dataset, k=1) == {'precision': 1.0, 'recall': 9.0 / 26, 'ndcg': 1.0, 'map': (8/3 + 1/2) / 9}
+  assert metric.metrics_at_k(dataset, k=1) == {'precision': 1.0, 'recall': 9.0 / 26, 'ndcg': 1.0, 'map': 1.0}
   assert metric.metrics_at_k(dataset, k=3) == {'precision': 26.0 / 27, 'recall': 1.0, 'ndcg': 1.0, 'map': 1.0}
   assert metric.metrics_at_k(dataset, k=6) == {'precision': 26.0 / 54, 'recall': 1.0, 'ndcg': 1.0, 'map': 1.0}
 

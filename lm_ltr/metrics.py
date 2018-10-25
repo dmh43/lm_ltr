@@ -110,7 +110,7 @@ def metrics_at_k(rankings_to_judge, relevant_doc_ids, k=10):
       avg_correct += rel * precision_so_far
       dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
     num_relevant += num_relevant_in_ranking
-    avg_precision_sum += avg_correct / num_relevant_in_ranking
+    avg_precision_sum += avg_correct / min(k, num_relevant_in_ranking)
     idcg += np.array([1.0/np.log2(rank + 2)
                       for rank in range(min(k, num_relevant_in_ranking))]).sum()
     num_rankings_considered += 1

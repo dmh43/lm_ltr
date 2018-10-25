@@ -1,5 +1,3 @@
-from functools import partial
-from pathos.multiprocessing import Pool, cpu_count
 from six.moves import xrange
 import pydash as _
 import pickle
@@ -13,15 +11,7 @@ import numpy as np
 
 from lm_ltr.fetchers import read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents
 from lm_ltr.preprocessing import create_id_lookup
-
-def effective_n_jobs(n_jobs):
-  if n_jobs == 0:
-    raise ValueError('n_jobs == 0 in Parallel has no meaning')
-  elif n_jobs is None:
-    return 1
-  elif n_jobs < 0:
-    n_jobs = max(cpu_count() + 1 + n_jobs, 1)
-  return n_jobs
+from lm_ltr.metrics import metrics_at_k
 
 def _get_scores(bm25, document, average_idf):
   scores = []
@@ -38,60 +28,42 @@ def main():
   query_ids = range(len(query_id_to_name))
   queries = [query_lookup[query_id_to_name[query_id]] for query_id in query_ids]
   document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
-  num_doc_tokens_to_consider = 10000
-  document_lookup = _.map_values(document_lookup, lambda document: document[:num_doc_tokens_to_consider])
+  # num_doc_tokens_to_consider = 10000
+  # document_lookup = _.map_values(document_lookup, lambda document: document[:num_doc_tokens_to_consider])
   document_title_to_id = create_id_lookup(document_lookup.keys())
   document_id_to_title = _.invert(document_title_to_id)
   doc_ids = range(len(document_id_to_title))
   documents = [document_lookup[document_id_to_title[doc_id]] for doc_id in doc_ids]
   tokenizer = Tokenizer()
-  tokenized_documents = tokenizer.process_all(documents)
-  tokenized_queries = tokenizer.process_all(queries)
+  tokenized_documents = read_cache('tok_docs.pkl',
+                                   lambda: tokenizer.process_all(documents))
+  tokenized_queries = read_cache('tok_queries.pkl',
+                                 lambda: tokenizer.process_all(queries))
   query_name_document_id_rels = _.map_values(query_name_document_title_rels,
                                              lambda doc_titles: [document_title_to_id[title]
                                                                  for title in doc_titles
                                                                  if title in document_title_to_id])
   try:
-    with open('./bm25_scores_10000_tokens.pkl', 'rb') as fh:
+    with open('./bm25_scores_all_tokens.pkl', 'rb') as fh:
       scores = pickle.load(fh)
   except:
     bm25 = BM25(tokenized_documents)
     average_idf = sum(float(val) for val in bm25.idf.values()) / len(bm25.idf)
-    n_jobs = 5
-    n_processes = effective_n_jobs(n_jobs)
-    pool = Pool(n_processes)
-    scores = pool.map(lambda document: _get_scores(bm25, document, average_idf=average_idf),
-                      tokenized_queries,
-                      100)
-    pool.close()
-    pool.join()
-    with open('./bm25_scores_10000_tokens.pkl', 'wb+') as fh:
+    scores = list(map(lambda document: _get_scores(bm25, document, average_idf=average_idf),
+                      tokenized_queries))
+    with open('./bm25_scores_all_tokens.pkl', 'wb+') as fh:
       pickle.dump(scores, fh)
   k = 10
-  correct = 0
-  num_relevant = 0
-  num_rankings_considered = 0
-  dcg = 0
-  idcg = 0
-  for query_id, doc_scores in enumerate(scores):
-    query_name = query_id_to_name[query_id]
-    if query_name not in query_name_document_id_rels: continue
-    rel_doc_ids = set(query_name_document_id_rels[query_name])
-    topk_scores, topk_idxs = torch.topk(torch.tensor(doc_scores), k)
-    sorted_scores, sort_idxs = torch.sort(topk_scores)
-    ranked_doc_ids = topk_idxs[sort_idxs].tolist()
-    for doc_rank, doc_id in enumerate(ranked_doc_ids):
-      rel = doc_id in rel_doc_ids
-      correct += rel
-      dcg += (2 ** rel - 1) / np.log2(doc_rank + 2)
-    num_relevant += len(rel_doc_ids)
-    idcg += np.array([1.0/np.log2(rank + 2)
-                      for rank in range(min(k, len(rel_doc_ids)))]).sum()
-    if len(rel_doc_ids) > 0:
-      num_rankings_considered += 1
-  precision_k = correct / (k * num_rankings_considered)
-  recall_k = correct / num_relevant
-  ndcg = dcg / idcg
-  print({'precision': precision_k, 'recall': recall_k, 'ndcg': ndcg})
+  def get_rankings_to_judge():
+    for doc_scores in scores:
+      topk_scores, topk_idxs = torch.topk(torch.tensor(doc_scores), k)
+      sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
+      ranked_doc_ids = topk_idxs[sort_idxs].tolist()
+      yield ranked_doc_ids
+  rel_doc_ids = [set(query_name_document_id_rels[query_id_to_name[query_id]])
+                 for query_id in range(len(scores))
+                 if (query_id in query_id_to_name) and (query_id_to_name[query_id] in query_name_document_id_rels)]
+  print(metrics_at_k(get_rankings_to_judge(), rel_doc_ids, k))
+
 
 if __name__ == "__main__": main()
