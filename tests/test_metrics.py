@@ -19,6 +19,22 @@ def test_ranking_metrics_at_k():
   assert metric.metrics_at_k(dataset, k=1) == {'precision': 1.0, 'recall': 9.0 / 26, 'ndcg': 1.0, 'map': 1.0}
   assert metric.metrics_at_k(dataset, k=3) == {'precision': 26.0 / 27, 'recall': 1.0, 'ndcg': 1.0, 'map': 1.0}
   assert metric.metrics_at_k(dataset, k=6) == {'precision': 26.0 / 54, 'recall': 1.0, 'ndcg': 1.0, 'map': 1.0}
+  empty_dataset = [{'query': torch.tensor([0]),
+                    'documents': torch.tensor([]),
+                    'relevant': list(range(num_documents)),
+                    'doc_ids': torch.arange(len(documents), dtype=torch.long)}]
+  assert metric.metrics_at_k(empty_dataset + dataset, k=1) == {'precision': 1.0,
+                                                               'recall': 9.0 / 26,
+                                                               'ndcg': 1.0,
+                                                               'map': 1.0}
+  assert metric.metrics_at_k(empty_dataset + dataset, k=3) == {'precision': 26.0 / 27,
+                                                               'recall': 1.0,
+                                                               'ndcg': 1.0,
+                                                               'map': 1.0}
+  assert metric.metrics_at_k(empty_dataset + dataset, k=6) == {'precision': 26.0 / 54,
+                                                               'recall': 1.0,
+                                                               'ndcg': 1.0,
+                                                               'map': 1.0}
 
 def test_metrics_at_k():
   rankings_to_judge = [[1, 2, 3, 4], [1, 2, 3, 9], [3, 4, 7, 10]]

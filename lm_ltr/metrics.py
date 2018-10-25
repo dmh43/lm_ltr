@@ -35,7 +35,9 @@ class RankingMetricRecorder(MetricRecorder):
       num_rankings_considered = 0
       for to_rank in dataset:
         if num_rankings_considered > 10000: break
-        if len(to_rank['documents']) < k: continue
+        if len(to_rank['documents']) < k:
+          yield None
+          continue
         ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
                                                           to_rank['documents'],
                                                           k))
@@ -98,6 +100,7 @@ def metrics_at_k(rankings_to_judge, relevant_doc_ids, k=10):
   idcg = 0
   avg_precision_sum = 0
   for ranking, relevant in zip(rankings_to_judge, relevant_doc_ids):
+    if ranking is None: continue
     num_relevant_in_ranking = len(relevant)
     if num_relevant_in_ranking == 0: continue
     avg_correct = 0
