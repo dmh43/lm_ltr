@@ -19,10 +19,10 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None):
   if lookup is None:
     lookup: dict = {'<unk>': unk_token_idx, '<pad>': pad_token_idx}
   result = []
-  tokens_to_parse = tokens if num_tokens is None else tokens[:num_tokens]
-  for tokens_chunk in tokens_to_parse:
+  for tokens_chunk in tokens:
+    tokens_to_parse = tokens_chunk if num_tokens is None else tokens_chunk[:num_tokens]
     chunk_result = []
-    for token in tokens_chunk:
+    for token in tokens_to_parse:
       if is_test:
         chunk_result.append(lookup.get(token) or unk_token_idx)
       else:
