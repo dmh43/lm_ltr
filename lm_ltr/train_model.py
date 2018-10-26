@@ -48,4 +48,4 @@ def train_model(model,
                     callback_fns=callback_fns,
                     wd=train_params.weight_decay)
   learner.fit(train_params.num_epochs)
-  torch.save(model.state_dict(), './model_save')
+  torch.save(model.state_dict(), './model_save_' + experiment.model_name)
