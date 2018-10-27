@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
+from .recorders import PlottingRecorder, LossesRecorder
 
 def _get_loss_function(use_pointwise_loss):
   if use_pointwise_loss:
@@ -35,7 +36,9 @@ def train_model(model,
                                      test_ranking_dataset,
                                      experiment)]
   if train_params.use_gradient_clipping:
-    callback_fns = [partial(GradientClipping, clip=train_params.gradient_clipping_norm)]
+    callback_fns = [partial(GradientClipping, clip=train_params.gradient_clipping_norm),
+                    partial(PlottingRecorder, experiment),
+                    partial(LossesRecorder, experiment)]
   else:
     callback_fns=[]
   print("Training:")
