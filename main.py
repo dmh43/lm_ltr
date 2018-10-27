@@ -8,7 +8,7 @@ import torch.nn as nn
 from fastai.data import DataBunch
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup
-from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result
+from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
 from lm_ltr.preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup
@@ -205,7 +205,10 @@ def main():
                            rabbit.train_params)
   train_ranking_dataset = RankingDataset(documents,
                                          train_dl.dataset.rankings)
+  test_ranking_candidates = read_cache('./test_ranking_candidates.pkl',
+                                       read_query_test_rankings)
   test_ranking_dataset = RankingDataset(documents,
+                                        test_ranking_candidates,
                                         test_dl.dataset.rankings)
   model_data = DataBunch(train_dl,
                          test_dl,

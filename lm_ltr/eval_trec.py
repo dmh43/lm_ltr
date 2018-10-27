@@ -2,14 +2,7 @@
 from lm_ltr.trec_doc_parse import parse_qrels
 from lm_ltr.metrics import metrics_at_k
 from lm_ltr.utils import append_at
-
-def read_query_test_rankings(path='./indri/query_result_test'):
-  rankings = {}
-  with open(path) as fh:
-    for line in fh:
-      query_name, __, doc_title, doc_rank, doc_score, ___ = line.strip().split(' ')
-      append_at(rankings, query_name, doc_title)
-    return rankings
+from lm_ltr.fetchers import read_query_test_rankings
 
 def main():
   rankings_to_eval = read_query_test_rankings()

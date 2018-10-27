@@ -37,6 +37,7 @@ class RankingDataset(Dataset):
   def __init__(self,
                documents,
                rankings,
+               relevant=None,
                num_doc_tokens=100,
                k=10):
     self.rankings = rankings
@@ -44,11 +45,13 @@ class RankingDataset(Dataset):
     self.k = k
     self.num_doc_tokens = num_doc_tokens
     self.num_to_rank = 1000
+    self.is_test = relevant is not None
+    self.relevant = relevant
 
   def __len__(self):
     return len(self.rankings)
 
-  def __getitem__(self, idx):
+  def _get_train_item(self, idx):
     query, ranking = self.rankings[idx]
     relevant = set(ranking[:self.k])
     if len(ranking) < self.num_to_rank:
@@ -63,6 +66,18 @@ class RankingDataset(Dataset):
             'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
             'ranking': ranking[:self.k],
             'relevant': relevant}
+
+  def _get_test_item(self, idx):
+    query, ranking = self.rankings[idx]
+    relevant = set(self.relevant[idx])
+    return {'query': torch.tensor(query, dtype=torch.long),
+            'documents': [self.documents[idx] for idx in ranking],
+            'doc_ids': torch.tensor(ranking, dtype=torch.long),
+            'ranking': relevant[:self.k],
+            'relevant': relevant}
+
+  def __getitem__(self, idx):
+    return self._get_test_item(idx) if self.is_test else self._get_train_item(idx)
 
 def _get_nth_pair(rankings, cumu_num_pairs, idx):
   ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
@@ -87,7 +102,7 @@ def _get_num_pairs(rankings):
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self, documents, data, rel_method=score):
     super().__init__(documents, data)
-    self.lowest_rank_doc_to_consider = 10
+    # self.lowest_rank_doc_to_consider = 10
     # self.rankings_for_train = _.map_(self.rankings,
     #                                  lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
     self.rankings_for_train = self.rankings

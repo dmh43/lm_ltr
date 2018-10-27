@@ -9,6 +9,7 @@ import pickle
 import pydash as _
 
 from .trec_doc_parse import parse_test_set, parse_qrels
+from .utils import append_at
 
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
@@ -121,6 +122,14 @@ def get_weak_raw_data(id_query_mapping, queries):
                         'rank': int(doc_rank) - 1})
       else:
         return results
+
+def read_query_test_rankings(path='./indri/query_result_test'):
+  rankings = {}
+  with open(path) as fh:
+    for line in fh:
+      query_name, __, doc_title, doc_rank, doc_score, ___ = line.strip().split(' ')
+      append_at(rankings, query_name, doc_title)
+    return rankings
 
 def read_query_result(query_name_to_id, document_title_to_id, queries, path='./indri/query_result'):
   results = []
