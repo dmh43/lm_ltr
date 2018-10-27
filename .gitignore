@@ -39,3 +39,6 @@ nosetests.xml
 /glove
 indri/out/*
 .cache
+
+*.pkl
+*.prof
