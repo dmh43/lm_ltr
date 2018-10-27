@@ -6,8 +6,8 @@ from lm_ltr.embedding_loaders import get_glove_lookup
 import numpy as np
 
 def count_me(docs):
-  tf = {0: 0}
-  df = {0: 1}
+  tf = {0: 0, 1: 0}
+  df = {0: 1, 1: 1}
   for doc in docs:
     in_doc = set()
     for idx in doc:
