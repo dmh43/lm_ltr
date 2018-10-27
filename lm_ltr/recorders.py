@@ -27,6 +27,10 @@ class PlottingRecorder(Recorder):
     plt.close()
 
 class LossesRecorder(Recorder):
+  def __init__(self, experiment, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.experiment = experiment
+
   def on_train_begin(self, pbar, metrics, **kwargs)->None:
     pass
 
@@ -41,5 +45,5 @@ class LossesRecorder(Recorder):
 
   def on_train_end(self, **kwargs):
     model_name = self.experiment.model_name
-    self.losses
-    with open(f'./losses_{model_name}.pkl')
+    with open(f'./losses_{model_name}.pkl', 'wb+') as fh:
+      pickle.dump(fh, self.losses)
