@@ -1,6 +1,5 @@
 from fastai import Recorder
 import matplotlib.pyplot as plt
-from time import time
 import pickle
 
 class PlottingRecorder(Recorder):
