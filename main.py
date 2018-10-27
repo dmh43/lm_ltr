@@ -207,6 +207,13 @@ def main():
                                          train_dl.dataset.rankings)
   test_ranking_candidates = read_cache('./test_ranking_candidates.pkl',
                                        read_query_test_rankings)
+  lookup_by_title = lambda title: document_title_to_id[title]
+  test_ranking_candidates = _.map_values(test_ranking_candidates,
+                                         lambda candidate_names: _.map_(candidate_names,
+                                                                        lookup_by_title))
+  test_ranking_candidates = _.to_pairs(test_ranking_candidates)
+  test_ranking_candidates = _.map_(test_ranking_candidates,
+                                   lambda pair: test_query_name_to_id[pair[0]])
   test_ranking_dataset = RankingDataset(documents,
                                         test_ranking_candidates,
                                         test_dl.dataset.rankings)

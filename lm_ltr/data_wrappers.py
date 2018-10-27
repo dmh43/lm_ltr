@@ -73,7 +73,7 @@ class RankingDataset(Dataset):
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': [self.documents[idx] for idx in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),
-            'ranking': relevant[:self.k],
+            'ranking': self.relevant[idx][:self.k],
             'relevant': relevant}
 
   def __getitem__(self, idx):
