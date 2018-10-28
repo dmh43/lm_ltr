@@ -39,11 +39,11 @@ class PointwiseScorer(nn.Module):
 
   def forward(self, query, document):
     if self.use_cosine_similarity:
-      return self.tanh(torch.sum(self.document_encoder(document) * self.query_encoder(query), 1))
+      hidden = torch.sum(self.document_encoder(document) * self.query_encoder(query), 1)
     else:
       hidden = torch.cat([self.document_encoder(document),
                           self.query_encoder(query)],
                          1)
-      return pipe(hidden,
-                  *self.layers,
-                  torch.squeeze)
+    return pipe(hidden,
+                *self.layers,
+                torch.squeeze)
