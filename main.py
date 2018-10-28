@@ -213,7 +213,8 @@ def main():
                                                                         lookup_by_title))
   test_ranking_candidates = _.to_pairs(test_ranking_candidates)
   test_ranking_candidates = _.map_(test_ranking_candidates,
-                                   lambda pair: test_query_name_to_id[pair[0]])
+                                   lambda pair: [test_queries[test_query_name_to_id[pair[0]]],
+                                                 pair[1]])
   test_ranking_dataset = RankingDataset(documents,
                                         test_ranking_candidates,
                                         test_dl.dataset.rankings)

@@ -142,7 +142,8 @@ def get_top_k(scores, k=1000):
 def normalize_scores_query_wise(data):
   query_doc_info = {}
   for row in data:
-    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], row['score']])
+    score = row.get['score'] or 0.0
+    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score])
   normalized_data = []
   for query_str, doc_infos in query_doc_info.items():
     scores = torch.tensor([doc_score for doc_id, doc_score in doc_infos])
