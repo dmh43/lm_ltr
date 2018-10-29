@@ -225,7 +225,7 @@ def main():
                                          num_doc_tokens=num_doc_tokens_to_consider)
   test_ranking_candidates = read_cache('./test_ranking_candidates.pkl',
                                        read_query_test_rankings)
-  lookup_by_title = lambda title: document_title_to_id[title]
+  lookup_by_title = lambda title: document_title_to_id.get(title) or 0
   test_ranking_candidates = _.map_values(test_ranking_candidates,
                                          lambda candidate_names: _.map_(candidate_names,
                                                                         lookup_by_title))
