@@ -113,9 +113,11 @@ class QueryPairwiseDataset(QueryDataset):
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
+    self._num_pairs = None
 
   def __len__(self):
-    return _get_num_pairs(self.rankings_for_train)
+    self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train)
+    return self._num_pairs
 
   def __getitem__(self, idx):
     elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
