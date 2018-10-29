@@ -62,7 +62,8 @@ def pack(batch, device=torch.device('cpu')):
   sorted_batch = torch.tensor(batch,
                               dtype=torch.long,
                               device=device)[batch_order]
-  return (pack_padded_sequence(sorted_batch, [100] * len(batch), batch_first=True),
+  num_tokens = len(batch[0])
+  return (pack_padded_sequence(sorted_batch, [num_tokens] * len(batch), batch_first=True),
           unsort_batch_order)
 
 def collate_query_pairwise_samples(samples):
