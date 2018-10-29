@@ -24,6 +24,10 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': int,
           'default': 512},
+         {'name': 'num_doc_tokens_to_consider',
+          'for': 'train_params',
+          'type': int,
+          'default': 100},
          {'name': 'train_dataset_size',
           'for': 'train_params',
           'type': lambda size: int(size) if size is not None else None,
@@ -134,17 +138,19 @@ def main():
   query_token_embed_len = rabbit.model_params.query_token_embed_len
   document_token_embed_len = rabbit.model_params.document_token_embed_len
   document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
-  num_doc_tokens_to_consider = 100
-  document_title_to_id = create_id_lookup(document_lookup.keys())
-  documents, document_token_lookup = read_cache('./parsed_docs_100_tokens.pkl',
+  num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
+  document_title_to_id = read_cache('./document_title_to_id.pkl',
+                                    lambda: create_id_lookup(document_lookup.keys()))
+  documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens.pkl',
                                                 lambda: prepare(document_lookup,
                                                                 document_title_to_id,
                                                                 num_tokens=num_doc_tokens_to_consider))
   train_query_lookup = read_cache('./robust_train_queries.pkl', get_robust_train_queries)
-  train_query_name_to_id = create_id_lookup(train_query_lookup.keys())
+  train_query_name_to_id = read_cache('./train_query_name_to_id.pkl',
+                                      lambda: create_id_lookup(train_query_lookup.keys()))
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.pkl',
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
-  train_data = read_cache('./robust_train_query_results_100_tokens',
+  train_data = read_cache(f'./robust_train_query_results_{num_doc_tokens_to_consider}_tokens',
                           lambda: read_query_result(train_query_name_to_id,
                                                     document_title_to_id,
                                                     train_queries))
@@ -168,7 +174,8 @@ def main():
                                  get_robust_test_queries)
   test_query_name_document_title_rels = read_cache('./robust_rels.pkl',
                                                    get_robust_rels)
-  test_query_name_to_id = create_id_lookup(test_query_lookup.keys())
+  test_query_name_to_id = read_cache('./test_query_name_to_id.pkl',
+                                     lambda: create_id_lookup(test_query_lookup.keys()))
   test_queries, __ = read_cache('./parsed_test_robust_queries.pkl',
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
@@ -214,7 +221,8 @@ def main():
                            rabbit.model_params,
                            rabbit.train_params)
   train_ranking_dataset = RankingDataset(documents,
-                                         train_dl.dataset.rankings)
+                                         train_dl.dataset.rankings,
+                                         num_doc_tokens=num_doc_tokens_to_consider)
   test_ranking_candidates = read_cache('./test_ranking_candidates.pkl',
                                        read_query_test_rankings)
   lookup_by_title = lambda title: document_title_to_id[title]
@@ -227,7 +235,8 @@ def main():
                                                  pair[1]])
   test_ranking_dataset = RankingDataset(documents,
                                         test_ranking_candidates,
-                                        test_dl.dataset.rankings)
+                                        test_dl.dataset.rankings,
+                                        num_doc_tokens=num_doc_tokens_to_consider)
   model_data = DataBunch(train_dl,
                          test_dl,
                          collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
