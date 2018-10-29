@@ -15,11 +15,21 @@ def parse_test_set(test_set_path):
   with open(test_set_path, 'r') as fh:
     queries = {}
     current_query = None
+    check_next_line = False
     for line in fh:
       line = line.strip()
       if '<num>' in line:
         current_query = line.split(' ')[-1]
       elif '<title>' in line:
-        queries[current_query] = ' '.join(line.split(' ')[1:])
+        query = ' '.join(line.split(' ')[1:]).strip()
+        if query != '':
+          queries[current_query] = query
+          current_query = None
+        else:
+          check_next_line = True
+      elif check_next_line:
+        check_next_line = False
+        query = line.strip()
+        queries[current_query] = query
         current_query = None
     return queries
