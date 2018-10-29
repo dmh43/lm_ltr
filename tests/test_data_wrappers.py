@@ -31,5 +31,18 @@ def test_normalize_scores_query_wise():
           {'query': [1, 2], 'doc_id': 5, 'score': -3.0}]
   normalized = df.normalize_scores_query_wise(data)
   assert len(normalized) == len(data)
-  assert abs(sum([torch.exp(row['score']) for row in normalized[:5]]) - torch.tensor(1.0)) < 1e-6
-  assert abs(sum([torch.exp(row['score'])for row in normalized[5:]]) - torch.tensor(1.0)) < 1e-6
+  assert abs(sum([torch.exp(torch.tensor(row['score']))
+                  for row in normalized[:5]]) - torch.tensor(1.0)) < 1e-6
+  assert abs(sum([torch.exp(torch.tensor(row['score']))
+                  for row in normalized[5:]]) - torch.tensor(1.0)) < 1e-6
+
+
+def test_true_random_sampler():
+  dataset = list(range(10))
+  sampler = df.TrueRandomSampler(dataset)
+  assert len(sampler) == 10
+  counter = 0
+  for elem in sampler:
+    assert elem in dataset
+    counter += 1
+  assert counter == 10

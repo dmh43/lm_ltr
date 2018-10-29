@@ -121,7 +121,8 @@ def to_query_rankings_pairs(data):
     append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return _.map_(querystr_ranking_pairs,
-                lambda q_str, ranking: [q_str_to_query[q_str], ranking])
+                lambda q_str_ranking: [q_str_to_query[q_str_ranking[0]],
+                                       q_str_ranking[1]])
 
 def create_id_lookup(names_or_titles):
   return dict(zip(names_or_titles,
