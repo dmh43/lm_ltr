@@ -1,11 +1,11 @@
 import ast
-from random import sample
+from random import sample, randint
 from functools import reduce
 import pydash as _
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.sampler import RandomSampler, BatchSampler
+from torch.utils.data.sampler import BatchSampler, Sampler
 
 import scipy.sparse as sp
 import numpy as np
@@ -162,15 +162,27 @@ def normalize_scores_query_wise(data):
                             for doc_id, doc_score, query in doc_infos])
   return normalized_data
 
+class TrueRandomSampler(Sampler):
+  def __init__(self, data_source):
+    self.data_source = data_source
+    self.num_samples_seen = 0
+
+  def __iter__(self):
+    if self.num_samples_seen == self.data_source: return
+    yield randint(0, len(self.data_source) - 1)
+
+  def __len__(self):
+    return len(self.data_source)
+
 def build_query_dataloader(documents, data, batch_size, rel_method=score) -> DataLoader:
   normalized_data = normalize_scores_query_wise(data)
   dataset = QueryDataset(documents, normalized_data, rel_method=rel_method)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
+                    batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
 
 def build_query_pairwise_dataloader(documents, data, batch_size, rel_method=score, num_neg_samples=90) -> DataLoader:
   dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method, num_neg_samples=num_neg_samples)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
+                    batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)
