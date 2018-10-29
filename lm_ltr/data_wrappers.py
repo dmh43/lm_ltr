@@ -5,7 +5,7 @@ import pydash as _
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.sampler import BatchSampler, Sampler
+from torch.utils.data.sampler import BatchSampler, Sampler, RandomSampler
 
 import scipy.sparse as sp
 import numpy as np
@@ -61,7 +61,6 @@ class RankingDataset(Dataset):
     else:
       ranking_with_neg = ranking
     return {'query': torch.tensor(query, dtype=torch.long),
-            # 'documents': [self.documents[idx][:self.num_doc_tokens] for idx in ranking_with_neg],
             'documents': [self.documents[idx] for idx in ranking_with_neg],
             'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
             'ranking': ranking[:self.k],
@@ -176,11 +175,13 @@ def build_query_dataloader(documents, data, batch_size, rel_method=score) -> Dat
   normalized_data = normalize_scores_query_wise(data)
   dataset = QueryDataset(documents, normalized_data, rel_method=rel_method)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
+                    # batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
 
 def build_query_pairwise_dataloader(documents, data, batch_size, rel_method=score, num_neg_samples=90) -> DataLoader:
   dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method, num_neg_samples=num_neg_samples)
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
+                    # batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
+                    batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)
