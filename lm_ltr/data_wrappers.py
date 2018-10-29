@@ -152,7 +152,7 @@ def normalize_scores_query_wise(data):
     append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score, row['query']])
   normalized_data = []
   for doc_infos in query_doc_info.values():
-    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos])
+    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos], device=torch.device('cuda'))
     query_score_total = float(torch.logsumexp(scores, 0))
     normalized_data.extend([{'query': query,
                              'doc_id': doc_id,
