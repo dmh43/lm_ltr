@@ -115,10 +115,13 @@ def sort_by_first(pairs):
 
 def to_query_rankings_pairs(data):
   query_to_ranking = {}
+  q_str_to_query = {}
   for row in data:
+    q_str_to_query[str(row['query'])[1:-1]] = row['query']
     append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
-  return [[ast.literal_eval('[' + pair[0] + ']'), pair[1]] for pair in querystr_ranking_pairs]
+  return _.map_(querystr_ranking_pairs,
+                lambda q_str, ranking: [q_str_to_query[q_str], ranking])
 
 def create_id_lookup(names_or_titles):
   return dict(zip(names_or_titles,
