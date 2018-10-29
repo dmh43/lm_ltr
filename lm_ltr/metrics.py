@@ -55,13 +55,12 @@ class RankingMetricRecorder(MetricRecorder):
                                             _.map_keys(test_results, lambda val, key: 'test_' + key)),
                                    batch_num)
 
-  def on_batch_end(self, num_batch, **kwargs):
+  def on_batch_begin(self, num_batch, **kwargs):
     if num_batch % 10000 == 0:
       self._check(num_batch)
 
   def on_epoch_begin(self, epoch, **kwargs):
     self.experiment.update_epoch(epoch)
-    self._check()
 
   def on_train_begin(self, **kwargs):
     self.experiment_context = self.experiment.train(['train_precision',
@@ -75,7 +74,6 @@ class RankingMetricRecorder(MetricRecorder):
     self.experiment_context.__enter__()
 
   def on_train_end(self, **kwargs):
-    self._check()
     self.experiment_context.__exit__()
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
