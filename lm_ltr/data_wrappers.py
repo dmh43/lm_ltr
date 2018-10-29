@@ -168,8 +168,9 @@ class TrueRandomSampler(Sampler):
     self.num_samples_seen = 0
 
   def __iter__(self):
-    if self.num_samples_seen == self.data_source: return
+    if self.num_samples_seen == len(self.data_source): return
     yield randint(0, len(self.data_source) - 1)
+    self.num_samples_seen += 1
 
   def __len__(self):
     return len(self.data_source)
