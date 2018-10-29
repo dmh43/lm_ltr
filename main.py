@@ -24,6 +24,10 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': int,
           'default': 512},
+         {'name': 'train_dataset_size',
+          'for': 'train_params',
+          'type': lambda size: int(size) if size is not None else None,
+          'default': None},
          {'name': 'num_neg_samples',
           'for': 'train_params',
           'type': int,
@@ -181,7 +185,7 @@ def main():
       dont_update(doc_encoder)
   if use_pointwise_loss:
     train_dl = build_query_dataloader(documents,
-                                      train_data,
+                                      train_data[:rabbit.train_params.train_dataset_size],
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method)
     test_dl = build_query_dataloader(documents,
@@ -195,7 +199,7 @@ def main():
                             rabbit.train_params)
   else:
     train_dl = build_query_pairwise_dataloader(documents,
-                                               train_data,
+                                               train_data[:rabbit.train_params.train_dataset_size],
                                                rabbit.train_params.batch_size,
                                                rel_method=rabbit.train_params.rel_method,
                                                num_neg_samples=rabbit.train_params.num_neg_samples)
