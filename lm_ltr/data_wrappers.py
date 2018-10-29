@@ -151,16 +151,15 @@ def normalize_scores_query_wise(data):
   query_doc_info = {}
   for row in data:
     score = row.get('score') or 0.0
-    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score])
+    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score, row['query']])
   normalized_data = []
-  for query_str, doc_infos in query_doc_info.items():
-    scores = torch.tensor([doc_score for doc_id, doc_score in doc_infos])
-    query_score_total = torch.logsumexp(scores, 0)
-    query = ast.literal_eval('[' + query_str + ']')
+  for doc_infos in query_doc_info.values():
+    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos])
+    query_score_total = float(torch.logsumexp(scores, 0))
     normalized_data.extend([{'query': query,
                              'doc_id': doc_id,
                              'score': doc_score - query_score_total}
-                            for doc_id, doc_score in doc_infos])
+                            for doc_id, doc_score, query in doc_infos])
   return normalized_data
 
 def build_query_dataloader(documents, data, batch_size, rel_method=score) -> DataLoader:
