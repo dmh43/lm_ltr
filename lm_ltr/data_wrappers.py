@@ -107,9 +107,6 @@ def insert_negative_samples(num_documents, num_neg_samples, rankings):
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self, documents, data, rel_method=score, num_neg_samples=90):
     super().__init__(documents, data)
-    # self.lowest_rank_doc_to_consider = 10
-    # self.rankings_for_train = _.map_(self.rankings,
-    #                                  lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
     num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
     insert_negative_samples(num_documents, self.num_neg_samples, self.rankings)
