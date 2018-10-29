@@ -104,7 +104,7 @@ def metrics_at_k(rankings_to_judge, relevant_doc_ids, k=10):
     if num_relevant_in_ranking == 0: continue
     avg_correct = 0
     correct_in_ranking = 0
-    for doc_rank, doc_id in enumerate(to_list(ranking)):
+    for doc_rank, doc_id in enumerate(to_list(ranking)[:k]):
       rel = doc_id in relevant
       correct += rel
       correct_in_ranking += rel
