@@ -100,12 +100,19 @@ def _get_num_pairs(rankings):
                 rankings,
                 0)
 
+def insert_negative_samples(num_documents, num_neg_samples, rankings):
+  for query, ranking in rankings:
+    ranking.extend(sample(range(num_documents), num_neg_samples))
+
 class QueryPairwiseDataset(QueryDataset):
-  def __init__(self, documents, data, rel_method=score):
+  def __init__(self, documents, data, rel_method=score, num_neg_samples=90):
     super().__init__(documents, data)
     # self.lowest_rank_doc_to_consider = 10
     # self.rankings_for_train = _.map_(self.rankings,
     #                                  lambda ranking: [ranking[0], ranking[1][:self.lowest_rank_doc_to_consider]])
+    num_documents = len(documents)
+    self.num_neg_samples = num_neg_samples
+    insert_negative_samples(num_documents, self.num_neg_samples, self.rankings)
     self.rankings_for_train = self.rankings
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
@@ -163,8 +170,8 @@ def build_query_dataloader(documents, data, batch_size, rel_method=score) -> Dat
                     batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
 
-def build_query_pairwise_dataloader(documents, data, batch_size, rel_method=score) -> DataLoader:
-  dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method)
+def build_query_pairwise_dataloader(documents, data, batch_size, rel_method=score, num_neg_samples=90) -> DataLoader:
+  dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method, num_neg_samples=num_neg_samples)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(RandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)
