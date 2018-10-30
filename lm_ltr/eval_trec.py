@@ -12,7 +12,7 @@ def main():
   ordered_qrels = [qrels[query] for query in queries]
   ordered_rankings_to_eval = [rankings_to_eval[query] for query in queries]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
-  print(metrics_at_k(ordered_rankings_to_eval, ordered_qrels))
+  print(metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
 
 if __name__ == "__main__":
   import ipdb
