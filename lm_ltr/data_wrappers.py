@@ -67,9 +67,10 @@ class RankingDataset(Dataset):
             'relevant': relevant}
 
   def _get_test_item(self, idx):
-    query, ranking = self.rankings[idx]
+    query, relevant = self.relevant[idx]
     q_str = str(query)[1:-1]
-    relevant = set(self.relevant[q_str])
+    relevant = set(relevant)
+    ranking = self.rankings[q_str]
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': [self.documents[idx] for idx in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),
