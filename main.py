@@ -11,7 +11,7 @@ from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_to
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
-from lm_ltr.preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup
+from lm_ltr.preprocessing import preprocess_raw_data, preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup, normalize_scores_query_wise
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
@@ -191,8 +191,10 @@ def main():
     if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
   if use_pointwise_loss:
+    normalized_train_data = read_cache('./normalized_train_query_data.pkl',
+                                       lambda: normalize_scores_query_wise(train_data))
     train_dl = build_query_dataloader(documents,
-                                      train_data[:rabbit.train_params.train_dataset_size],
+                                      normalized_train_data[:rabbit.train_params.train_dataset_size],
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method)
     test_dl = build_query_dataloader(documents,

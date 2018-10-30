@@ -145,22 +145,6 @@ def get_top_k(scores, k=1000):
   sorted_scores, idxs = torch.sort(scores, descending=True)
   return idxs[:k]
 
-def normalize_scores_query_wise(data):
-  query_doc_info = {}
-  for row in data:
-    score = row.get('score') or 0.0
-    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score, row['query']])
-  normalized_data = []
-  for doc_infos in query_doc_info.values():
-    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos], device=torch.device('cuda'))
-    query_score_total = torch.logsumexp(scores, 0)
-    normalized_scores = scores - query_score_total
-    normalized_data.extend([{'query': doc_info[2],
-                             'doc_id': doc_info[0],
-                             'score': score}
-                            for doc_info, score in zip(doc_infos, scores.tolist())])
-  return normalized_data
-
 class TrueRandomSampler(Sampler):
   def __init__(self, data_source):
     self.data_source = data_source
@@ -174,8 +158,7 @@ class TrueRandomSampler(Sampler):
   def __len__(self):
     return len(self.data_source)
 
-def build_query_dataloader(documents, data, batch_size, rel_method=score) -> DataLoader:
-  normalized_data = normalize_scores_query_wise(data)
+def build_query_dataloader(documents, normalized_data, batch_size, rel_method=score) -> DataLoader:
   dataset = QueryDataset(documents, normalized_data, rel_method=rel_method)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
