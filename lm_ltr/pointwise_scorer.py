@@ -21,7 +21,7 @@ class PointwiseScorer(nn.Module):
                train_params):
     super().__init__()
     self.document_encoder = DocumentEncoder(document_token_embeds, doc_encoder)
-    self.query_encoder = QueryEncoder(query_token_embeds)
+    self.query_encoder = QueryEncoder(query_token_embeds, model_params.use_max_pooling)
     if model_params.use_pretrained_doc_encoder:
       concat_len = 1300
     else:
