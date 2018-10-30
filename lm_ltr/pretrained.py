@@ -32,7 +32,11 @@ def get_doc_encoder_and_embeddings(document_token_lookup):
   with open('./itos_wt103.pkl', 'rb') as fh:
     old_itos = pickle.load(fh)
   old_stoi = _.invert(old_itos)
-  wgts = convert_weights(wgts, old_stoi, _.invert(document_token_lookup))
+  string_lookup = _.invert(document_token_lookup)
+  wgts = convert_weights(wgts,
+                         old_stoi,
+                         [string_lookup[i]
+                          for i in range(len(document_token_lookup))])
   model.load_state_dict(wgts)
   rnn_enc = model[0]
   embedding = rnn_enc.encoder
