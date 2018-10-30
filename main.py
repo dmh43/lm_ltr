@@ -235,10 +235,8 @@ def main():
   test_ranking_candidates = _.map_values(test_ranking_candidates,
                                          lambda candidate_names: _.map_(candidate_names,
                                                                         lookup_by_title))
-  test_ranking_candidates = _.to_pairs(test_ranking_candidates)
-  test_ranking_candidates = _.map_(test_ranking_candidates,
-                                   lambda pair: [test_queries[test_query_name_to_id[pair[0]]],
-                                                 pair[1]])
+  test_ranking_candidates = _.map_keys(test_ranking_candidates,
+                                       lambda ranking, query_name: str(test_queries[test_query_name_to_id[query_name]])[1:-1])
   test_ranking_dataset = RankingDataset(documents,
                                         test_ranking_candidates,
                                         test_dl.dataset.rankings,
