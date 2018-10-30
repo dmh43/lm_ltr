@@ -16,7 +16,7 @@ class QueryEncoder(nn.Module):
     normalized_weights = F.softmax(token_weights, 1)
     if self.use_max_pooling:
       pool_input = torch.transpose(normalized_weights * query_tokens, 0, 1)
-      query_vecs = torch.squeeze(self.max_pool(pool_input, 1))
+      query_vecs = torch.squeeze(self.max_pool(pool_input))
     else:
       query_vecs = torch.sum(normalized_weights * query_tokens, 1)
     encoded = query_vecs

@@ -73,9 +73,11 @@ class DocumentEncoder(nn.Module):
                                    batch_first=True)[0][order]
     document_tokens = self.document_token_embeds(document)
     return pipe(document_tokens,
+                lambda batch: torch.transpose(batch, 1, 2),
                 self.cnn,
                 self.relu,
                 self.pool,
+                torch.squeeze,
                 self.projection)
 
   def forward(self, packed_document_and_order):
