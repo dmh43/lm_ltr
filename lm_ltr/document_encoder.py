@@ -27,7 +27,7 @@ class DocumentEncoder(nn.Module):
     unsorted_padded_docs = pad_packed_sequence(packed_document,
                                                padding_value=1)[0][:, order]
     doc_vecs = self.pretrained_enc(unsorted_padded_docs)
-    return doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)
+    return doc_vecs
 
   def _lstm_forward(self, packed_document_and_order):
     packed_document, order = packed_document_and_order
@@ -37,7 +37,7 @@ class DocumentEncoder(nn.Module):
     out, last_out_and_last_cell = self.lstm(packed_seq_document_tokens)
     last_out, last_cell_state = last_out_and_last_cell
     doc_vecs = self.projection(torch.cat([last_out[0], last_out[1]], 1)[order])
-    return doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)
+    return doc_vecs
 
   def _weighted_forward(self, packed_document_and_order):
     packed_document, order = packed_document_and_order
@@ -50,7 +50,7 @@ class DocumentEncoder(nn.Module):
     token_weights = self.weights(document)
     normalized_weights = F.softmax(token_weights, 1)
     doc_vecs = torch.sum(normalized_weights * document_tokens, 1)
-    encoded = doc_vecs / (torch.norm(doc_vecs, 2, 1).unsqueeze(1) + 0.0001)
+    encoded = doc_vecs
     return encoded
 
   def forward(self, packed_document_and_order):

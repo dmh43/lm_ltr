@@ -19,5 +19,5 @@ class QueryEncoder(nn.Module):
       query_vecs = torch.squeeze(self.max_pool(pool_input, 1))
     else:
       query_vecs = torch.sum(normalized_weights * query_tokens, 1)
-    encoded = query_vecs / (torch.norm(query_vecs, 2, 1).unsqueeze(1) + 0.0001)
+    encoded = query_vecs
     return encoded
