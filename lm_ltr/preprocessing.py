@@ -139,17 +139,18 @@ def prepare(lookup, title_to_id, token_lookup=None, num_tokens=None):
   return numericalized, token_lookup
 
 def normalize_scores_query_wise(data):
+  device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
   query_doc_info = {}
   for row in data:
     score = row.get('score') or 0.0
     append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score, row['query']])
   normalized_data = []
   for doc_infos in query_doc_info.values():
-    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos], device=torch.device('cuda'))
+    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos], device=device)
     query_score_total = torch.logsumexp(scores, 0)
     normalized_scores = scores - query_score_total
     normalized_data.extend([{'query': doc_info[2],
                              'doc_id': doc_info[0],
                              'score': score}
-                            for doc_info, score in zip(doc_infos, scores.tolist())])
+                            for doc_info, score in zip(doc_infos, normalized_scores.tolist())])
   return normalized_data

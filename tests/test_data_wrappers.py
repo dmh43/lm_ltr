@@ -18,25 +18,6 @@ def test__get_nth_pair():
     assert isinstance(pair['doc_id_1'], int)
     assert isinstance(pair['doc_id_2'], int)
 
-def test_normalize_scores_query_wise():
-  data = [{'query': [1], 'doc_id': 1, 'score': -11.0},
-          {'query': [1], 'doc_id': 2, 'score': -11.3},
-          {'query': [1], 'doc_id': 3, 'score': -11.9},
-          {'query': [1], 'doc_id': 4, 'score': -12.0},
-          {'query': [1], 'doc_id': 5, 'score': -13.0},
-          {'query': [1, 2], 'doc_id': 1, 'score': -1.0},
-          {'query': [1, 2], 'doc_id': 2, 'score': -1.3},
-          {'query': [1, 2], 'doc_id': 3, 'score': -1.9},
-          {'query': [1, 2], 'doc_id': 4, 'score': -2.0},
-          {'query': [1, 2], 'doc_id': 5, 'score': -3.0}]
-  normalized = df.normalize_scores_query_wise(data)
-  assert len(normalized) == len(data)
-  assert abs(sum([torch.exp(torch.tensor(row['score']))
-                  for row in normalized[:5]]) - torch.tensor(1.0)) < 1e-6
-  assert abs(sum([torch.exp(torch.tensor(row['score']))
-                  for row in normalized[5:]]) - torch.tensor(1.0)) < 1e-6
-
-
 def test_true_random_sampler():
   dataset = list(range(10))
   sampler = df.TrueRandomSampler(dataset)
