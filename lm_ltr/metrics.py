@@ -35,7 +35,7 @@ class RankingMetricRecorder(MetricRecorder):
       with torch.no_grad():
         num_rankings_considered = 0
         for to_rank in dataset:
-          if num_rankings_considered > 10000: break
+          if num_rankings_considered > 300: break
           if len(to_rank['documents']) < k:
             yield None
             continue
