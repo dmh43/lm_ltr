@@ -50,8 +50,10 @@ def collate_query_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  documents = pad_to_max_len(x[1])
-  return (torch.tensor(query), torch.tensor(documents)), torch.tensor(rel)
+  packed_doc_and_order = pack(x[1])
+  return ((torch.tensor(query),
+           packed_doc_and_order),
+          torch.tensor(rel))
 
 def pack(batch, device=torch.device('cpu')):
   batch_lengths = torch.tensor(_.map_(batch, len),
