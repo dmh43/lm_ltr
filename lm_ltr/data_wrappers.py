@@ -48,7 +48,7 @@ class RankingDataset(Dataset):
     self.is_test = relevant is not None
     self.relevant = relevant
     if self.is_test:
-      self.q_strs = list(rankings.keys())
+      self.q_strs = list(set(rankings.keys()).intersection(set(relevant.keys())))
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
 
   def __len__(self):
