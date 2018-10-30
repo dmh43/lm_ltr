@@ -208,11 +208,13 @@ def main():
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data[:rabbit.train_params.train_dataset_size],
                                       rabbit.train_params.batch_size,
-                                      rel_method=rabbit.train_params.rel_method)
+                                      rel_method=rabbit.train_params.rel_method,
+                                      num_doc_tokens=num_doc_tokens_to_consider)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
-                                     rel_method=rabbit.train_params.rel_method)
+                                     rel_method=rabbit.train_params.rel_method,
+                                     num_doc_tokens=num_doc_tokens_to_consider)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -223,12 +225,14 @@ def main():
                                                train_data[:rabbit.train_params.train_dataset_size],
                                                rabbit.train_params.batch_size,
                                                rel_method=rabbit.train_params.rel_method,
-                                               num_neg_samples=rabbit.train_params.num_neg_samples)
+                                               num_neg_samples=rabbit.train_params.num_neg_samples,
+                                               num_doc_tokens=num_doc_tokens_to_consider)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
                                               rel_method=rabbit.train_params.rel_method,
-                                              num_neg_samples=0)
+                                              num_neg_samples=0,
+                                              num_doc_tokens=num_doc_tokens_to_consider)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,

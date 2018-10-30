@@ -16,11 +16,11 @@ from .preprocessing import collate_query_samples, collate_query_pairwise_samples
 from .utils import append_at
 
 class QueryDataset(Dataset):
-  def __init__(self, documents, data, rel_method=score, num_doc_tokens=100):
+  def __init__(self, documents, data, rel_method=score, num_doc_tokens=100, rankings=None):
     self.documents = documents
     self.data = data
     self.rel_method = rel_method
-    self.rankings = to_query_rankings_pairs(data)
+    self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
     self.num_doc_tokens = num_doc_tokens
 
   def _get_document(self, elem_idx):
@@ -109,8 +109,8 @@ def insert_negative_samples(num_documents, num_neg_samples, rankings):
     ranking.extend(sample(range(num_documents), num_neg_samples))
 
 class QueryPairwiseDataset(QueryDataset):
-  def __init__(self, documents, data, rel_method=score, num_neg_samples=90):
-    super().__init__(documents, data)
+  def __init__(self, documents, data, rel_method=score, num_neg_samples=90, num_doc_tokens=100, rankings=None):
+    super().__init__(documents, data, rel_method=rel_method, num_doc_tokens=num_doc_tokens, rankings=rankings)
     num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
     insert_negative_samples(num_documents, self.num_neg_samples, self.rankings)
@@ -163,14 +163,34 @@ class TrueRandomSampler(Sampler):
   def __len__(self):
     return len(self.data_source)
 
-def build_query_dataloader(documents, normalized_data, batch_size, rel_method=score) -> DataLoader:
-  dataset = QueryDataset(documents, normalized_data, rel_method=rel_method)
+def build_query_dataloader(documents,
+                           normalized_data,
+                           batch_size,
+                           rel_method=score,
+                           rankings=None,
+                           num_doc_tokens=100) -> DataLoader:
+  dataset = QueryDataset(documents,
+                         normalized_data,
+                         rel_method=rel_method,
+                         rankings=rankings,
+                         num_doc_tokens=num_doc_tokens)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
 
-def build_query_pairwise_dataloader(documents, data, batch_size, rel_method=score, num_neg_samples=90) -> DataLoader:
-  dataset = QueryPairwiseDataset(documents, data, rel_method=rel_method, num_neg_samples=num_neg_samples)
+def build_query_pairwise_dataloader(documents,
+                                    data,
+                                    batch_size,
+                                    rel_method=score,
+                                    num_neg_samples=90,
+                                    rankings=None,
+                                    num_doc_tokens=100) -> DataLoader:
+  dataset = QueryPairwiseDataset(documents,
+                                 data,
+                                 rel_method=rel_method,
+                                 num_neg_samples=num_neg_samples,
+                                 rankings=rankings,
+                                 num_doc_tokens=num_doc_tokens)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)
