@@ -14,6 +14,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 
 from .preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score
 from .utils import append_at
+from .fetchers import read_cache
 
 class QueryDataset(Dataset):
   def __init__(self, documents, data, rel_method=score, num_doc_tokens=100, rankings=None):
@@ -167,8 +168,9 @@ def build_query_dataloader(documents,
                            normalized_data,
                            batch_size,
                            rel_method=score,
-                           rankings=None,
+                           cache=None,
                            num_doc_tokens=100) -> DataLoader:
+  rankings = read_cache(cache, to_query_rankings_pairs(normalized_data)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
                          rel_method=rel_method,
@@ -183,8 +185,9 @@ def build_query_pairwise_dataloader(documents,
                                     batch_size,
                                     rel_method=score,
                                     num_neg_samples=90,
-                                    rankings=None,
+                                    cache=None,
                                     num_doc_tokens=100) -> DataLoader:
+  rankings = read_cache(cache, to_query_rankings_pairs(data)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
                                  rel_method=rel_method,

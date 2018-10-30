@@ -209,12 +209,14 @@ def main():
                                       normalized_train_data[:rabbit.train_params.train_dataset_size],
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method,
-                                      num_doc_tokens=num_doc_tokens_to_consider)
+                                      num_doc_tokens=num_doc_tokens_to_consider,
+                                      cache='./pointwise_train_ranking.pkl')
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
                                      rel_method=rabbit.train_params.rel_method,
-                                     num_doc_tokens=num_doc_tokens_to_consider)
+                                     num_doc_tokens=num_doc_tokens_to_consider,
+                                     cache='./pointwise_test_ranking.pkl')
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -226,13 +228,15 @@ def main():
                                                rabbit.train_params.batch_size,
                                                rel_method=rabbit.train_params.rel_method,
                                                num_neg_samples=rabbit.train_params.num_neg_samples,
-                                               num_doc_tokens=num_doc_tokens_to_consider)
+                                               num_doc_tokens=num_doc_tokens_to_consider,
+                                               cache='./pairwise_train_ranking.pkl')
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
                                               rel_method=rabbit.train_params.rel_method,
                                               num_neg_samples=0,
-                                              num_doc_tokens=num_doc_tokens_to_consider)
+                                              num_doc_tokens=num_doc_tokens_to_consider,
+                                              cache='./pairwise_test_ranking.pkl')
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
