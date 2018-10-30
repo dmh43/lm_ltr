@@ -1,3 +1,4 @@
+import sys
 
 from lm_ltr.trec_doc_parse import parse_qrels
 from lm_ltr.metrics import metrics_at_k
@@ -10,6 +11,7 @@ def main():
   queries = list(set(qrels.keys()).intersection(set(rankings_to_eval.keys())))
   ordered_qrels = [qrels[query] for query in queries]
   ordered_rankings_to_eval = [rankings_to_eval[query] for query in queries]
+  k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
   print(metrics_at_k(ordered_rankings_to_eval, ordered_qrels))
 
 if __name__ == "__main__":
