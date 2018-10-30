@@ -31,3 +31,23 @@ def extend_token_lookup(tokens_to_insert, token_lookup) -> None:
   for token in tokens_to_insert:
     if token not in token_lookup:
       token_lookup[token] = len(token_lookup)
+
+def from_doc_to_query_embeds(document_token_embeds,
+                             document_token_lookup,
+                             query_token_lookup):
+  from_idxs = []
+  to_idxs = []
+  doc_weights = document_token_embeds.weight
+  num_tokens = len(query_token_lookup)
+  embed_len = len(doc_weights[0])
+  weights = torch.Tensor(num_tokens, embed_len)
+  weights.data.normal_(0, 1.0/math.sqrt(embed_len))
+  for query_token, query_idx in query_token_lookup.items():
+    if query_token not in document_token_lookup: continue
+    doc_idx = document_token_lookup[query_token]
+    from_idxs.append(doc_idx)
+    to_idxs.append(query_idx)
+  weights[to_idxs] = doc_weights[from_idxs]
+  embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
+  embedding.weight = nn.Parameter(weights)
+  return embedding

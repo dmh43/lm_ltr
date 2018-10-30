@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from fastai.data import DataBunch
 
-from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup
+from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
@@ -167,14 +167,23 @@ def main():
   # extend_token_lookup(glove_lookup.keys(), query_token_lookup)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
-  query_token_embeds = init_embedding(glove_lookup,
-                                      query_token_lookup,
-                                      num_query_tokens,
-                                      query_token_embed_len)
-  document_token_embeds = init_embedding(glove_lookup,
-                                         document_token_lookup,
-                                         num_doc_tokens,
-                                         document_token_embed_len)
+  doc_encoder = None
+  if use_pretrained_doc_encoder:
+    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
+    query_token_embeds = from_doc_to_query_embeds(document_token_embeds,
+                                                  document_token_lookup,
+                                                  query_token_lookup)
+    if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
+      dont_update(doc_encoder)
+  else:
+    query_token_embeds = init_embedding(glove_lookup,
+                                        query_token_lookup,
+                                        num_query_tokens,
+                                        query_token_embed_len)
+    document_token_embeds = init_embedding(glove_lookup,
+                                           document_token_lookup,
+                                           num_doc_tokens,
+                                           document_token_embed_len)
   if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
     dont_update(query_token_embeds)
@@ -193,11 +202,6 @@ def main():
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
-  doc_encoder = None
-  if use_pretrained_doc_encoder:
-    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
-    if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
-      dont_update(doc_encoder)
   if use_pointwise_loss:
     normalized_train_data = read_cache('./normalized_train_query_data.pkl',
                                        lambda: normalize_scores_query_wise(train_data))
