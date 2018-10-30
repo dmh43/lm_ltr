@@ -47,6 +47,9 @@ class RankingDataset(Dataset):
     self.num_to_rank = 1000
     self.is_test = relevant is not None
     self.relevant = relevant
+    if self.is_test:
+      self.q_strs = list(rankings.keys())
+      self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
 
   def __len__(self):
     return len(self.rankings)
@@ -67,14 +70,15 @@ class RankingDataset(Dataset):
             'relevant': relevant}
 
   def _get_test_item(self, idx):
-    query, relevant = self.relevant[idx]
+    q_str = self.q_strs[idx]
+    query, relevant = self.rel_by_q_str[q_str]
     q_str = str(query)[1:-1]
     relevant = set(relevant)
     ranking = self.rankings[q_str]
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.documents[idx] for idx in ranking],
+            'documents': [self.documents[doc_id] for doc_id in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),
-            'ranking': self.relevant[idx][1][:self.k],
+            'ranking': self.rel_by_q_str[q_str][1][:self.k],
             'relevant': relevant}
 
   def __getitem__(self, idx):
