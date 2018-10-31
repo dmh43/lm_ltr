@@ -133,6 +133,7 @@ def process_rels(query_name_document_title_rels, document_title_to_id, query_nam
     query = queries[query_id]
     if query is None: continue
     data.extend([{'query': query,
+                  'score': 1.0
                   'doc_id': document_title_to_id[title]} for title in doc_titles if title in document_title_to_id])
   return data
 
