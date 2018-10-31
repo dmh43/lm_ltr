@@ -145,26 +145,24 @@ def main():
   use_pointwise_loss = rabbit.train_params.use_pointwise_loss
   query_token_embed_len = rabbit.model_params.query_token_embed_len
   document_token_embed_len = rabbit.model_params.document_token_embed_len
-  document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
+  document_lookup = read_cache('./doc_lookup.json', get_robust_documents)
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
-  document_title_to_id = read_cache('./document_title_to_id.pkl',
+  document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens.pkl',
+  documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens.json',
                                                 lambda: prepare(document_lookup,
                                                                 document_title_to_id,
                                                                 num_tokens=num_doc_tokens_to_consider))
-  train_query_lookup = read_cache('./robust_train_queries.pkl', get_robust_train_queries)
-  train_query_name_to_id = read_cache('./train_query_name_to_id.pkl',
+  train_query_lookup = read_cache('./robust_train_queries.json', get_robust_train_queries)
+  train_query_name_to_id = read_cache('./train_query_name_to_id.json',
                                       lambda: create_id_lookup(train_query_lookup.keys()))
-  train_queries, query_token_lookup = read_cache('./parsed_robust_queries.pkl',
+  train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
-  train_data = read_cache(f'./robust_train_query_results_{num_doc_tokens_to_consider}_tokens',
+  train_data = read_cache(f'./robust_train_query_results_{num_doc_tokens_to_consider}_tokens.json',
                           lambda: read_query_result(train_query_name_to_id,
                                                     document_title_to_id,
                                                     train_queries))
   glove_lookup = get_glove_lookup()
-  # extend_token_lookup(glove_lookup.keys(), document_token_lookup)
-  # extend_token_lookup(glove_lookup.keys(), query_token_lookup)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   doc_encoder = None
@@ -187,36 +185,36 @@ def main():
   if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
     dont_update(query_token_embeds)
-  test_query_lookup = read_cache('./robust_test_queries.pkl',
+  test_query_lookup = read_cache('./robust_test_queries.json',
                                  get_robust_test_queries)
-  test_query_name_document_title_rels = read_cache('./robust_rels.pkl',
+  test_query_name_document_title_rels = read_cache('./robust_rels.json',
                                                    get_robust_rels)
-  test_query_name_to_id = read_cache('./test_query_name_to_id.pkl',
+  test_query_name_to_id = read_cache('./test_query_name_to_id.json',
                                      lambda: create_id_lookup(test_query_lookup.keys()))
-  test_queries, __ = read_cache('./parsed_test_robust_queries.pkl',
+  test_queries, __ = read_cache('./parsed_test_robust_queries.json',
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  test_data = read_cache('./parsed_robust_rels.pkl',
+  test_data = read_cache('./parsed_robust_rels.json',
                          lambda: process_rels(test_query_name_document_title_rels,
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
   if use_pointwise_loss:
-    normalized_train_data = read_cache('./normalized_train_query_data.pkl',
+    normalized_train_data = read_cache('./normalized_train_query_data.json',
                                        lambda: normalize_scores_query_wise(train_data))
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data[:rabbit.train_params.train_dataset_size],
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
-                                      cache='./pointwise_train_ranking.pkl')
+                                      cache='./pointwise_train_ranking.json')
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
                                      rel_method=rabbit.train_params.rel_method,
                                      num_doc_tokens=num_doc_tokens_to_consider,
-                                     cache='./pointwise_test_ranking.pkl')
+                                     cache='./pointwise_test_ranking.json')
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -229,14 +227,14 @@ def main():
                                                rel_method=rabbit.train_params.rel_method,
                                                num_neg_samples=rabbit.train_params.num_neg_samples,
                                                num_doc_tokens=num_doc_tokens_to_consider,
-                                               cache='./pairwise_train_ranking.pkl')
+                                               cache='./pairwise_train_ranking.json')
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
                                               rel_method=rabbit.train_params.rel_method,
                                               num_neg_samples=0,
                                               num_doc_tokens=num_doc_tokens_to_consider,
-                                              cache='./pairwise_test_ranking.pkl')
+                                              cache='./pairwise_test_ranking.json')
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -245,7 +243,7 @@ def main():
   train_ranking_dataset = RankingDataset(documents,
                                          train_dl.dataset.rankings,
                                          num_doc_tokens=num_doc_tokens_to_consider)
-  test_ranking_candidates = read_cache('./test_ranking_candidates.pkl',
+  test_ranking_candidates = read_cache('./test_ranking_candidates.json',
                                        read_query_test_rankings)
   lookup_by_title = lambda title: document_title_to_id.get(title) or 0
   test_ranking_candidates = _.map_values(test_ranking_candidates,

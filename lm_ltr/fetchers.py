@@ -5,6 +5,7 @@ from lxml import html
 
 import pymysql.cursors
 import pickle
+import json
 
 import pydash as _
 
@@ -150,12 +151,12 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
         return results
 
 def write_to_file(path, rows):
-  with open(path, 'wb') as fh:
-    pickle.dump(rows, fh)
+  with open(path, 'w+') as fh:
+    json.dump(rows, fh)
 
 def read_from_file(path):
-  with open(path, 'rb') as fh:
-    return pickle.load(fh)
+  with open(path, 'r') as fh:
+    return json.load(fh)
 
 def read_or_cache(path, fn):
   try:
