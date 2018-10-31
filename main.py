@@ -138,8 +138,10 @@ def process_rels(query_name_document_title_rels, document_title_to_id, query_nam
   return data
 
 model_to_save = None
+experiment = None
 def main():
   global model_to_save
+  global experiment
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
@@ -286,7 +288,7 @@ if __name__ == "__main__":
     main()
   except: # pylint: disable=bare-except
     if model_to_save and input("save?") == 'y':
-      torch.save(model_to_save.state_dict(), './model_save_debug' + str(time.time()))
+      torch.save(model_to_save.state_dict(), './model_save_debug' + str(experiment.model_name))
     extype, value, tb = sys.exc_info()
     traceback.print_exc()
   ipdb.post_mortem(tb)

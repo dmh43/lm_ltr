@@ -63,7 +63,7 @@ class RankingDataset(Dataset):
                            self.num_to_rank - len(ranking))
       ranking_with_neg = ranking + neg_samples
     else:
-      ranking_with_neg = ranking
+      ranking_with_neg = ranking[:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': [self.documents[idx] for idx in ranking_with_neg],
             'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
@@ -75,7 +75,7 @@ class RankingDataset(Dataset):
     query, relevant = self.rel_by_q_str[q_str]
     q_str = str(query)[1:-1]
     relevant = set(relevant)
-    ranking = self.rankings[q_str]
+    ranking = self.rankings[q_str][:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': [self.documents[doc_id] for doc_id in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),

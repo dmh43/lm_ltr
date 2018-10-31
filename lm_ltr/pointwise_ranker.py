@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pack_sequence
 
 from .preprocessing import pack
+from .utils import at_least_one_dim
 
 class PointwiseRanker:
   def __init__(self, device, pointwise_scorer, doc_chunk_size=-1):
