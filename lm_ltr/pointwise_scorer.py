@@ -23,7 +23,7 @@ class PointwiseScorer(nn.Module):
     self.document_encoder = DocumentEncoder(document_token_embeds, doc_encoder, model_params.use_cnn)
     self.query_encoder = QueryEncoder(query_token_embeds, model_params.use_max_pooling)
     if model_params.use_pretrained_doc_encoder:
-      concat_len = 1300
+      concat_len = 1600
     else:
       concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
     self.layers = nn.ModuleList()
