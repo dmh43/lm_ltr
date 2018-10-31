@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
+from .tuple_data_parallel import TupleDataParallel
 
 def _get_loss_function(use_pointwise_loss):
   if use_pointwise_loss:
@@ -27,7 +28,7 @@ def train_model(model,
                 train_params,
                 model_params,
                 experiment):
-  model = nn.DataParallel(model)
+  model = TupleDataParallel(model)
   loss = _get_loss_function(train_params.use_pointwise_loss)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
