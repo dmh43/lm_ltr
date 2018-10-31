@@ -35,7 +35,7 @@ def train_model(model,
                                      train_ranking_dataset,
                                      test_ranking_dataset,
                                      experiment,
-                                     doc_chunk_size=10 if model_params.use_pretrained_doc_encoder else -1)]
+                                     doc_chunk_size=2 if model_params.use_pretrained_doc_encoder else -1)]
   if train_params.use_gradient_clipping:
     callback_fns = [partial(GradientClipping, clip=train_params.gradient_clipping_norm),
                     partial(PlottingRecorder, experiment),
