@@ -15,9 +15,10 @@ class PointwiseRanker:
 
   def _scores_for_chunk(self, query, documents) -> None:
     packed_doc_and_order = pack(documents, self.device)
+    batch_range, unsort_order = torch.sort(packed_doc_and_order[1])
     scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
                                    packed_doc_and_order)
-    return at_least_one_dim(scores)
+    return at_least_one_dim(scores)[unsort_order]
 
   def __call__(self, query, documents, k=None):
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"

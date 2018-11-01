@@ -31,32 +31,25 @@ class DocumentEncoder(nn.Module):
                             batch_first=True)
         self.projection = nn.Linear(hidden_size * 2, 100)
 
-  def _lm_forward(self, packed_document_and_order):
-    packed_document, order = packed_document_and_order
-    packed_document = torch.nn.utils.rnn.PackedSequence(packed_document[0],
-                                                        packed_document[1].to(torch.device('cpu')))
-    unsorted_padded_docs = pad_packed_sequence(packed_document,
-                                               padding_value=1)[0][:, order]
-    doc_vecs = self.pretrained_enc(unsorted_padded_docs)
+  def _lm_forward(self, packed_document):
+    padded_docs = pad_packed_sequence(packed_document,
+                                      padding_value=1)[0]
+    doc_vecs = self.pretrained_enc(padded_docs)
     return doc_vecs
 
-  def _lstm_forward(self, packed_document_and_order):
-    packed_document, order = packed_document_and_order
+  def _lstm_forward(self, packed_document):
     packed_document_tokens = self.document_token_embeds(packed_document[0])
     packed_seq_document_tokens = torch.nn.utils.rnn.PackedSequence(packed_document_tokens,
                                                                    packed_document[1].to(torch.device('cpu')))
     out, last_out_and_last_cell = self.lstm(packed_seq_document_tokens)
     last_out, last_cell_state = last_out_and_last_cell
-    doc_vecs = self.projection(torch.cat([last_out[0], last_out[1]], 1)[order])
+    doc_vecs = self.projection(torch.cat([last_out[0], last_out[1]], 1))
     return doc_vecs
 
-  def _weighted_forward(self, packed_document_and_order):
-    packed_document, order = packed_document_and_order
-    packed_document = torch.nn.utils.rnn.PackedSequence(packed_document[0],
-                                                        packed_document[1].to(torch.device('cpu')))
+  def _weighted_forward(self, packed_document):
     document = pad_packed_sequence(packed_document,
                                    padding_value=1,
-                                   batch_first=True)[0][order]
+                                   batch_first=True)[0]
     document_tokens = self.document_token_embeds(document)
     token_weights = self.weights(document)
     normalized_weights = F.softmax(token_weights, 1)
@@ -64,13 +57,10 @@ class DocumentEncoder(nn.Module):
     encoded = doc_vecs
     return encoded
 
-  def _cnn_forward(self, packed_document_and_order):
-    packed_document, order = packed_document_and_order
-    packed_document = torch.nn.utils.rnn.PackedSequence(packed_document[0],
-                                                        packed_document[1].to(torch.device('cpu')))
+  def _cnn_forward(self, packed_document):
     document = pad_packed_sequence(packed_document,
                                    padding_value=1,
-                                   batch_first=True)[0][order]
+                                   batch_first=True)[0]
     document_tokens = self.document_token_embeds(document)
     return pipe(document_tokens,
                 lambda batch: torch.transpose(batch, 1, 2),
