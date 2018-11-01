@@ -6,8 +6,8 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_padded_sequence
 from fastai.text import Tokenizer
+from torch.nn.utils.rnn import pad_sequence
 
 from .utils import append_at
 
@@ -28,7 +28,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None):
       else:
         lookup[token] = lookup.get(token) or len(lookup)
         chunk_result.append(lookup[token])
-    result.append(chunk_result if num_tokens is None else pad_to_len(chunk_result, num_tokens))
+    result.append(chunk_result)
   return result, lookup
 
 def preprocess_texts(texts, token_lookup=None, num_tokens=None):
@@ -46,39 +46,28 @@ def pad_to_max_len(elems, pad_with=None):
   max_len = max(map(len, elems))
   return [elem + [pad_with] * (max_len - len(elem)) if len(elem) < max_len else elem for elem in elems]
 
-def pack(batch, device=torch.device('cpu')):
+def pad(batch, device=torch.device('cpu')):
   batch_lengths = torch.tensor(_.map_(batch, len),
                                dtype=torch.long,
                                device=device)
-  num_tokens = len(batch[0])
-  return (pack_padded_sequence(torch.tensor(batch,
-                                            dtype=torch.long,
-                                            device=device),
-                               [num_tokens] * len(batch),
-                               batch_first=True),
+  return (pad_sequence(batch, batch_first=True, padding_value=1).to(device),
           batch_lengths)
 
 def collate_query_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  packed_doc, lens = pack(x[1])
-  return ((torch.tensor(query),
-           packed_doc,
-           lens),
+  doc, lens = pad(x[1])
+  return ((torch.tensor(query), doc, lens),
           torch.tensor(rel))
 
 def collate_query_pairwise_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  packed_doc_1, lens_1 = pack(x[1])
-  packed_doc_2, lens_2 = pack(x[2])
-  return ((torch.tensor(query),
-           packed_doc_1,
-           packed_doc_2,
-           lens_1,
-           lens_2),
+  doc_1, lens_1 = pad(x[1])
+  doc_2, lens_2 = pad(x[2])
+  return ((torch.tensor(query), doc_1, doc_2, lens_1, lens_2),
           torch.tensor(rel))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
@@ -106,14 +95,6 @@ def sigmoid_score(raw_info):
 
 def all_ones(raw_info):
   return 1.0
-
-def preprocess_raw_data(raw_data, query_token_lookup=None):
-  queries = [sample['query'] for sample in raw_data]
-  tokens, lookup = preprocess_texts(queries, query_token_lookup)
-  preprocessed_data = [_.assign({},
-                                sample,
-                                {'query': query_tokens}) for query_tokens, sample in zip(tokens, raw_data)]
-  return preprocessed_data, lookup
 
 def sort_by_first(pairs):
   return sorted(pairs, key=lambda val: val[0])

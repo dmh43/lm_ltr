@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_sequence
 
-from .preprocessing import pack
+from .preprocessing import pad
 from .utils import at_least_one_dim
 
 class PointwiseRanker:
@@ -14,9 +14,9 @@ class PointwiseRanker:
     self.doc_chunk_size = doc_chunk_size
 
   def _scores_for_chunk(self, query, documents) -> None:
-    packed_doc, lens = pack(documents, self.device)
+    padded_doc, lens = pad(documents, self.device)
     scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
-                                   packed_doc,
+                                   padded_doc,
                                    lens)
     return at_least_one_dim(scores)
 

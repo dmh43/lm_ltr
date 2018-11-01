@@ -25,7 +25,7 @@ class QueryDataset(Dataset):
     self.num_doc_tokens = num_doc_tokens
 
   def _get_document(self, elem_idx):
-    return self.documents[self.data[elem_idx]['doc_id']][:self.num_doc_tokens]
+    return torch.tensor(self.documents[self.data[elem_idx]['doc_id']][:self.num_doc_tokens])
 
   def __len__(self):
     return len(self.data)
@@ -65,7 +65,7 @@ class RankingDataset(Dataset):
     else:
       ranking_with_neg = ranking[:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.documents[idx] for idx in ranking_with_neg],
+            'documents': [torch.tensor(self.documents[idx]) for idx in ranking_with_neg],
             'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
             'ranking': ranking[:self.k],
             'relevant': relevant}
@@ -77,7 +77,7 @@ class RankingDataset(Dataset):
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.documents[doc_id] for doc_id in ranking],
+            'documents': [torch.tensor(self.documents[doc_id]) for doc_id in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),
             'ranking': self.rel_by_q_str[q_str][1][:self.k],
             'relevant': relevant}
@@ -128,8 +128,8 @@ class QueryPairwiseDataset(QueryDataset):
   def __getitem__(self, idx):
     elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
     return ((elem['query'],
-             self.documents[elem['doc_id_1']][:self.num_doc_tokens],
-             self.documents[elem['doc_id_2']][:self.num_doc_tokens]),
+             torch.tensor(self.documents[elem['doc_id_1']][:self.num_doc_tokens]),
+             torch.tensor(self.documents[elem['doc_id_2']][:self.num_doc_tokens])),
             elem['order_int'])
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):

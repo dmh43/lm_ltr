@@ -4,9 +4,7 @@ from lm_ltr.metrics import RankingMetricRecorder, metrics_at_k
 def test_ranking_metrics_at_k():
   train_ranking_dl = None
   test_ranking_dl = None
-  scorer = lambda query, documents: - (query[:, 0] - torch.nn.utils.rnn.pad_packed_sequence(documents[0],
-                                                                                            padding_value=0,
-                                                                                            batch_first=True)[0].nonzero()[:, 0]) ** 2
+  scorer = lambda query, documents, lens: - (query[:, 0] - documents.nonzero()[:, 0]) ** 2
   device = torch.device('cpu')
   metric = RankingMetricRecorder(device, scorer, train_ranking_dl, test_ranking_dl, None)
   num_documents = 10

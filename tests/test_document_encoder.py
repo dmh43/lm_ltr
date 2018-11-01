@@ -9,6 +9,5 @@ def test_forward():
   word_embeds = nn.Embedding(num_words, word_embed_dim)
   encoder = DocumentEncoder(word_embeds)
   document = torch.tensor([[0, 0, 1, 1, 0, 2]])
-  embedded = encoder((nn.utils.rnn.pack_sequence(document),
-                      torch.arange(len(document))))
+  embedded = encoder(document, torch.arange(len(document)))
   assert embedded.shape[1] == word_embed_dim

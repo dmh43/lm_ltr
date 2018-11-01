@@ -44,13 +44,12 @@ class PointwiseScorer(nn.Module):
   def forward(self, query, document, lens):
     sorted_lens, sort_order = torch.sort(lens)
     unsort_order, batch_range = torch.sort(sort_order)
+    doc_embed = self.document_encoder(document[sort_order], sorted_lens)
+    query_embed = self.query_encoder(query)[sort_order]
     if self.use_cosine_similarity:
-      hidden = torch.sum(self.document_encoder(document[sort_order]) * self.query_encoder(query[sort_order]),
-                         1)
+      hidden = torch.sum(doc_embed * query_embed, 1)
     else:
-      hidden = torch.cat([self.document_encoder(document[sort_order]),
-                          self.query_encoder(query[sort_order])],
-                         1)
+      hidden = torch.cat([doc_embed, query_embed], 1)
     return pipe(hidden,
                 *self.layers,
                 torch.squeeze)[unsort_order]

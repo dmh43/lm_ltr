@@ -18,14 +18,8 @@ class RelScore(nn.Module):
     self.num_pos_tokens = train_params.num_pos_tokens_rel_score
     self.nce_sample_mul = train_params.nce_sample_mul_rel_score
 
-  def forward(self, query, packed_document_and_order):
+  def forward(self, query, document):
     batch_size = len(query)
-    packed_document, order = packed_document_and_order
-    packed_document = torch.nn.utils.rnn.PackedSequence(packed_document[0],
-                                                        packed_document[1].to(torch.device('cpu')))
-    document = pad_packed_sequence(packed_document,
-                                   padding_value=1,
-                                   batch_first=True)[0][order]
     document_tokens = self.document_token_embeds(document)[:, :self.num_pos_tokens]
     query_tokens = self.query_token_embeds(query)
     query_embeds = query_tokens.sum(1).unsqueeze(1)
