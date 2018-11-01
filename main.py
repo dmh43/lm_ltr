@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from fastai.data import DataBunch
 
-from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds
+from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
@@ -48,6 +48,22 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': 'flag',
           'default': False},
+         {'name': 'add_relevance_score',
+          'for': 'train_params',
+          'type': 'flag',
+          'default': False},
+         {'name': 'rel_score_penalty',
+          'for': 'train_params',
+          'type': float,
+          'default': 0.5},
+         {'name': 'num_pos_tokens_rel_score',
+          'for': 'train_params',
+          'type': int,
+          'default': 20},
+         {'name': 'nce_sample_mul_rel_score',
+          'for': 'train_params',
+          'type': int,
+          'default': 5},
          {'name': 'use_max_pooling',
           'for': 'model_params',
           'type': 'flag',
@@ -142,6 +158,7 @@ experiment = None
 def main():
   global model_to_save
   global experiment
+  regularize = []
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
@@ -171,23 +188,28 @@ def main():
   doc_encoder = None
   if use_pretrained_doc_encoder:
     doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
-    query_token_embeds = from_doc_to_query_embeds(document_token_embeds,
-                                                  document_token_lookup,
-                                                  query_token_lookup)
+    query_token_embeds_init = from_doc_to_query_embeds(document_token_embeds,
+                                                       document_token_lookup,
+                                                       query_token_lookup)
     if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
   else:
-    query_token_embeds = init_embedding(glove_lookup,
-                                        query_token_lookup,
-                                        num_query_tokens,
-                                        query_token_embed_len)
+    query_token_embeds_init = init_embedding(glove_lookup,
+                                             query_token_lookup,
+                                             num_query_tokens,
+                                             query_token_embed_len)
     document_token_embeds = init_embedding(glove_lookup,
                                            document_token_lookup,
                                            num_doc_tokens,
                                            document_token_embed_len)
   if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
-    dont_update(query_token_embeds)
+    dont_update(query_token_embeds_init)
+  if rabbit.train_params.add_relevance_score:
+    query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
+    regularize.append(['l2', additive])
+  else:
+    query_token_embeds = query_token_embeds_init
   test_query_lookup = read_cache('./robust_test_queries.json',
                                  get_robust_test_queries)
   test_query_name_document_title_rels = read_cache('./robust_rels.json',
@@ -277,7 +299,8 @@ def main():
               test_ranking_dataset,
               rabbit.train_params,
               rabbit.model_params,
-              experiment)
+              experiment,
+              regularize=regularize)
 
 if __name__ == "__main__":
   import ipdb

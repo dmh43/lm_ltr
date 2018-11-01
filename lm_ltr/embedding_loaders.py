@@ -51,3 +51,12 @@ def from_doc_to_query_embeds(document_token_embeds,
   embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
   embedding.weight = nn.Parameter(weights)
   return embedding
+
+def get_additive_regularized_embeds(embeds_init):
+  num_tokens = len(embeds_init.weight)
+  embed_len = len(embeds_init.weight[0])
+  embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
+  additive = nn.Parameter(torch.Tensor(num_tokens, embed_len))
+  additive.data.normal_(0, 1.0/math.sqrt(embed_len))
+  embedding.weight = embeds_init.weight + additive
+  return embedding, additive
