@@ -2,6 +2,7 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
+from torch.nn.parallel.scatter_gather import scatter_kwargs
 
 class TupleDataParallel(nn.DataParallel):
   """Expects that a batch is in the form Tuple[Tuple[Tensor], Tensor]"""
@@ -17,6 +18,6 @@ class TupleDataParallel(nn.DataParallel):
     return self.gather(outputs, self.output_device)
 
   def scatter(self, inputs, device_ids):
-    y_scattered = self.scatter_kwargs(inputs[-1], device_ids, self.dim)
-    x_scattered = list(zip([self.scatter_kwargs(x, device_ids, self.dim) for x in inputs[:-1]]))
+    y_scattered = scatter_kwargs(inputs[-1], None, device_ids, self.dim)
+    x_scattered = list(zip([scatter_kwargs(x, None, device_ids, self.dim) for x in inputs[:-1]]))
     return list(zip(x_scattered, y_scattered))
