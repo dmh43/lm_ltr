@@ -42,7 +42,8 @@ def train_model(model,
                 model_params,
                 experiment,
                 regularize=None):
-  model = TupleDataParallel(model)
+  # model = TupleDataParallel(model)
+  model = nn.DataParallel(model)
   loss = _get_loss_function(train_params.use_pointwise_loss, regularize=regularize)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
