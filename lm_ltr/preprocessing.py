@@ -50,34 +50,35 @@ def pack(batch, device=torch.device('cpu')):
   batch_lengths = torch.tensor(_.map_(batch, len),
                                dtype=torch.long,
                                device=device)
-  sorted_batch_lengths, batch_order = torch.sort(batch_lengths, descending=True)
-  sorted_batch = torch.tensor(batch,
-                              dtype=torch.long,
-                              device=device)[batch_order]
   num_tokens = len(batch[0])
-  return (pack_padded_sequence(sorted_batch, [num_tokens] * len(batch), batch_first=True),
-          batch_order)
+  return (pack_padded_sequence(torch.tensor(batch,
+                                            dtype=torch.long,
+                                            device=device),
+                               [num_tokens] * len(batch),
+                               batch_first=True),
+          batch_lengths)
 
 def collate_query_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  packed_doc, order = pack(x[1])
-  return ((torch.tensor(query)[order],
-           packed_doc),
-          torch.tensor(rel)[order])
+  packed_doc, lens = pack(x[1])
+  return ((torch.tensor(query),
+           packed_doc,
+           lens),
+          torch.tensor(rel))
 
 def collate_query_pairwise_samples(samples):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
-  packed_doc_1, order_1 = pack(x[1])
-  packed_doc_2, order_2 = pack(x[2])
+  packed_doc_1, lens_1 = pack(x[1])
+  packed_doc_2, lens_2 = pack(x[2])
   return ((torch.tensor(query),
            packed_doc_1,
            packed_doc_2,
-           order_1,
-           order_2),
+           lens_1,
+           lens_2),
           torch.tensor(rel))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):

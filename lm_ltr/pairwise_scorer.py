@@ -17,9 +17,7 @@ class PairwiseScorer(nn.Module):
                                             model_params,
                                             train_params)
 
-  def forward(self, query, document_1, document_2, order_1, order_2):
-    batch_range_1, unsort_order_1 = torch.sort(order_1)
-    batch_range_2, unsort_order_2 = torch.sort(order_2)
-    score_1 = self.pointwise_scorer(query[order_1], document_1)
-    score_2 = self.pointwise_scorer(query[order_2], document_2)
-    return score_1[unsort_order_1] - score_2[unsort_order_2]
+  def forward(self, query, document_1, document_2, lens_1, lens_2):
+    score_1 = self.pointwise_scorer(query, document_1, lens_1)
+    score_2 = self.pointwise_scorer(query, document_2, lens_2)
+    return score_1 - score_2
