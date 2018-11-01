@@ -76,12 +76,12 @@ class DocumentEncoder(nn.Module):
                 torch.squeeze,
                 self.projection)
 
-  def forward(self, packed_document_and_order):
+  def forward(self, packed_document):
     if self.use_cnn:
-      return self._cnn_forward(packed_document_and_order)
+      return self._cnn_forward(packed_document)
     elif self.use_lm:
-      return self._lm_forward(packed_document_and_order)
+      return self._lm_forward(packed_document)
     elif self.use_lstm:
-      return self._lstm_forward(packed_document_and_order)
+      return self._lstm_forward(packed_document)
     else:
-      return self._weighted_forward(packed_document_and_order)
+      return self._weighted_forward(packed_document)

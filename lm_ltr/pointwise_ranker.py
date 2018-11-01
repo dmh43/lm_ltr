@@ -14,10 +14,10 @@ class PointwiseRanker:
     self.doc_chunk_size = doc_chunk_size
 
   def _scores_for_chunk(self, query, documents) -> None:
-    packed_doc_and_order = pack(documents, self.device)
-    batch_range, unsort_order = torch.sort(packed_doc_and_order[1])
+    packed_doc, order = pack(documents, self.device)
+    batch_range, unsort_order = torch.sort(order)
     scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
-                                   packed_doc_and_order)
+                                   packed_doc)
     return at_least_one_dim(scores)[unsort_order]
 
   def __call__(self, query, documents, k=None):
