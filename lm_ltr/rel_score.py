@@ -19,6 +19,7 @@ class RelScore(nn.Module):
     self.nce_sample_mul = train_params.nce_sample_mul_rel_score
 
   def forward(self, query, packed_document_and_order):
+    batch_size = len(query)
     packed_document, order = packed_document_and_order
     packed_document = torch.nn.utils.rnn.PackedSequence(packed_document[0],
                                                         packed_document[1].to(torch.device('cpu')))
@@ -30,6 +31,6 @@ class RelScore(nn.Module):
     query_embeds = query_tokens.sum(1).unsqueeze(1)
     neg_doc_tokens = sample(range(self.nce_sample_mul * len(self.document_token_embeds.weight)),
                             self.num_pos_tokens)
-    pos_posterior = F.sigmoid(- torch.sum(query_embeds * document_tokens, 2))
-    neg_posterior = F.sigmoid(- torch.sum(query_embeds * neg_doc_tokens, 1))
-    return torch.sum(torch.log(pos_posterior) + torch.log(neg_posterior))
+    pos_posterior = F.sigmoid(- torch.sum(query_embeds * document_tokens, 2) / len(document_tokens))
+    neg_posterior = F.sigmoid(- torch.sum(query_embeds * neg_doc_tokens, 1) / len(neg_doc_tokens))
+    return torch.sum(torch.log(pos_posterior) + torch.log(neg_posterior)) / batch_size
