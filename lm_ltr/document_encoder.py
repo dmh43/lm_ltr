@@ -6,10 +6,17 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_packed_sequence
 
 class DocumentEncoder(nn.Module):
-  def __init__(self, document_token_embeds, doc_encoder=None, use_cnn=False):
+  def __init__(self,
+               document_token_embeds,
+               doc_encoder=None,
+               use_cnn=False,
+               use_lstm=False,
+               lstm_hidden_size=None):
     super().__init__()
     self.document_token_embeds = document_token_embeds
     self.use_cnn = use_cnn
+    self.use_lstm = use_lstm
+    self.lstm_hidden_size = lstm_hidden_size
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if doc_encoder:
@@ -23,13 +30,12 @@ class DocumentEncoder(nn.Module):
         self.relu = nn.ReLU()
         self.pool = nn.AdaptiveMaxPool1d(1)
         self.projection = nn.Linear(num_filters, 100)
-      else:
-        hidden_size = 100
+      elif self.use_lstm:
         self.lstm = nn.LSTM(input_size=word_embed_size,
                             hidden_size=hidden_size,
                             bidirectional=True,
                             batch_first=True)
-        self.projection = nn.Linear(hidden_size * 2, 100)
+        self.projection = nn.Linear(self.lstm_hidden_size * 2, 100)
 
   def _lm_forward(self, packed_document):
     padded_docs = pad_packed_sequence(packed_document,
@@ -75,6 +81,7 @@ class DocumentEncoder(nn.Module):
       return self._cnn_forward(packed_document_and_order)
     elif self.use_lm:
       return self._lm_forward(packed_document_and_order)
+    elif self.use_lstm:
+      return self._lstm_forward(packed_document_and_order)
     else:
       return self._weighted_forward(packed_document_and_order)
-      # return self._lstm_forward(packed_document_and_order)
