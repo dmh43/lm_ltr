@@ -54,7 +54,7 @@ def from_doc_to_query_embeds(document_token_embeds,
 
 class AdditiveEmbedding(nn.Embedding):
   def __init__(self, embeds_init, num_tokens, embed_len, *args, **kwargs):
-    super().__init__(*args, **kwargs)
+    super().__init__(num_tokens, embed_len, *args, **kwargs)
     self.embeds_init = embeds_init
     self.embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
     additive_weights = nn.Parameter(torch.Tensor(num_tokens, embed_len))
