@@ -215,7 +215,7 @@ def main():
     dont_update(query_token_embeds_init)
   if rabbit.train_params.add_relevance_score:
     query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
-    regularize.append(['l2', additive.weight])
+    regularize.append(['l2', rabbit.train_params.rel_score_penalty, additive.weight])
   else:
     query_token_embeds = query_token_embeds_init
   test_query_lookup = read_cache('./robust_test_queries.json',

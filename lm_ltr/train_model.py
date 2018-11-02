@@ -18,9 +18,9 @@ def _get_loss_function(use_pointwise_loss, regularize=None):
   def _with_regularization(loss_fn, regularize):
     def _calc_reg(regularize):
       loss = []
-      for reg_type, param in regularize:
+      for reg_type, penalty, param in regularize:
         if reg_type == 'l2':
-          loss.append(torch.sum(param ** 2))
+          loss.append(penalty * torch.sum(param ** 2))
         else:
           raise NotImplementedError('Only implemented for l2, not for: ' + reg_type)
       return sum(loss)
