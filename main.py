@@ -297,14 +297,19 @@ def main():
                          test_dl,
                          collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-  rel_score_model = RelScore(query_token_embeds,
-                             document_token_embeds,
-                             rabbit.model_params,
-                             rabbit.train_params)
-  regularization = Regularization('l2', additive)
+  if rabbit.train_params.add_rel_score:
+    rel_score_model = RelScore(query_token_embeds,
+                               document_token_embeds,
+                               rabbit.model_params,
+                               rabbit.train_params)
+    side_models = [(rel_score_model, rabbit.train_params.rel_score_loss)]
+    regularization = [(Regularization('l2', additive), rabbit.train_params.rel_score_penalty)]
+  else:
+    side_models = []
+    regularization = []
   multi_objective_model = MultiObjective(model,
-                                         [(rel_score_model, rabbit.train_params.rel_score_loss)],
-                                         [(regularization, rabbit.train_params.rel_score_penalty)],
+                                         side_models,
+                                         regularization,
                                          rabbit.train_params.use_pointwise_loss)
   model_to_save = multi_objective_model
   del document_lookup
