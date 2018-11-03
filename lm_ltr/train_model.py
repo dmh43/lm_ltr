@@ -14,35 +14,15 @@ from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
 
-def _get_loss_function(use_pointwise_loss, regularize=None):
-  def _with_regularization(loss_fn, regularize):
-    def _calc_reg(regularize):
-      loss = []
-      for reg_type, penalty, param in regularize:
-        if reg_type == 'l2':
-          loss.append(penalty * torch.sum(param ** 2))
-        else:
-          raise NotImplementedError('Only implemented for l2, not for: ' + reg_type)
-      return sum(loss)
-    def _apply_loss_fn(out, target):
-      return loss_fn(out, target) + _calc_reg(regularize)
-    return _apply_loss_fn
-  if use_pointwise_loss:
-    loss_fn = F.mse_loss
-  else:
-    loss_fn = hinge_loss
-  return _with_regularization(loss_fn, regularize) if regularize is not None else loss_fn
-
 def train_model(model,
                 model_data,
                 train_ranking_dataset,
                 test_ranking_dataset,
                 train_params,
                 model_params,
-                experiment,
-                regularize=None):
+                experiment):
+  loss = model.get_loss(train_params.use_pointwise_loss)
   model = nn.DataParallel(model)
-  loss = _get_loss_function(train_params.use_pointwise_loss, regularize=regularize)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
                                      model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,

@@ -16,6 +16,9 @@ from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_da
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
 from lm_ltr.utils import dont_update
+from lm_ltr.multi_objective import MultiObjective
+from lm_ltr.rel_score import RelScore
+from lm_ltr.regularization import Regularization
 
 from rabbit_ml.rabbit_ml import Rabbit
 from rabbit_ml.rabbit_ml.experiment import Experiment
@@ -48,7 +51,7 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': 'flag',
           'default': False},
-         {'name': 'add_relevance_score',
+         {'name': 'add_rel_score',
           'for': 'train_params',
           'type': 'flag',
           'default': False},
@@ -56,6 +59,10 @@ args =  [{'name': 'batch_size',
           'for': 'train_params',
           'type': float,
           'default': 0.5},
+         {'name': 'rel_score_loss',
+          'for': 'train_params',
+          'type': float,
+          'default': 0.1},
          {'name': 'num_pos_tokens_rel_score',
           'for': 'train_params',
           'type': int,
@@ -166,7 +173,6 @@ experiment = None
 def main():
   global model_to_save
   global experiment
-  regularize = []
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
@@ -213,9 +219,8 @@ def main():
   if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
     dont_update(query_token_embeds_init)
-  if rabbit.train_params.add_relevance_score:
+  if rabbit.train_params.add_rel_score:
     query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
-    regularize.append(['l2', rabbit.train_params.rel_score_penalty, additive.weight])
   else:
     query_token_embeds = query_token_embeds_init
   test_query_lookup = read_cache('./robust_test_queries.json',
@@ -292,7 +297,16 @@ def main():
                          test_dl,
                          collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-  model_to_save = model
+  rel_score_model = RelScore(query_token_embeds,
+                             document_token_embeds,
+                             rabbit.model_params,
+                             rabbit.train_params)
+  regularization = Regularization('l2', additive)
+  multi_objective_model = MultiObjective(model,
+                                         [(rel_score_model, rabbit.train_params.rel_score_loss)],
+                                         [(regularization, rabbit.train_params.rel_score_penalty)],
+                                         rabbit.train_params.use_pointwise_loss)
+  model_to_save = multi_objective_model
   del document_lookup
   del query_token_lookup
   del document_token_lookup
@@ -301,14 +315,13 @@ def main():
   del train_queries
   del test_queries
   del glove_lookup
-  train_model(model,
+  train_model(multi_objective_model,
               model_data,
               train_ranking_dataset,
               test_ranking_dataset,
               rabbit.train_params,
               rabbit.model_params,
-              experiment,
-              regularize=regularize)
+              experiment)
 
 if __name__ == "__main__":
   import ipdb

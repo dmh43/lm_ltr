@@ -17,7 +17,7 @@ class PointwiseRanker:
     padded_doc, lens = pad(documents, self.device)
     scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
                                    padded_doc,
-                                   lens)
+                                   lens)[0]
     return at_least_one_dim(scores)
 
   def __call__(self, query, documents, k=None):
