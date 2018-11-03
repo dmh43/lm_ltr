@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from toolz import concat
+
 from .losses import hinge_loss
 
 class MultiObjective(nn.Module):
   def __init__(self, model, side_objectives, regularization, use_pointwise_loss):
     super().__init__()
     side_models, side_loss = list(zip(*side_objectives))
-    self.models = nn.ModuleList([model] + side_models)
+    self.models = nn.ModuleList(concat(((model), side_models)))
     self.losses = [1.0] + side_loss
     self.regularization = regularization
     self.use_pointwise_loss = use_pointwise_loss
@@ -22,7 +24,7 @@ class MultiObjective(nn.Module):
     pred_loss = loss_fn(pred_out, target)
     side_loss = sum(multi_objective_out[1:])
     reg = sum([reg() for reg in self.regularization])
-    return pred_out + side_loss + reg
+    return pred_loss + side_loss + reg
 
   def forward(self, query, document):
     results = [loss * model(query, document) for model, loss in zip(self.models,
