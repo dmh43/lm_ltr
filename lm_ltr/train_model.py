@@ -21,7 +21,7 @@ def train_model(model,
                 train_params,
                 model_params,
                 experiment):
-  loss = model.get_loss(train_params.use_pointwise_loss)
+  loss = model.loss
   model = nn.DataParallel(model)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
