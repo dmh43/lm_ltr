@@ -137,3 +137,15 @@ def normalize_scores_query_wise(data):
                              'score': score}
                             for doc_info, score in zip(doc_infos, normalized_scores.tolist())])
   return normalized_data
+
+def process_rels(query_name_document_title_rels, document_title_to_id, query_name_to_id, queries):
+  data = []
+  for query_name, doc_titles in query_name_document_title_rels.items():
+    if query_name not in query_name_to_id: continue
+    query_id = query_name_to_id[query_name]
+    query = queries[query_id]
+    if query is None: continue
+    data.extend([{'query': query,
+                  'score': 1.0,
+                  'doc_id': document_title_to_id[title]} for title in doc_titles if title in document_title_to_id])
+  return data

@@ -5,6 +5,7 @@ import torch.nn as nn
 
 class Regularization(nn.Module):
   def __init__(self, kind, module):
+    super().__init__()
     self.kind = kind
     self.module = module
 
