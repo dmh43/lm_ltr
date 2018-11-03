@@ -10,7 +10,7 @@ class MultiObjective(nn.Module):
   def __init__(self, model, side_objectives, regularization, use_pointwise_loss):
     super().__init__()
     side_models, side_loss = list(zip(*side_objectives))
-    self.models = nn.ModuleList(concat(((model), side_models)))
+    self.models = nn.ModuleList(concat(((model,), side_models)))
     self.losses = [1.0] + side_loss
     self.regularization = regularization
     self.use_pointwise_loss = use_pointwise_loss
