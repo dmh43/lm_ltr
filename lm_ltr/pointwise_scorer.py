@@ -20,6 +20,7 @@ class PointwiseScorer(nn.Module):
                model_params,
                train_params):
     super().__init__()
+    self.frame_as_qa = model_params.frame_as_qa
     self.document_encoder = DocumentEncoder(document_token_embeds,
                                             doc_encoder,
                                             model_params.use_cnn,
@@ -44,8 +45,13 @@ class PointwiseScorer(nn.Module):
   def forward(self, query, document, lens):
     sorted_lens, sort_order = torch.sort(lens)
     unsort_order, batch_range = torch.sort(sort_order)
-    doc_embed = self.document_encoder(document[sort_order], sorted_lens)
-    query_embed = self.query_encoder(query)[sort_order]
+    if self.frame_as_qa:
+      qa = torch.cat([document[sort_order], query[sort_order]], 1)
+      doc_embed = self.document_encoder(qa, sorted_lens)
+      query_embed = torch.tensor([], device=doc_embed.device)
+    else:
+      doc_embed = self.document_encoder(document[sort_order], sorted_lens)
+      query_embed = self.query_encoder(query)[sort_order]
     if self.use_cosine_similarity:
       hidden = torch.sum(doc_embed * query_embed, 1)
     else:

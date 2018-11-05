@@ -13,16 +13,29 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfTransformer
 
 from .preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score
-from .utils import append_at
+from .utils import append_at, to_list
 from .fetchers import read_cache
 
+def remap_if_exists(tokens, lookup):
+  if lookup:
+    return [lookup[token] for token in to_list(tokens)]
+  else:
+    return tokens
+
 class QueryDataset(Dataset):
-  def __init__(self, documents, data, rel_method=score, num_doc_tokens=100, rankings=None):
+  def __init__(self,
+               documents,
+               data,
+               rel_method=score,
+               num_doc_tokens=100,
+               rankings=None,
+               query_tok_to_doc_tok=None):
     self.documents = documents
     self.data = data
     self.rel_method = rel_method
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
     self.num_doc_tokens = num_doc_tokens
+    self.query_tok_to_doc_tok = query_tok_to_doc_tok
 
   def _get_document(self, elem_idx):
     return torch.tensor(self.documents[self.data[elem_idx]['doc_id']][:self.num_doc_tokens])
@@ -31,7 +44,8 @@ class QueryDataset(Dataset):
     return len(self.data)
 
   def __getitem__(self, idx):
-    return ((self.data[idx]['query'], self._get_document(idx)),
+    query = remap_if_exists(self.data[idx]['query'], self.query_tok_to_doc_tok)
+    return ((query, self._get_document(idx)),
             self.rel_method(self.data[idx]))
 
 class RankingDataset(Dataset):
@@ -40,7 +54,8 @@ class RankingDataset(Dataset):
                rankings,
                relevant=None,
                num_doc_tokens=100,
-               k=10):
+               k=10,
+               query_tok_to_doc_tok=None):
     self.rankings = rankings
     self.documents = documents
     self.k = k
@@ -48,6 +63,7 @@ class RankingDataset(Dataset):
     self.num_to_rank = 1000
     self.is_test = relevant is not None
     self.relevant = relevant
+    self.query_tok_to_doc_tok = query_tok_to_doc_tok
     if self.is_test:
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
       self.q_strs = list(set(rankings.keys()).intersection(set(self.rel_by_q_str.keys())))
@@ -57,6 +73,7 @@ class RankingDataset(Dataset):
 
   def _get_train_item(self, idx):
     query, ranking = self.rankings[idx]
+    query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(ranking[:self.k])
     if len(ranking) < self.num_to_rank:
       neg_samples = sample(set(range(self.num_to_rank)) - set(ranking),
@@ -74,6 +91,7 @@ class RankingDataset(Dataset):
     q_str = self.q_strs[idx]
     query, relevant = self.rel_by_q_str[q_str]
     q_str = str(query)[1:-1]
+    query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
@@ -110,8 +128,20 @@ def insert_negative_samples(num_documents, num_neg_samples, rankings):
     ranking.extend(sample(range(num_documents), num_neg_samples))
 
 class QueryPairwiseDataset(QueryDataset):
-  def __init__(self, documents, data, rel_method=score, num_neg_samples=90, num_doc_tokens=100, rankings=None):
-    super().__init__(documents, data, rel_method=rel_method, num_doc_tokens=num_doc_tokens, rankings=rankings)
+  def __init__(self,
+               documents,
+               data,
+               rel_method=score,
+               num_neg_samples=90,
+               num_doc_tokens=100,
+               rankings=None,
+               query_tok_to_doc_tok=None):
+    super().__init__(documents,
+                     data,
+                     rel_method=rel_method,
+                     num_doc_tokens=num_doc_tokens,
+                     rankings=rankings,
+                     query_tok_to_doc_tok=query_tok_to_doc_tok)
     num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
     insert_negative_samples(num_documents, self.num_neg_samples, self.rankings)
@@ -127,7 +157,8 @@ class QueryPairwiseDataset(QueryDataset):
 
   def __getitem__(self, idx):
     elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
-    return ((elem['query'],
+    query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
+    return ((query,
              torch.tensor(self.documents[elem['doc_id_1']][:self.num_doc_tokens]),
              torch.tensor(self.documents[elem['doc_id_2']][:self.num_doc_tokens])),
             elem['order_int'])
@@ -169,13 +200,15 @@ def build_query_dataloader(documents,
                            batch_size,
                            rel_method=score,
                            cache=None,
-                           num_doc_tokens=100) -> DataLoader:
+                           num_doc_tokens=100,
+                           query_tok_to_doc_tok=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
                          rel_method=rel_method,
                          rankings=rankings,
-                         num_doc_tokens=num_doc_tokens)
+                         num_doc_tokens=num_doc_tokens,
+                         query_tok_to_doc_tok=query_tok_to_doc_tok)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
@@ -186,14 +219,16 @@ def build_query_pairwise_dataloader(documents,
                                     rel_method=score,
                                     num_neg_samples=90,
                                     cache=None,
-                                    num_doc_tokens=100) -> DataLoader:
+                                    num_doc_tokens=100,
+                                    query_tok_to_doc_tok=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
                                  rel_method=rel_method,
                                  num_neg_samples=num_neg_samples,
                                  rankings=rankings,
-                                 num_doc_tokens=num_doc_tokens)
+                                 num_doc_tokens=num_doc_tokens,
+                                 query_tok_to_doc_tok=query_tok_to_doc_tok)
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)
