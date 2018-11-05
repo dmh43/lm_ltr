@@ -25,6 +25,6 @@ class RelScore(nn.Module):
     query_embeds = query_tokens.sum(1).unsqueeze(1)
     neg_doc_tokens = sample(range(self.nce_sample_mul * len(self.document_token_embeds.weight)),
                             self.num_pos_tokens)
-    pos_posterior = F.sigmoid(- torch.sum(query_embeds * document_tokens, 2) / len(document_tokens))
-    neg_posterior = F.sigmoid(- torch.sum(query_embeds * neg_doc_tokens, 1) / len(neg_doc_tokens))
+    pos_posterior = F.sigmoid(torch.sum(query_embeds * document_tokens, 2) / len(document_tokens))
+    neg_posterior = F.sigmoid(torch.sum(query_embeds * neg_doc_tokens, 1) / len(neg_doc_tokens))
     return -torch.sum(torch.log(pos_posterior) + torch.log(neg_posterior)) / batch_size

@@ -33,7 +33,7 @@ args =  [{'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 5
          {'name': 'dont_freeze_word_embeds', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'add_rel_score', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'rel_score_penalty', 'for': 'train_params', 'type': float, 'default': 0.5},
-         {'name': 'rel_score_loss', 'for': 'train_params', 'type': float, 'default': 0.1},
+         {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'num_pos_tokens_rel_score', 'for': 'train_params', 'type': int, 'default': 20},
          {'name': 'nce_sample_mul_rel_score', 'for': 'train_params', 'type': int, 'default': 5},
          {'name': 'use_max_pooling', 'for': 'model_params', 'type': 'flag', 'default': False},
@@ -129,6 +129,7 @@ def main():
     query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
   else:
     query_token_embeds = query_token_embeds_init
+    additive = None
   test_query_lookup = read_cache('./robust_test_queries.json',
                                  get_robust_test_queries)
   test_query_name_document_title_rels = read_cache('./robust_rels.json',
@@ -209,7 +210,8 @@ def main():
                          test_dl,
                          collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-  model_to_save = model
+  multi_objective_model = MultiObjective(model, rabbit.train_params, additive)
+  model_to_save = multi_objective_model
   if not rabbit.run_params.just_caches:
     del document_lookup
     del train_query_lookup
@@ -219,7 +221,7 @@ def main():
   del train_queries
   del test_queries
   del glove_lookup
-  train_model(model,
+  train_model(multi_objective_model,
               model_data,
               train_ranking_dataset,
               test_ranking_dataset,
