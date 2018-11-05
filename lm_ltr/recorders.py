@@ -20,10 +20,11 @@ class PlottingRecorder(Recorder):
     pass
 
   def on_train_end(self, **kwargs):
-    self.plot_losses()
-    model_name = self.experiment.model_name
-    plt.savefig(f'./loss_plots_{model_name}.png')
-    plt.close()
+    if hasattr(self, 'losses'):
+      self.plot_losses()
+      model_name = self.experiment.model_name
+      plt.savefig(f'./loss_plots_{model_name}.png')
+      plt.close()
 
 class LossesRecorder(Recorder):
   def __init__(self, experiment, *args, **kwargs):
@@ -43,6 +44,7 @@ class LossesRecorder(Recorder):
     pass
 
   def on_train_end(self, **kwargs):
-    model_name = self.experiment.model_name
-    with open(f'./losses_{model_name}.pkl', 'wb+') as fh:
-      pickle.dump(fh, self.losses)
+    if hasattr(self, 'losses'):
+      model_name = self.experiment.model_name
+      with open(f'./losses_{model_name}.pkl', 'wb+') as fh:
+        pickle.dump(fh, self.losses)
