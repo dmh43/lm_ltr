@@ -44,6 +44,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'num_epochs', 'for': 'train_params', 'type': int, 'default': 1},
          {'name': 'num_neg_samples', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'num_pos_tokens_rel_score', 'for': 'train_params', 'type': int, 'default': 20},
+         {'name': 'only_use_last_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'query_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
          {'name': 'rel_method', 'for': 'train_params', 'type': eval, 'default': score},
@@ -107,7 +108,8 @@ def main():
   num_doc_tokens = len(document_token_lookup)
   doc_encoder = None
   if use_pretrained_doc_encoder:
-    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
+    doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup,
+                                                                        rabbit.model_params.only_use_last_out)
     query_token_embeds_init = from_doc_to_query_embeds(document_token_embeds,
                                                        document_token_lookup,
                                                        query_token_lookup)
