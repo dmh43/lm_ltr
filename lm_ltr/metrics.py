@@ -20,8 +20,8 @@ class MetricRecorder(Callback):
     self.model = model
 
 class RankingMetricRecorder(MetricRecorder):
-  def __init__(self, device, multi_objective_model, train_ranking_dl, test_ranking_dl, experiment, doc_chunk_size=-1):
-    super().__init__(multi_objective_model.model)
+  def __init__(self, device, model, train_ranking_dl, test_ranking_dl, experiment, doc_chunk_size=-1):
+    super().__init__(model)
     self.device = device
     self.ranker = PointwiseRanker(device, self.model, doc_chunk_size)
     self.train_ranking_dl = train_ranking_dl

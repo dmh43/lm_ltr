@@ -25,7 +25,7 @@ def train_model(model,
   model = nn.DataParallel(model)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
-                                     model.module.pointwise_scorer if hasattr(model.module, 'pointwise_scorer') else model,
+                                     model.module.model.pointwise_scorer if hasattr(model.module.model, 'pointwise_scorer') else model.module.model,
                                      train_ranking_dataset,
                                      test_ranking_dataset,
                                      experiment,
