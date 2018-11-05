@@ -89,8 +89,11 @@ def main():
                                         lambda: create_id_lookup(train_query_lookup.keys()))
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
-  query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
-                          for query_token, idx in query_token_lookup.items()}
+  if rabbit.model_params.frame_as_qa:
+    query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
+                            for query_token, idx in query_token_lookup.items()}
+  else:
+    query_tok_to_doc_tok = None
   if rabbit.train_params.train_dataset_size:
     train_data = read_from_file('./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json')
   else:
