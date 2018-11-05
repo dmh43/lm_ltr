@@ -28,6 +28,7 @@ args =  [{'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 5
          {'name': 'train_dataset_size', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
          {'name': 'num_neg_samples', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
+         {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'num_epochs', 'for': 'train_params', 'type': int, 'default': 1},
          {'name': 'dont_freeze_word_embeds', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'add_rel_score', 'for': 'train_params', 'type': 'flag', 'default': False},
