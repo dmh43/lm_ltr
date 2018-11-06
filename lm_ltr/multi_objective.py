@@ -10,7 +10,7 @@ class MultiObjective(nn.Module):
   def __init__(self, model, train_params, additive=None):
     super().__init__()
     self.add_rel_score = train_params.add_rel_score
-    self.use_pointwise_loss = train_params.add_rel_score
+    self.use_pointwise_loss = train_params.use_pointwise_loss
     self.rel_score_penalty = train_params.rel_score_penalty
     self.rel_score_obj_scale = train_params.rel_score_obj_scale
     self.additive = additive
