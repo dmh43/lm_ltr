@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from toolz import cons
+from toolz import cons, partial
 
 from .losses import hinge_loss
 
@@ -13,6 +13,7 @@ class MultiObjective(nn.Module):
     self.use_pointwise_loss = train_params.use_pointwise_loss
     self.rel_score_penalty = train_params.rel_score_penalty
     self.rel_score_obj_scale = train_params.rel_score_obj_scale
+    self.margin = train_params.margin
     self.additive = additive
     self.model = model
 
@@ -20,7 +21,7 @@ class MultiObjective(nn.Module):
     if self.use_pointwise_loss:
       loss_fn = F.mse_loss
     else:
-      loss_fn = hinge_loss
+      loss_fn = partial(hinge_loss, margin=self.margin)
     pred_out = multi_objective_out[0]
     pred_loss = loss_fn(pred_out, target)
     side_loss = sum(multi_objective_out[1:])

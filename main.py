@@ -39,6 +39,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
+         {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
          {'name': 'nce_sample_mul_rel_score', 'for': 'train_params', 'type': int, 'default': 5},
          {'name': 'num_doc_tokens_to_consider', 'for': 'train_params', 'type': int, 'default': 100},
          {'name': 'num_epochs', 'for': 'train_params', 'type': int, 'default': 1},
