@@ -24,7 +24,7 @@ class MultiObjective(nn.Module):
     pred_out = multi_objective_out[0]
     pred_loss = loss_fn(pred_out, target)
     side_loss = sum(multi_objective_out[1:])
-    reg = sum([p ** 2 for p in self.additive.parameters()])
+    reg = sum([p ** 2 for p in self.additive.parameters()]) if self.add_rel_score else 0
     return pred_loss + self.rel_score_obj_scale * side_loss + self.rel_score_penalty * reg
 
   def _pointwise_forward(self, query, document, lens):
