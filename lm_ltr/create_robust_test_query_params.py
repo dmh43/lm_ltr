@@ -3,7 +3,7 @@ import os
 from lm_ltr.fetchers import get_robust_test_queries
 
 def main():
-  path = './indri/robust_query_params.xml'
+  path = './indri/robust_test_query_params.xml'
   try:
     os.remove(path)
   except OSError:
