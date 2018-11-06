@@ -97,7 +97,7 @@ def main():
   else:
     query_tok_to_doc_tok = None
   if rabbit.train_params.train_dataset_size:
-    train_data = read_from_file('./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json')
+    train_data = read_from_file(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json')
   else:
     train_data = read_cache(f'./robust_train_query_results_tokens.json',
                             lambda: read_query_result(train_query_name_to_id,
