@@ -135,9 +135,11 @@ def main():
     dont_update(query_token_embeds_init)
   if rabbit.train_params.add_rel_score:
     query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
+    rel_score = RelScore(query_token_embeds, document_token_embeds, rabbit.model_params, rabbit.train_params)
   else:
     query_token_embeds = query_token_embeds_init
     additive = None
+    rel_score = None
   test_query_lookup = read_cache('./robust_test_queries.json',
                                  get_robust_test_queries)
   test_query_name_document_title_rels = read_cache('./robust_rels.json',
@@ -222,7 +224,7 @@ def main():
                          test_dl,
                          collate_fn=collate_query_samples if use_pointwise_loss else collate_query_pairwise_samples,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-  multi_objective_model = MultiObjective(model, rabbit.train_params, additive)
+  multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
   if not rabbit.run_params.just_caches:
     del document_lookup

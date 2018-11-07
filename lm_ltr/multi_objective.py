@@ -7,7 +7,7 @@ from toolz import cons, partial
 from .losses import hinge_loss
 
 class MultiObjective(nn.Module):
-  def __init__(self, model, train_params, additive=None):
+  def __init__(self, model, train_params, rel_score=None, additive=None):
     super().__init__()
     self.add_rel_score = train_params.add_rel_score
     self.use_pointwise_loss = train_params.use_pointwise_loss
@@ -15,6 +15,7 @@ class MultiObjective(nn.Module):
     self.rel_score_obj_scale = train_params.rel_score_obj_scale
     self.margin = train_params.margin
     self.additive = additive
+    self.rel_score = rel_score
     self.model = model
 
   def loss(self, multi_objective_out, target):
