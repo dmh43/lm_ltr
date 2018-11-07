@@ -59,6 +59,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_max_pooling', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_pointwise_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0}]
 
 class MyRabbit(Rabbit):
@@ -157,14 +158,16 @@ def main():
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
                                       cache='./pointwise_train_ranking.json',
-                                      query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
                                      rel_method=rabbit.train_params.rel_method,
                                      num_doc_tokens=num_doc_tokens_to_consider,
                                      cache='./pointwise_test_ranking.json',
-                                     query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                     query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                     use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -178,7 +181,8 @@ def main():
                                                num_neg_samples=rabbit.train_params.num_neg_samples,
                                                num_doc_tokens=num_doc_tokens_to_consider,
                                                cache='./pairwise_train_ranking.json',
-                                               query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
@@ -186,7 +190,8 @@ def main():
                                               num_neg_samples=0,
                                               num_doc_tokens=num_doc_tokens_to_consider,
                                               cache='./pairwise_test_ranking.json',
-                                              query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                              query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                              use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,

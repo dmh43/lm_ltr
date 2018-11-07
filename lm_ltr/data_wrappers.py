@@ -5,7 +5,7 @@ import pydash as _
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.sampler import BatchSampler, Sampler
+from torch.utils.data.sampler import BatchSampler, Sampler, SequentialSampler
 
 import scipy.sparse as sp
 import numpy as np
@@ -201,7 +201,8 @@ def build_query_dataloader(documents,
                            rel_method=score,
                            cache=None,
                            num_doc_tokens=100,
-                           query_tok_to_doc_tok=None) -> DataLoader:
+                           query_tok_to_doc_tok=None,
+                           use_sequential_sampler=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
@@ -209,8 +210,9 @@ def build_query_dataloader(documents,
                          rankings=rankings,
                          num_doc_tokens=num_doc_tokens,
                          query_tok_to_doc_tok=query_tok_to_doc_tok)
+  sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
+                    batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
                     collate_fn=collate_query_samples)
 
 def build_query_pairwise_dataloader(documents,
@@ -220,7 +222,8 @@ def build_query_pairwise_dataloader(documents,
                                     num_neg_samples=90,
                                     cache=None,
                                     num_doc_tokens=100,
-                                    query_tok_to_doc_tok=None) -> DataLoader:
+                                    query_tok_to_doc_tok=None,
+                                    use_sequential_sampler=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -229,6 +232,7 @@ def build_query_pairwise_dataloader(documents,
                                  rankings=rankings,
                                  num_doc_tokens=num_doc_tokens,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok)
+  sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
-                    batch_sampler=BatchSampler(TrueRandomSampler(dataset), batch_size, False),
+                    batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
                     collate_fn=collate_query_pairwise_samples)
