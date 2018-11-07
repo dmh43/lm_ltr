@@ -24,20 +24,30 @@ class MultiObjective(nn.Module):
       loss_fn = partial(hinge_loss, margin=self.margin)
     pred_out = multi_objective_out[0]
     pred_loss = loss_fn(pred_out, target)
-    side_loss = sum(multi_objective_out[1:])
-    reg = sum([p ** 2 for p in self.additive.parameters()]) if self.add_rel_score else 0
-    return pred_loss + self.rel_score_obj_scale * side_loss + self.rel_score_penalty * reg
+    if self.add_rel_score:
+      side_loss = sum(multi_objective_out[1:])
+      reg = sum([p ** 2 for p in self.additive.parameters()])
+      return pred_loss + self.rel_score_obj_scale * side_loss + self.rel_score_penalty * reg
+    else:
+      return pred_loss
 
   def _pointwise_forward(self, query, document, lens):
-    rel_score = self.rel_score(query, document) if self.add_rel_score else 0
-    out = self.model(query, document, lens)
-    return (out, rel_score)
+    if self.add_rel_score:
+      rel_score = self.rel_score(query, document) if self.add_rel_score else 0
+      out = self.model(query, document, lens)
+      return (out, rel_score)
+    else:
+      return (out,)
 
   def _pairwise_forward(self, query, document_1, document_2, lens_1, lens_2):
-    rel_score_1 = self.rel_score(query, document_1) if self.add_rel_score else 0
-    rel_score_2 = self.rel_score(query, document_2) if self.add_rel_score else 0
-    out = self.model(query, document_1, document_2, lens_1, lens_2)
-    return (out, rel_score_1, rel_score_2)
+    if self.add_rel_score:
+      rel_score_1 = self.rel_score(query, document_1) if self.add_rel_score else 0
+      rel_score_2 = self.rel_score(query, document_2) if self.add_rel_score else 0
+      out = self.model(query, document_1, document_2, lens_1, lens_2)
+      return (out, rel_score_1, rel_score_2)
+    else:
+      out = self.model(query, document_1, document_2, lens_1, lens_2)
+      return (out,)
 
   def forward(self, *args):
     if self.use_pointwise_loss:
