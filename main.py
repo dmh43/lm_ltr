@@ -60,6 +60,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_pointwise_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0}]
 
 class MyRabbit(Rabbit):
@@ -93,7 +94,7 @@ def main():
                                         lambda: create_id_lookup(train_query_lookup.keys()))
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
-  if rabbit.model_params.frame_as_qa:
+  if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
     query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
                             for query_token, idx in query_token_lookup.items()}
   else:
@@ -118,14 +119,17 @@ def main():
     if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
   else:
-    query_token_embeds_init = init_embedding(glove_lookup,
-                                             query_token_lookup,
-                                             num_query_tokens,
-                                             query_token_embed_len)
     document_token_embeds = init_embedding(glove_lookup,
                                            document_token_lookup,
                                            num_doc_tokens,
                                            document_token_embed_len)
+    if rabbit.model_params.use_single_word_embed_set:
+      query_token_embeds_init = document_token_embeds
+    else:
+      query_token_embeds_init = init_embedding(glove_lookup,
+                                               query_token_lookup,
+                                               num_query_tokens,
+                                               query_token_embed_len)
   if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
     dont_update(query_token_embeds_init)
