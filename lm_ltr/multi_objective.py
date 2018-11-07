@@ -26,8 +26,8 @@ class MultiObjective(nn.Module):
     pred_out = multi_objective_out[0]
     pred_loss = loss_fn(pred_out, target)
     if self.add_rel_score:
-      side_loss = torch.sum(multi_objective_out[1:])
-      reg = torch.sum([p ** 2 for p in self.additive.parameters()])
+      side_loss = torch.sum(sum(multi_objective_out[1:]))
+      reg = torch.sum(sum([p ** 2 for p in self.additive.parameters()]))
       return pred_loss + self.rel_score_obj_scale * side_loss + self.rel_score_penalty * reg
     else:
       return pred_loss
