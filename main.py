@@ -51,7 +51,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'query_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
          {'name': 'rel_method', 'for': 'train_params', 'type': eval, 'default': score},
-         {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 0.1},
+         {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'rel_score_penalty', 'for': 'train_params', 'type': float, 'default': 0.5},
          {'name': 'train_dataset_size', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
          {'name': 'truncation', 'for': 'train_params', 'type': float, 'default': -1.0},
