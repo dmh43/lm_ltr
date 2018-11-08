@@ -56,7 +56,7 @@ class RankingMetricRecorder(MetricRecorder):
                                    batch_num)
 
   def on_batch_begin(self, num_batch, **kwargs):
-    if num_batch % 10000 == 0:
+    if num_batch % 1000 == 0:
       self._check(num_batch)
 
   def on_epoch_begin(self, epoch, **kwargs):
