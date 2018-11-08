@@ -16,7 +16,7 @@ from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
-from lm_ltr.utils import dont_update
+from lm_ltr.utils import dont_update, do_update
 from lm_ltr.multi_objective import MultiObjective
 from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
@@ -159,6 +159,9 @@ def main():
   if not rabbit.train_params.dont_freeze_word_embeds:
     dont_update(document_token_embeds)
     dont_update(query_token_embeds_init)
+  else:
+    do_update(document_token_embeds)
+    do_update(query_token_embeds_init)
   if rabbit.train_params.add_rel_score:
     query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
     rel_score = RelScore(query_token_embeds, document_token_embeds, rabbit.model_params, rabbit.train_params)

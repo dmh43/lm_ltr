@@ -30,6 +30,10 @@ def dont_update(module):
   for p in module.parameters():
     p.requires_grad = False
 
+def do_update(module):
+  for p in module.parameters():
+    p.requires_grad = True
+
 def plots(model, im_path):
   norms = model['pointwise_scorer.document_encoder.document_token_embeds.weight'].norm(dim=1)
   no = norms[norms > 2].cpu().numpy()
