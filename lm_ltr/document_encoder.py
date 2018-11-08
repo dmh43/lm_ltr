@@ -32,11 +32,11 @@ class DocumentEncoder(nn.Module):
     else:
       self.weights = nn.Embedding(len(document_token_embeds.weight), 1)
       if self.use_cnn:
-        num_filters = int(document_token_embeds.shape[1] / 2)
+        num_filters = int(document_token_embeds.weight.shape[1] / 2)
         self.cnn = nn.Conv1d(word_embed_size, num_filters, 5)
         self.relu = nn.ReLU()
         self.pool = nn.AdaptiveMaxPool1d(1)
-        self.projection = nn.Linear(num_filters, document_token_embeds.shape[1])
+        self.projection = nn.Linear(num_filters, document_token_embeds.weight.shape[1])
       elif self.use_lstm:
         self.num_lstm_layers = 1
         self.lstm = nn.LSTM(input_size=word_embed_size,
