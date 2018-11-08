@@ -77,12 +77,12 @@ class RankingMetricRecorder(MetricRecorder):
     self.experiment_context.__exit__()
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
-  preds = F.sigmoid(logits) > thresh
+  preds = torch.sigmoid(logits) > thresh
   tpos = torch.mul((targs.byte() == preds.byte()), targs.byte()).float()
   return tpos.sum()/(targs.sum() + epsilon)
 
 def precision(logits, targs, thresh=0.5, epsilon=1e-8):
-  preds = (F.sigmoid(logits) > thresh).float()
+  preds = (torch.sigmoid(logits) > thresh).float()
   tpos = torch.mul((targs.byte() == preds.byte()), targs.byte()).float()
   return tpos.sum()/(preds.sum() + epsilon)
 

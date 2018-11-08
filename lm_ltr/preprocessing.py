@@ -97,7 +97,7 @@ def exp_score(raw_info):
   return 2 ** raw_info['score']
 
 def sigmoid_score(raw_info):
-  return F.sigmoid(raw_info['score'])
+  return torch.sigmoid(raw_info['score'])
 
 def all_ones(raw_info):
   return 1.0
