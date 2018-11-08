@@ -68,7 +68,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
 def name(path, notes):
   if len(notes) == 0: return path
   path_segs = path.split('.json')
-  return '_'.join([path_segs[0]] + notes + [path_segs[1]])
+  return '_'.join([path_segs[0]] + notes) + '.json'
 
 class MyRabbit(Rabbit):
   def run(self):
