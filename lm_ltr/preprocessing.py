@@ -23,7 +23,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None):
     tokens_to_parse = tokens_chunk if num_tokens is None else tokens_chunk[:num_tokens]
     chunk_result = []
     for token in tokens_to_parse:
-      if (token in token_set) or token_set is None:
+      if (token_set is None) or (token in token_set):
         if is_test:
           chunk_result.append(lookup.get(token) or unk_token_idx)
         else:
