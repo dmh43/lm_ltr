@@ -2,18 +2,16 @@ import torch
 import torch.nn as nn
 import math
 
-def get_glove_lookup(path='./glove/glove.6B.100d.txt', embedding_dim=100):
+def get_glove_lookup(path=None, embedding_dim=100):
+  if path is None:
+    path = f'./glove/glove.6B.{embedding_dim}d.txt'
   lookup = {'<pad>': torch.zeros(size=(embedding_dim,), dtype=torch.float32),
             '<unk>': torch.randn(size=(embedding_dim,), dtype=torch.float32)}
   with open(path) as f:
-    while True:
-      line = f.readline()
-      if line and len(line) > 0:
-        split_line = line.strip().split(' ')
-        lookup[split_line[0]] = torch.tensor([float(val) for val in split_line[1:]],
-                                             dtype=torch.float32)
-      else:
-        break
+    for line in f:
+      split_line = line.rstrip().split(' ')
+      lookup[split_line[0]] = torch.tensor([float(val) for val in split_line[1:]],
+                                           dtype=torch.float32)
   return lookup
 
 def init_embedding(glove_lookup, token_lookup, num_tokens, embed_len):
