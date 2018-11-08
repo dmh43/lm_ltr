@@ -155,8 +155,12 @@ def write_to_file(path, rows):
     json.dump(rows, fh)
 
 def read_from_file(path):
-  with open(path, 'r') as fh:
-    return json.load(fh)
+  if '.pkl' in path:
+    with open(path, 'rb') as fh:
+      return pickle.load(fh)
+  else:
+    with open(path, 'r') as fh:
+      return json.load(fh)
 
 def read_or_cache(path, fn):
   try:

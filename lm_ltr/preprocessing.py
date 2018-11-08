@@ -14,7 +14,7 @@ from .utils import append_at
 pad_token_idx = 1
 unk_token_idx = 0
 
-def tokens_to_indexes(tokens, lookup=None, num_tokens=None):
+def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None):
   is_test = lookup is not None
   if lookup is None:
     lookup: dict = {'<unk>': unk_token_idx, '<pad>': pad_token_idx}
@@ -23,18 +23,24 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None):
     tokens_to_parse = tokens_chunk if num_tokens is None else tokens_chunk[:num_tokens]
     chunk_result = []
     for token in tokens_to_parse:
-      if is_test:
-        chunk_result.append(lookup.get(token) or unk_token_idx)
+      if token in token_set:
+        if is_test:
+          chunk_result.append(lookup.get(token) or unk_token_idx)
+        else:
+          lookup[token] = lookup.get(token) or len(lookup)
+          chunk_result.append(lookup[token])
       else:
-        lookup[token] = lookup.get(token) or len(lookup)
-        chunk_result.append(lookup[token])
+        chunk_result.append(unk_token_idx)
     result.append(chunk_result)
   return result, lookup
 
-def preprocess_texts(texts, token_lookup=None, num_tokens=None):
+def preprocess_texts(texts, token_lookup=None, num_tokens=None, token_set=None):
   tokenizer = Tokenizer()
   tokenized = tokenizer.process_all(texts)
-  idx_texts, token_lookup = tokens_to_indexes(tokenized, token_lookup, num_tokens=num_tokens)
+  idx_texts, token_lookup = tokens_to_indexes(tokenized,
+                                              token_lookup,
+                                              num_tokens=num_tokens,
+                                              token_set=token_set)
   return idx_texts, token_lookup
 
 def pad_to_len(coll, max_len, pad_with=None):
@@ -114,11 +120,14 @@ def create_id_lookup(names_or_titles):
   return dict(zip(names_or_titles,
                   range(len(names_or_titles))))
 
-def prepare(lookup, title_to_id, token_lookup=None, num_tokens=None):
+def prepare(lookup, title_to_id, token_lookup=None, num_tokens=None, token_set=None):
   id_to_title_lookup = _.invert(title_to_id)
   ids = range(len(id_to_title_lookup))
   contents = [lookup[id_to_title_lookup[id]] for id in ids]
-  numericalized, token_lookup = preprocess_texts(contents, token_lookup=token_lookup, num_tokens=num_tokens)
+  numericalized, token_lookup = preprocess_texts(contents,
+                                                 token_lookup=token_lookup,
+                                                 num_tokens=num_tokens,
+                                                 token_set=token_set)
   return numericalized, token_lookup
 
 def normalize_scores_query_wise(data):

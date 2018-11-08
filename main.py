@@ -1,4 +1,5 @@
 import pickle
+import json
 import random
 import time
 
@@ -37,6 +38,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': lambda string: [int(size) for size in string.split(',')], 'default': [128, 64, 16]},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
+         {'name': 'limit_num_uniq_tokens', 'for': 'model_params', 'type': bool, 'default': True},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
@@ -84,16 +86,33 @@ def main():
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_no_pad.json',
-                                                lambda: prepare(document_lookup,
-                                                                document_title_to_id,
-                                                                num_tokens=num_doc_tokens_to_consider))
+  if rabbit.model_params.limit_num_uniq_tokens:
+    with open('./60000_most_common_doc.json', 'r') as fh:
+      doc_token_set = set(json.load(fh))
+    documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks.json',
+                                                  lambda: prepare(document_lookup,
+                                                                  document_title_to_id,
+                                                                  num_tokens=num_doc_tokens_to_consider,
+                                                                  token_set=doc_token_set))
+  else:
+    documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_no_pad.json',
+                                                  lambda: prepare(document_lookup,
+                                                                  document_title_to_id,
+                                                                  num_tokens=num_doc_tokens_to_consider))
   if not rabbit.run_params.just_caches:
     train_query_lookup = read_cache('./robust_train_queries.json', get_robust_train_queries)
     train_query_name_to_id = read_cache('./train_query_name_to_id.json',
                                         lambda: create_id_lookup(train_query_lookup.keys()))
-  train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
-                                                 lambda: prepare(train_query_lookup, train_query_name_to_id))
+  with open('./60000_most_common_query.json', 'r') as fh:
+    query_token_set = set(json.load(fh))
+  if rabbit.model_params.limit_num_uniq_tokens:
+    train_queries, query_token_lookup = read_cache('./parsed_robust_queries_limit_uniq_toks.json',
+                                                   lambda: prepare(train_query_lookup,
+                                                                   train_query_name_to_id,
+                                                                   token_set=query_token_set))
+  else:
+    train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
+                                                   lambda: prepare(train_query_lookup, train_query_name_to_id))
   if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
     query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
                             for query_token, idx in query_token_lookup.items()}
