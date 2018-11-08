@@ -23,7 +23,7 @@ def init_embedding(glove_lookup, token_lookup, num_tokens, embed_len):
   token_embed_weights = nn.Parameter(torch.Tensor(num_tokens,
                                                     embed_len))
   token_embed_weights.data.normal_(0, 1.0/math.sqrt(embed_len))
-  if embed_len == 100:
+  if embed_len in [100, 300]:
     for token, index in token_lookup.items():
       if token in glove_lookup:
         token_embed_weights.data[index] = glove_lookup[token]
