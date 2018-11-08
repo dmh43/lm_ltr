@@ -132,7 +132,15 @@ def main():
                             lambda: read_query_result(train_query_name_to_id,
                                                       document_title_to_id,
                                                       train_queries))
-  glove_lookup = get_glove_lookup()
+  q_embed_len = rabbit.model_params.query_token_embed_len
+  doc_embed_len = rabbit.model_params.document_token_embed_len
+  if q_embed_len == doc_embed_len:
+    glove_lookup = get_glove_lookup(embedding_dim=q_embed_len)
+    q_glove_lookup = glove_lookup
+    doc_glove_lookup = glove_lookup
+  else:
+    q_glove_lookup = get_glove_lookup(embedding_dim=q_embed_len)
+    doc_glove_lookup = get_glove_lookup(embedding_dim=doc_embed_len)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   doc_encoder = None
@@ -145,14 +153,14 @@ def main():
     if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
   else:
-    document_token_embeds = init_embedding(glove_lookup,
+    document_token_embeds = init_embedding(doc_glove_lookup,
                                            document_token_lookup,
                                            num_doc_tokens,
                                            document_token_embed_len)
     if rabbit.model_params.use_single_word_embed_set:
       query_token_embeds_init = document_token_embeds
     else:
-      query_token_embeds_init = init_embedding(glove_lookup,
+      query_token_embeds_init = init_embedding(q_glove_lookup,
                                                query_token_lookup,
                                                num_query_tokens,
                                                query_token_embed_len)
