@@ -191,6 +191,7 @@ class TrueRandomSampler(Sampler):
     while self.num_samples_seen < len(self.data_source):
       yield randint(0, len(self.data_source) - 1)
       self.num_samples_seen += 1
+    self.num_samples_seen = 0
 
   def __len__(self):
     return len(self.data_source)
