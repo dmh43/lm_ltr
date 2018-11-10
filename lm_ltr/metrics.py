@@ -74,6 +74,7 @@ class RankingMetricRecorder(MetricRecorder):
     self.experiment_context.__enter__()
 
   def on_train_end(self, **kwargs):
+    self._check(num_batch)
     self.experiment_context.__exit__()
 
 def recall(logits, targs, thresh=0.5, epsilon=1e-8):
