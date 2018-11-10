@@ -17,7 +17,7 @@ def main():
                               range(1000, int(len(documents) / 1000) + 1000)):
     doc_batch = [torch.tensor(doc[:500]) for doc in documents[from_idx:to_idx]]
     padded_batch, lens = pad(doc_batch)
-    sorted_lens, sort_order = torch.sort(lens)
+    sorted_lens, sort_order = torch.sort(lens, descending=True)
     batch_range, unsort_order = torch.sort(sort_order)
     sorted_batch = padded_batch[sort_order]
     seq_dim_first = torch.transpose(sorted_batch, 0, 1).to(device)
