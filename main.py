@@ -126,8 +126,11 @@ def main():
   else:
     query_tok_to_doc_tok = None
   if rabbit.train_params.train_dataset_size:
-    train_data = read_from_file(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
-                                     ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []))
+    train_data = read_cache(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
+                                 ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                            lambda: read_query_result(train_query_name_to_id,
+                                                      document_title_to_id,
+                                                      train_queries)[:rabbit.train_params.train_dataset_size])
   else:
     train_data = read_cache(name(f'./robust_train_query_results_tokens.json',
                                  ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
