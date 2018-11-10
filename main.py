@@ -210,6 +210,7 @@ def main():
                                       num_doc_tokens=num_doc_tokens_to_consider,
                                       cache=name('./pointwise_train_ranking.json',
                                                  ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                                      limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     test_dl = build_query_dataloader(documents,
@@ -235,6 +236,7 @@ def main():
                                                num_doc_tokens=num_doc_tokens_to_consider,
                                                cache=name('./pairwise_train_ranking.json',
                                                           ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                                               limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     test_dl = build_query_pairwise_dataloader(documents,

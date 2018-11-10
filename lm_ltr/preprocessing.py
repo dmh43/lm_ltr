@@ -105,12 +105,13 @@ def all_ones(raw_info):
 def sort_by_first(pairs):
   return sorted(pairs, key=lambda val: val[0])
 
-def to_query_rankings_pairs(data):
+def to_query_rankings_pairs(data, limit=None):
   query_to_ranking = {}
   q_str_to_query = {}
   for row in data:
     q_str_to_query[str(row['query'])[1:-1]] = row['query']
-    append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
+    if (limit is None) or (len(query_to_ranking.get(str(row['query'])[1:-1]) or []) < limit):
+      append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return _.map_(querystr_ranking_pairs,
                 lambda q_str_ranking: [q_str_to_query[q_str_ranking[0]],

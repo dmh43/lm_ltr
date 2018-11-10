@@ -201,9 +201,10 @@ def build_query_dataloader(documents,
                            rel_method=score,
                            cache=None,
                            num_doc_tokens=100,
+                           limit=None,
                            query_tok_to_doc_tok=None,
                            use_sequential_sampler=False) -> DataLoader:
-  rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data)) if cache is not None else None
+  rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
                          rel_method=rel_method,
@@ -222,9 +223,10 @@ def build_query_pairwise_dataloader(documents,
                                     num_neg_samples=90,
                                     cache=None,
                                     num_doc_tokens=100,
+                                    limit=None,
                                     query_tok_to_doc_tok=None,
                                     use_sequential_sampler=False) -> DataLoader:
-  rankings = read_cache(cache, lambda: to_query_rankings_pairs(data)) if cache is not None else None
+  rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
                                  rel_method=rel_method,
