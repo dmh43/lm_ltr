@@ -38,7 +38,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': lambda string: [int(size) for size in string.split(',')], 'default': [128, 64, 16]},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
-         {'name': 'limit_num_uniq_tokens', 'for': 'model_params', 'type': bool, 'default': True},
+         {'name': 'dont_limit_num_uniq_tokens', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
@@ -93,7 +93,7 @@ def main():
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  if rabbit.model_params.limit_num_uniq_tokens:
+  if not rabbit.model_params.dont_limit_num_uniq_tokens:
     with open('./60000_most_common_doc.json', 'r') as fh:
       doc_token_set = set(json.load(fh))
     documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks.json',
@@ -112,7 +112,7 @@ def main():
                                         lambda: create_id_lookup(train_query_lookup.keys()))
   with open('./60000_most_common_query.json', 'r') as fh:
     query_token_set = set(json.load(fh))
-  if rabbit.model_params.limit_num_uniq_tokens:
+  if not rabbit.model_params.dont_limit_num_uniq_tokens:
     train_queries, query_token_lookup = read_cache('./parsed_robust_queries_limit_uniq_toks.json',
                                                    lambda: prepare(train_query_lookup,
                                                                    train_query_name_to_id,
@@ -127,10 +127,10 @@ def main():
     query_tok_to_doc_tok = None
   if rabbit.train_params.train_dataset_size:
     train_data = read_from_file(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
-                                     ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []))
+                                     ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []))
   else:
     train_data = read_cache(name(f'./robust_train_query_results_tokens.json',
-                                 ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                 ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                             lambda: read_query_result(train_query_name_to_id,
                                                       document_title_to_id,
                                                       train_queries))
@@ -186,19 +186,19 @@ def main():
   test_query_name_to_id = read_cache('./test_query_name_to_id.json',
                                      lambda: create_id_lookup(test_query_lookup.keys()))
   test_queries, __ = read_cache(name('./parsed_test_robust_queries.json',
-                                     ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                     ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
   test_data = read_cache(name('./parsed_robust_rels.json',
-                              ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                              ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                          lambda: process_rels(test_query_name_document_title_rels,
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
   if use_pointwise_loss:
     normalized_train_data = read_cache(name('./normalized_train_query_data.json',
-                                            ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                            ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                                        lambda: normalize_scores_query_wise(train_data))
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data[:rabbit.train_params.train_dataset_size],
@@ -206,7 +206,7 @@ def main():
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
                                       cache=name('./pointwise_train_ranking.json',
-                                                 ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                                 ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     test_dl = build_query_dataloader(documents,
@@ -215,7 +215,7 @@ def main():
                                      rel_method=rabbit.train_params.rel_method,
                                      num_doc_tokens=num_doc_tokens_to_consider,
                                      cache=name('./pointwise_test_ranking.json',
-                                                ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                                ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     model = PointwiseScorer(query_token_embeds,
@@ -231,7 +231,7 @@ def main():
                                                num_neg_samples=rabbit.train_params.num_neg_samples,
                                                num_doc_tokens=num_doc_tokens_to_consider,
                                                cache=name('./pairwise_train_ranking.json',
-                                                          ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                                          ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     test_dl = build_query_pairwise_dataloader(documents,
@@ -241,7 +241,7 @@ def main():
                                               num_neg_samples=0,
                                               num_doc_tokens=num_doc_tokens_to_consider,
                                               cache=name('./pairwise_test_ranking.json',
-                                                         ['limit_uniq_toks'] if rabbit.model_params.limit_num_uniq_tokens else []),
+                                                         ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     model = PairwiseScorer(query_token_embeds,
