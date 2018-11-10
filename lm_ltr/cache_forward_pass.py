@@ -9,14 +9,15 @@ from lm_ltr.preprocessing import pad
 def main():
   documents, document_token_lookup = read_from_file('./parsed_docs_500_tokens_limit_uniq_toks.json')
   doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup)
-  doc_encoder = doc_encoder.to(torch.device("cuda"))
+  device = torch.device("cuda")
+  doc_encoder = doc_encoder.to(device)
   dont_update(doc_encoder)
   batches = []
   for from_idx, to_idx in zip(range(int(len(documents) / 1000)),
                               range(1000, int(len(documents) / 1000) + 1000)):
     doc_batch = [torch.tensor(doc[:500]) for doc in documents[from_idx:to_idx]]
     padded_batch, lens = pad(doc_batch)
-    seq_dim_first = torch.transpose(padded_batch, 0, 1)
+    seq_dim_first = torch.transpose(padded_batch, 0, 1).to(device)
     batches.append(doc_encoder(seq_dim_first).tolist())
   with open('./forward_out.json', 'w+') as fh:
     json.dump(batches, fh)
