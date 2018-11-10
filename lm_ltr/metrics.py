@@ -73,7 +73,7 @@ class RankingMetricRecorder(MetricRecorder):
                                                      'test_map'])
     self.experiment_context.__enter__()
 
-  def on_train_end(self, **kwargs):
+  def on_train_end(self, num_batch, **kwargs):
     self._check(num_batch)
     self.experiment_context.__exit__()
 
