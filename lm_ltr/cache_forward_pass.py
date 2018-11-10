@@ -15,7 +15,9 @@ def main():
   for from_idx, to_idx in zip(range(int(len(documents) / 1000)),
                               range(1000, int(len(documents) / 1000) + 1000)):
     doc_batch = [torch.tensor(doc[:500]) for doc in documents[from_idx:to_idx]]
-    batches.append(doc_encoder(pad(doc_batch)).tolist())
+    padded_batch, lens = pad(doc_batch)
+    seq_dim_first = torch.transpose(padded_batch, 0, 1)
+    batches.append(doc_encoder(seq_dim_first).tolist())
   with open('./forward_out.json', 'w+') as fh:
     json.dump(batches, fh)
 
