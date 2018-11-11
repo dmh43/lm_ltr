@@ -42,6 +42,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
+         {'name': 'memorize_test', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'nce_sample_mul_rel_score', 'for': 'train_params', 'type': int, 'default': 5},
          {'name': 'num_doc_tokens_to_consider', 'for': 'train_params', 'type': int, 'default': 100},
          {'name': 'num_epochs', 'for': 'train_params', 'type': int, 'default': 1},
@@ -274,6 +275,9 @@ def main():
   valid_dl = build_query_pairwise_dataloader(documents,
                                              test_data[:rabbit.train_params.batch_size],
                                              rabbit.train_params.batch_size)
+  if rabbit.train_params.memorize_test:
+    train_dl = test_dl
+    train_ranking_dataset = test_ranking_dataset
   model_data = DataBunch(train_dl,
                          valid_dl,
                          test_dl,
