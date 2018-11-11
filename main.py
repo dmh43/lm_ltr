@@ -271,7 +271,9 @@ def main():
                                         test_dl.dataset.rankings,
                                         num_doc_tokens=num_doc_tokens_to_consider,
                                         query_tok_to_doc_tok=query_tok_to_doc_tok)
-  valid_dl = build_query_pairwise_dataloader(documents, [], rabbit.train_params.batch_size)
+  valid_dl = build_query_pairwise_dataloader(documents,
+                                             test_data[:rabbit.train_params.batch_size],
+                                             rabbit.train_params.batch_size)
   model_data = DataBunch(train_dl,
                          valid_dl,
                          test_dl,

@@ -110,7 +110,7 @@ def to_query_rankings_pairs(data, limit=None):
   q_str_to_query = {}
   for row in data:
     q_str_to_query[str(row['query'])[1:-1]] = row['query']
-    if (limit is None) or (len(query_to_ranking.get(str(row['query'])[1:-1]) or []) < limit):
+    if (limit is None) or (len(query_to_ranking.get(str(row['query'])[1:-1]) or []) <= limit):
       append_at(query_to_ranking, str(row['query'])[1:-1], row['doc_id'])
   querystr_ranking_pairs = _.to_pairs(query_to_ranking)
   return _.map_(querystr_ranking_pairs,
