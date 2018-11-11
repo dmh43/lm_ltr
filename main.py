@@ -285,6 +285,8 @@ def main():
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
+  if rabbit.train_params.memorize_test:
+    del train_data
   if not rabbit.run_params.just_caches:
     del document_lookup
     del train_query_lookup
