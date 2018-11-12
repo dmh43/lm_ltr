@@ -45,6 +45,7 @@ class MultiObjective(nn.Module):
       out = self.model(query, document, lens)
       return (out, rel_score)
     else:
+      out = self.model(query, document, lens)
       return (out,)
 
   def _pairwise_forward(self, query, document_1, document_2, lens_1, lens_2):
