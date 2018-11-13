@@ -85,6 +85,7 @@ def main():
   global experiment
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
+  print('Model name:', experiment.model_name)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
   use_pointwise_loss = rabbit.train_params.use_pointwise_loss
   query_token_embed_len = rabbit.model_params.query_token_embed_len
