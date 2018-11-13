@@ -142,22 +142,31 @@ class QueryPairwiseDataset(QueryDataset):
                      num_doc_tokens=num_doc_tokens,
                      rankings=rankings,
                      query_tok_to_doc_tok=query_tok_to_doc_tok)
-    num_documents = len(documents)
+    self.num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
-    if self.num_neg_samples > 0:
-      self.rankings_for_train = _.clone_deep(self.rankings)
-      insert_negative_samples(num_documents, self.num_neg_samples, self.rankings_for_train)
+    self._insert_negs()
     self.rankings_for_train = self.rankings
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
     self._num_pairs = None
+    self._num_seen = 0
+
+  def _insert_negs(self):
+    if self.num_neg_samples > 0:
+      self.rankings_for_train = _.clone_deep(self.rankings)
+      insert_negative_samples(self.num_documents, self.num_neg_samples, self.rankings_for_train)
 
   def __len__(self):
     self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train)
     return self._num_pairs
 
   def __getitem__(self, idx):
+    if self._num_seen == len(self):
+      self._num_seen = 0
+      self._insert_negs()
+    else:
+      self._num_seen += 1
     elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     return ((query,
