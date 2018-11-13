@@ -144,7 +144,9 @@ class QueryPairwiseDataset(QueryDataset):
                      query_tok_to_doc_tok=query_tok_to_doc_tok)
     num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
-    insert_negative_samples(num_documents, self.num_neg_samples, self.rankings)
+    if self.num_neg_samples > 0:
+      self.rankings_for_train = _.clone_deep(self.rankings)
+      insert_negative_samples(num_documents, self.num_neg_samples, self.rankings_for_train)
     self.rankings_for_train = self.rankings
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
