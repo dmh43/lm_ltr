@@ -203,6 +203,11 @@ def main():
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
+  names = []
+  if not rabbit.model_params.dont_limit_num_uniq_tokens:
+    names.append('limit_uniq_toks')
+  if rabbit.train_params.train_dataset_size:
+    names.append(f'first_{rabbit.train_params.train_dataset_size}')
   if use_pointwise_loss:
     normalized_train_data = read_cache(name('./normalized_train_query_data.json',
                                             ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
@@ -212,8 +217,7 @@ def main():
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
-                                      cache=name('./pointwise_train_ranking.json',
-                                                 ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                                      cache=name('./pointwise_train_ranking.json', names),
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
@@ -222,8 +226,7 @@ def main():
                                      rabbit.train_params.batch_size,
                                      rel_method=rabbit.train_params.rel_method,
                                      num_doc_tokens=num_doc_tokens_to_consider,
-                                     cache=name('./pointwise_test_ranking.json',
-                                                ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                                     cache=name('./pointwise_test_ranking.json', names),
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     model = PointwiseScorer(query_token_embeds,
@@ -238,8 +241,7 @@ def main():
                                                rel_method=rabbit.train_params.rel_method,
                                                num_neg_samples=rabbit.train_params.num_neg_samples,
                                                num_doc_tokens=num_doc_tokens_to_consider,
-                                               cache=name('./pairwise_train_ranking.json',
-                                                          ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                                               cache=name('./pairwise_train_ranking.json', names),
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
@@ -249,8 +251,7 @@ def main():
                                               rel_method=rabbit.train_params.rel_method,
                                               num_neg_samples=0,
                                               num_doc_tokens=num_doc_tokens_to_consider,
-                                              cache=name('./pairwise_test_ranking.json',
-                                                         ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                                              cache=name('./pairwise_test_ranking.json', names),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
     model = PairwiseScorer(query_token_embeds,
