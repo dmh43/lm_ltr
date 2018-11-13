@@ -126,7 +126,7 @@ def main():
                             for query_token, idx in query_token_lookup.items()}
   else:
     query_tok_to_doc_tok = None
-  if rabbit.model_params.use_pointwise_loss:
+  if rabbit.train_params.use_pointwise_loss:
     if rabbit.train_params.train_dataset_size:
       train_data = read_cache(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
                                    ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
