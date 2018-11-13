@@ -126,18 +126,21 @@ def main():
                             for query_token, idx in query_token_lookup.items()}
   else:
     query_tok_to_doc_tok = None
-  if rabbit.train_params.train_dataset_size:
-    train_data = read_cache(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
-                                 ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
-                            lambda: read_query_result(train_query_name_to_id,
-                                                      document_title_to_id,
-                                                      train_queries)[:rabbit.train_params.train_dataset_size])
+  if rabbit.model_params.use_pointwise_loss:
+    if rabbit.train_params.train_dataset_size:
+      train_data = read_cache(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
+                                   ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                              lambda: read_query_result(train_query_name_to_id,
+                                                        document_title_to_id,
+                                                        train_queries)[:rabbit.train_params.train_dataset_size])
+    else:
+      train_data = read_cache(name(f'./robust_train_query_results_tokens.json',
+                                   ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+                              lambda: read_query_result(train_query_name_to_id,
+                                                        document_title_to_id,
+                                                        train_queries))
   else:
-    train_data = read_cache(name(f'./robust_train_query_results_tokens.json',
-                                 ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
-                            lambda: read_query_result(train_query_name_to_id,
-                                                      document_title_to_id,
-                                                      train_queries))
+    train_data = []
   q_embed_len = rabbit.model_params.query_token_embed_len
   doc_embed_len = rabbit.model_params.document_token_embed_len
   if q_embed_len == doc_embed_len:
@@ -288,7 +291,8 @@ def main():
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
   if rabbit.train_params.memorize_test:
-    del train_data
+    try: del train_data
+    except: pass
   if not rabbit.run_params.just_caches:
     del document_lookup
     del train_query_lookup
