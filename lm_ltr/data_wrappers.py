@@ -12,7 +12,7 @@ import numpy as np
 
 from sklearn.feature_extraction.text import TfidfTransformer
 
-from .preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score
+from .preprocessing import collate_query_samples, collate_query_pairwise_samples, to_query_rankings_pairs, pad_to_max_len, all_ones, score, inv_log_rank, inv_rank, exp_score, pad
 from .utils import append_at, to_list
 from .fetchers import read_cache
 
@@ -31,6 +31,7 @@ class QueryDataset(Dataset):
                rankings=None,
                query_tok_to_doc_tok=None):
     self.documents = documents
+    self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
     self.data = data
     self.rel_method = rel_method
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
@@ -38,7 +39,7 @@ class QueryDataset(Dataset):
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
 
   def _get_document(self, elem_idx):
-    return torch.tensor(self.documents[self.data[elem_idx]['doc_id']][:self.num_doc_tokens])
+    return torch.tensor(self.padded_docs[elem_idx])
 
   def __len__(self):
     return len(self.data)
@@ -58,6 +59,7 @@ class RankingDataset(Dataset):
                query_tok_to_doc_tok=None):
     self.rankings = rankings
     self.documents = documents
+    self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
     self.k = k
     self.num_doc_tokens = num_doc_tokens
     self.num_to_rank = 1000
@@ -82,7 +84,7 @@ class RankingDataset(Dataset):
     else:
       ranking_with_neg = ranking[:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [torch.tensor(self.documents[idx]) for idx in ranking_with_neg],
+            'documents': [self.short_docs[idx] for idx in ranking_with_neg],
             'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
             'ranking': ranking[:self.k],
             'relevant': relevant}
@@ -95,7 +97,7 @@ class RankingDataset(Dataset):
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [torch.tensor(self.documents[doc_id]) for doc_id in ranking],
+            'documents': [self.short_docs[doc_id] for doc_id in ranking],
             'doc_ids': torch.tensor(ranking, dtype=torch.long),
             'ranking': self.rel_by_q_str[q_str][1][:self.k],
             'relevant': relevant}
@@ -170,8 +172,8 @@ class QueryPairwiseDataset(QueryDataset):
     elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     return ((query,
-             torch.tensor(self.documents[elem['doc_id_1']][:self.num_doc_tokens]),
-             torch.tensor(self.documents[elem['doc_id_2']][:self.num_doc_tokens])),
+             self._get_document(elem['doc_id_1']),
+             self._get_document(elem['doc_id_2'])),
             elem['order_int'])
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
