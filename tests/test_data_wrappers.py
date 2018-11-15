@@ -5,6 +5,14 @@ import scipy.sparse as sp
 import torch
 import numpy as np
 
+def test_query_pairwise_dataset():
+  rankings = [[[1], [1, 2, 3]],
+              [[9], [3, 4, 5, 6]],
+              [[9, 3], [0, 5, 2, 1]]]
+  documents = [range(10) for doc in range(7)]
+  dataset = df.QueryPairwiseDataset(documents, [], num_neg_samples=3, rankings=rankings)
+  assert len(dataset) == (3 + 3) ** 2 - (3 + 3) + 2 * ((4 + 3) ** 2 - (4 + 3))
+
 def test__get_nth_pair():
   rankings = [[[1], [3, 4, 1]],
               [[2, 3], [8, 9, 4]]]

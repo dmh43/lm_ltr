@@ -1,10 +1,17 @@
 import torch
 from lm_ltr.metrics import RankingMetricRecorder, metrics_at_k
 
+class MyScorer:
+  def __init__(self):
+    self.training = False
+
+  def __call__(self, query, documents, lens):
+    return - (query[:, 0] - documents.nonzero()[:, 0]) ** 2
+
 def test_ranking_metrics_at_k():
   train_ranking_dl = None
   test_ranking_dl = None
-  scorer = lambda query, documents, lens: - (query[:, 0] - documents.nonzero()[:, 0]) ** 2
+  scorer = MyScorer()
   device = torch.device('cpu')
   metric = RankingMetricRecorder(device, scorer, train_ranking_dl, test_ranking_dl, None)
   num_documents = 10

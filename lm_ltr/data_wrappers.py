@@ -144,8 +144,8 @@ class QueryPairwiseDataset(QueryDataset):
                      query_tok_to_doc_tok=query_tok_to_doc_tok)
     self.num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
-    self._insert_negs()
     self.rankings_for_train = self.rankings
+    self._insert_negs()
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
