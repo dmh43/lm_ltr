@@ -73,7 +73,11 @@ def collate_query_pairwise_samples(samples):
   query = pad_to_max_len(x[0])
   doc_1, lens_1 = list(zip(*x[1]))
   doc_2, lens_2 = list(zip(*x[2]))
-  return ((torch.tensor(query), doc_1, doc_2, lens_1, lens_2),
+  return ((torch.tensor(query),
+           doc_1,
+           doc_2,
+           torch.stack(lens_1),
+           torch.stack(lens_2)),
           torch.tensor(rel, dtype=torch.float32))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
