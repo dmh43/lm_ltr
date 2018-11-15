@@ -39,7 +39,7 @@ class QueryDataset(Dataset):
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
 
   def _get_document(self, elem_idx):
-    return torch.tensor(self.padded_docs[elem_idx])
+    return self.padded_docs[0][elem_idx], self.padded_docs[1][elem_idx]
 
   def __len__(self):
     return len(self.data)
