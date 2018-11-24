@@ -25,7 +25,8 @@ class PointwiseScorer(nn.Module):
                                             doc_encoder,
                                             model_params.use_cnn,
                                             model_params.use_lstm,
-                                            model_params.lstm_hidden_size)
+                                            model_params.lstm_hidden_size,
+                                            model_params.use_doc_out)
     self.query_encoder = QueryEncoder(query_token_embeds, model_params.use_max_pooling)
     if model_params.use_pretrained_doc_encoder:
       if model_params.only_use_last_out:

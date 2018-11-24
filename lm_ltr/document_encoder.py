@@ -1,4 +1,5 @@
 from toolz import pipe
+import json
 
 import torch
 import torch.nn as nn
@@ -18,14 +19,19 @@ class DocumentEncoder(nn.Module):
                doc_encoder=None,
                use_cnn=False,
                use_lstm=False,
-               lstm_hidden_size=None):
+               lstm_hidden_size=None,
+               use_doc_out=False):
     super().__init__()
     self.document_token_embeds = document_token_embeds
     self.use_cnn = use_cnn
     self.use_lstm = use_lstm
     self.lstm_hidden_size = lstm_hidden_size
+    self.use_doc_out = use_doc_out
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
+    if self.use_doc_out:
+      with open('./forward_out_flat.json') as fh:
+        self.lm_outs = json.load(fh)
     if doc_encoder:
       self.use_lm = True
       self.pretrained_enc = doc_encoder
@@ -97,6 +103,10 @@ class DocumentEncoder(nn.Module):
                 torch.squeeze,
                 self.projection)
 
+  def _doc_out(self, document_ids):
+    return torch.tensor([self.lm_outs[doc_id] for doc_id in document_ids],
+                        device=document_ids.device)
+
   def forward(self, document, lens):
     if self.use_cnn:
       return self._cnn_forward(document)
@@ -104,5 +114,8 @@ class DocumentEncoder(nn.Module):
       return self._lm_forward(document)
     elif self.use_lstm:
       return self._lstm_forward(document, lens)
+    elif self.use_doc_out:
+      document_ids = document
+      return self._doc_out(document_ids)
     else:
       return self._weighted_forward(document)
