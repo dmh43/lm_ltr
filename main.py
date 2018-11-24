@@ -116,14 +116,8 @@ def main():
                                         lambda: create_id_lookup(train_query_lookup.keys()))
   with open('./60000_most_common_query.json', 'r') as fh:
     query_token_set = set(json.load(fh))
-  if not rabbit.model_params.dont_limit_num_uniq_tokens:
-    train_queries, query_token_lookup = read_cache('./parsed_robust_queries_limit_uniq_toks.json',
-                                                   lambda: prepare(train_query_lookup,
-                                                                   train_query_name_to_id,
-                                                                   token_set=query_token_set))
-  else:
-    train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
-                                                   lambda: prepare(train_query_lookup, train_query_name_to_id))
+  train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
+                                                 lambda: prepare(train_query_lookup, train_query_name_to_id))
   if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
     query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
                             for query_token, idx in query_token_lookup.items()}
@@ -131,14 +125,12 @@ def main():
     query_tok_to_doc_tok = None
   if rabbit.train_params.use_pointwise_loss:
     if rabbit.train_params.train_dataset_size:
-      train_data = read_cache(name(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
-                                   ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+      train_data = read_cache(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
                               lambda: read_query_result(train_query_name_to_id,
                                                         document_title_to_id,
                                                         train_queries)[:rabbit.train_params.train_dataset_size])
     else:
-      train_data = read_cache(name(f'./robust_train_query_results_tokens.json',
-                                   ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+      train_data = read_cache(f'./robust_train_query_results_tokens.json',
                               lambda: read_query_result(train_query_name_to_id,
                                                         document_title_to_id,
                                                         train_queries))
@@ -198,25 +190,20 @@ def main():
                                                    get_robust_rels)
   test_query_name_to_id = read_cache('./test_query_name_to_id.json',
                                      lambda: create_id_lookup(test_query_lookup.keys()))
-  test_queries, __ = read_cache(name('./parsed_test_robust_queries.json',
-                                     ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+  test_queries, __ = read_cache('./parsed_test_robust_queries.json',
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  test_data = read_cache(name('./parsed_robust_rels.json',
-                              ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+  test_data = read_cache('./parsed_robust_rels.json',
                          lambda: process_rels(test_query_name_document_title_rels,
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
   names = []
-  if not rabbit.model_params.dont_limit_num_uniq_tokens:
-    names.append('limit_uniq_toks')
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
   if use_pointwise_loss:
-    normalized_train_data = read_cache(name('./normalized_train_query_data.json',
-                                            ['limit_uniq_toks'] if not rabbit.model_params.dont_limit_num_uniq_tokens else []),
+    normalized_train_data = read_cache('./normalized_train_query_data.json',
                                        lambda: normalize_scores_query_wise(train_data))
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data[:rabbit.train_params.train_dataset_size],
