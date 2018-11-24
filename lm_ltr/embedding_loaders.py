@@ -2,9 +2,12 @@ import torch
 import torch.nn as nn
 import math
 
-def get_glove_lookup(path=None, embedding_dim=100):
+def get_glove_lookup(path=None, embedding_dim=100, use_large_embed=False):
   if path is None:
-    path = f'./glove/glove.6B.{embedding_dim}d.txt'
+    if use_large_embed:
+      path = f'./glove/glove.840B.{embedding_dim}d.txt'
+    else:
+      path = f'./glove/glove.6B.{embedding_dim}d.txt'
   lookup = {'<pad>': torch.zeros(size=(embedding_dim,), dtype=torch.float32),
             '<unk>': torch.randn(size=(embedding_dim,), dtype=torch.float32)}
   try:

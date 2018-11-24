@@ -61,6 +61,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_doc_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_truncated_hinge_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_gradient_clipping', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'use_large_embed', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_lstm', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_max_pooling', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_pointwise_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
@@ -146,12 +147,15 @@ def main():
   q_embed_len = rabbit.model_params.query_token_embed_len
   doc_embed_len = rabbit.model_params.document_token_embed_len
   if q_embed_len == doc_embed_len:
-    glove_lookup = get_glove_lookup(embedding_dim=q_embed_len)
+    glove_lookup = get_glove_lookup(embedding_dim=q_embed_len,
+                                    use_large_embed=rabbit.model_params.use_large_embed)
     q_glove_lookup = glove_lookup
     doc_glove_lookup = glove_lookup
   else:
-    q_glove_lookup = get_glove_lookup(embedding_dim=q_embed_len)
-    doc_glove_lookup = get_glove_lookup(embedding_dim=doc_embed_len)
+    q_glove_lookup = get_glove_lookup(embedding_dim=q_embed_len,
+                                      use_large_embed=rabbit.model_params.use_large_embed)
+    doc_glove_lookup = get_glove_lookup(embedding_dim=doc_embed_len,
+                                        use_large_embed=rabbit.model_params.use_large_embed)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   doc_encoder = None
