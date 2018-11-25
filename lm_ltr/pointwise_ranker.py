@@ -16,13 +16,12 @@ class PointwiseRanker:
     padded_doc, lens = pad(documents, self.device)
     with torch.no_grad():
       try:
-        tmp_state = self.pointwise_scorer.training
-        self.pointwise_scorer.training = False
-        scores = self.pointwise_scorer.eval()(torch.unsqueeze(query, 0).repeat(len(documents), 1),
-                                              padded_doc,
-                                              lens)
+        self.pointwise_scorer.eval()
+        scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
+                                       padded_doc,
+                                       lens)
       finally:
-        self.pointwise_scorer.training = tmp_state
+        self.pointwise_scorer.train()
     return at_least_one_dim(scores)
 
   def __call__(self, query, documents, k=None):
