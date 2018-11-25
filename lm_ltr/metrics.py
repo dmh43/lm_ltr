@@ -39,10 +39,12 @@ class RankingMetricRecorder(MetricRecorder):
           if len(to_rank['documents']) < k:
             yield None
             continue
+          shuffled_order = torch.randperm(len(to_rank['documents']))
+          shuffled_docs = [to_rank['documents'][i] for i in shuffled_order]
           ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
-                                                            to_rank['documents'],
+                                                            shuffled_docs,
                                                             k))
-          ranking = to_rank['doc_ids'][ranking_ids_for_batch]
+          ranking = to_rank['doc_ids'][shuffled_order[ranking_ids_for_batch]]
           yield at_least_one_dim(ranking)
           num_rankings_considered += 1
     return metrics_at_k(rank_dataset_contents(), relevant_doc_ids, k=k)

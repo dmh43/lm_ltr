@@ -27,22 +27,20 @@ class PointwiseRanker:
   def __call__(self, query, documents, k=None):
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
     k = k if k is not None else len(documents)
-    shuffled_order = torch.randperm(len(documents))
-    shuffled_documents = [documents[i] for i in shuffled_order]
     ranks = []
     for query in query.to(self.device):
       if self.doc_chunk_size != -1:
         all_scores = []
         for from_idx, to_idx in zip(range(0,
-                                          len(shuffled_documents),
+                                          len(documents),
                                           self.doc_chunk_size),
                                     range(self.doc_chunk_size,
-                                          len(shuffled_documents) + self.doc_chunk_size,
+                                          len(documents) + self.doc_chunk_size,
                                           self.doc_chunk_size)):
-          all_scores.append(self._scores_for_chunk(query, shuffled_documents[from_idx : to_idx]))
+          all_scores.append(self._scores_for_chunk(query, documents[from_idx : to_idx]))
         scores = torch.cat(all_scores, 0)
       else:
-        scores = self._scores_for_chunk(query, shuffled_documents)
+        scores = self._scores_for_chunk(query, documents)
       topk_scores, topk_idxs = torch.topk(scores, k)
       sorted_scores, sort_idx = torch.sort(topk_scores, descending=True)
       ranks.append(topk_idxs[sort_idx])
