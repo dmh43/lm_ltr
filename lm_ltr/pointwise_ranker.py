@@ -29,7 +29,7 @@ class PointwiseRanker:
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
     k = k if k is not None else len(documents)
     shuffled_order = torch.randperm(len(documents))
-    shuffled_documents = documents[shuffled_order]
+    shuffled_documents = [documents[i] for i in shuffled_order]
     ranks = []
     for query in query.to(self.device):
       if self.doc_chunk_size != -1:
