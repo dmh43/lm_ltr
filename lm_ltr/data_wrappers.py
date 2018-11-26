@@ -50,9 +50,9 @@ class QueryDataset(Dataset):
             self.rel_method(self.data[idx]))
 
 def _shuffle_doc_doc_ids(documents, doc_ids):
-  shuffled_doc_ids = torch.randperm(len(doc_ids))
+  shuffled_doc_ids_for_batch = torch.randperm(len(doc_ids))
   shuffled_documents = [documents[i] for i in shuffled_doc_ids]
-  return shuffled_documents, shuffled_doc_ids
+  return shuffled_documents, doc_ids[shuffled_doc_ids_for_batch]
 
 class RankingDataset(Dataset):
   def __init__(self,
