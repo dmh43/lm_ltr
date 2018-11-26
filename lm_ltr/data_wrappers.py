@@ -49,6 +49,11 @@ class QueryDataset(Dataset):
     return ((query, self._get_document(idx)),
             self.rel_method(self.data[idx]))
 
+def _shuffle_doc_doc_ids(documents, doc_ids):
+  shuffled_doc_ids = torch.randperm(len(doc_ids))
+  shuffled_documents = [documents[i] for i in shuffled_doc_ids]
+  return shuffled_documents, shuffled_doc_ids
+
 class RankingDataset(Dataset):
   def __init__(self,
                documents,
@@ -83,9 +88,11 @@ class RankingDataset(Dataset):
       ranking_with_neg = ranking + neg_samples
     else:
       ranking_with_neg = ranking[:self.num_to_rank]
+    documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
+                                              torch.tensor(ranking_with_neg, dtype=torch.long))
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.short_docs[idx] for idx in ranking_with_neg],
-            'doc_ids': torch.tensor(ranking_with_neg, dtype=torch.long),
+            'documents': documents,
+            'doc_ids': doc_ids,
             'ranking': ranking[:self.k],
             'relevant': relevant}
 
@@ -96,9 +103,11 @@ class RankingDataset(Dataset):
     query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
+    documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
+                                              torch.tensor(ranking, dtype=torch.long))
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': [self.short_docs[doc_id] for doc_id in ranking],
-            'doc_ids': torch.tensor(ranking, dtype=torch.long),
+            'documents': documents,
+            'doc_ids': doc_ids,
             'ranking': self.rel_by_q_str[q_str][1][:self.k],
             'relevant': relevant}
 
