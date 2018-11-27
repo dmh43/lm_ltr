@@ -30,7 +30,7 @@ class DocumentEncoder(nn.Module):
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if self.use_doc_out:
-      with open('./forward_out_flat.json') as fh:
+      with open('./forward_out.json') as fh:
         self.lm_outs = json.load(fh)
     if doc_encoder and not self.use_doc_out:
       self.use_lm = True
