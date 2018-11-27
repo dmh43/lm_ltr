@@ -152,7 +152,7 @@ def main():
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   doc_encoder = None
-  if use_pretrained_doc_encoder:
+  if use_pretrained_doc_encoder or rabbit.model_params.use_doc_out:
     doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup,
                                                                         rabbit.model_params.only_use_last_out)
     query_token_embeds_init = from_doc_to_query_embeds(document_token_embeds,
