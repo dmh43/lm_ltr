@@ -67,13 +67,14 @@ class RankingDataset(Dataset):
                num_doc_tokens=100,
                k=10,
                query_tok_to_doc_tok=None,
-               use_doc_out=False):
+               use_doc_out=False,
+               num_to_rank=1000):
     self.rankings = rankings
     self.documents = documents
     self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
     self.k = k
     self.num_doc_tokens = num_doc_tokens
-    self.num_to_rank = 1000
+    self.num_to_rank = num_to_rank
     self.is_test = relevant is not None
     self.relevant = relevant
     self.query_tok_to_doc_tok = query_tok_to_doc_tok

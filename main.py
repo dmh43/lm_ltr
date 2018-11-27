@@ -48,6 +48,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'num_epochs', 'for': 'train_params', 'type': int, 'default': 1},
          {'name': 'num_neg_samples', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'num_pos_tokens_rel_score', 'for': 'train_params', 'type': int, 'default': 20},
+         {'name': 'num_to_rank', 'for': 'run_params', 'type': int, 'default': 1000},
          {'name': 'only_use_last_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'query_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
@@ -260,7 +261,8 @@ def main():
                                          train_dl.dataset.rankings,
                                          num_doc_tokens=num_doc_tokens_to_consider,
                                          query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                         use_doc_out=rabbit.model_params.use_doc_out)
+                                         use_doc_out=rabbit.model_params.use_doc_out,
+                                         num_to_rank=rabbit.run_params.num_to_rank)
   test_ranking_candidates = read_cache('./test_ranking_candidates.json',
                                        read_query_test_rankings)
   lookup_by_title = lambda title: document_title_to_id.get(title) or 0
@@ -274,7 +276,8 @@ def main():
                                         test_dl.dataset.rankings,
                                         num_doc_tokens=num_doc_tokens_to_consider,
                                         query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                        use_doc_out=rabbit.model_params.use_doc_out)
+                                        use_doc_out=rabbit.model_params.use_doc_out,
+                                        num_to_rank=rabbit.run_params.num_to_rank)
   valid_dl = build_query_pairwise_dataloader(documents,
                                              test_data[:rabbit.train_params.batch_size],
                                              rabbit.train_params.batch_size,
