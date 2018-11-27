@@ -105,7 +105,7 @@ class DocumentEncoder(nn.Module):
 
   def _doc_out(self, document_ids):
     return torch.tensor([self.lm_outs[doc_id] for doc_id in document_ids],
-                        device=document_ids.device)
+                        device=self.weights.weight.device)
 
   def forward(self, document, lens):
     if self.use_cnn:
