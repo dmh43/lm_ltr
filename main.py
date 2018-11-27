@@ -242,7 +242,7 @@ def main():
                                               test_data,
                                               rabbit.train_params.batch_size,
                                               rel_method=rabbit.train_params.rel_method,
-                                              num_neg_samples=0,
+                                              num_neg_samples=rabbit.train_params.num_neg_samples if rabbit.train_params.memorize_test else 0,
                                               num_doc_tokens=num_doc_tokens_to_consider,
                                               cache=name('./pairwise_test_ranking.json', names),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,

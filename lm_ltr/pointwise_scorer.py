@@ -48,7 +48,7 @@ class PointwiseScorer(nn.Module):
 
 
   def forward(self, query, document, lens):
-    sorted_lens, sort_order = torch.sort(lens)
+    sorted_lens, sort_order = torch.sort(lens, descending=True)
     batch_range, unsort_order = torch.sort(sort_order)
     if self.frame_as_qa:
       qa = torch.cat([document[sort_order], query[sort_order]], 1)
