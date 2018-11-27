@@ -13,7 +13,11 @@ class PointwiseRanker:
     self.doc_chunk_size = doc_chunk_size
 
   def _scores_for_chunk(self, query, documents) -> None:
-    padded_doc, lens = pad(documents, self.device)
+    if isinstance(documents, torch.Tensor) and len(documents.shape) == 1:
+      padded_doc = documents
+      lens = torch.zeros_like(documents)
+    else:
+      padded_doc, lens = pad(documents, self.device)
     with torch.no_grad():
       try:
         self.pointwise_scorer.eval()
