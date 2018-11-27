@@ -12,18 +12,18 @@ def main():
   device = torch.device("cuda")
   doc_encoder = doc_encoder.to(device)
   dont_update(doc_encoder)
-  batches = []
-  for from_idx, to_idx in zip(range(int(len(documents) / 200)),
-                              range(200, int(len(documents) / 200) + 200)):
+  results = []
+  for from_idx, to_idx in zip(range(int(len(documents) / 200), 200),
+                              range(200, int(len(documents) / 200) + 200, 200)):
     doc_batch = [torch.tensor(doc[:500]) for doc in documents[from_idx:to_idx]]
     padded_batch, lens = pad(doc_batch)
     sorted_lens, sort_order = torch.sort(lens, descending=True)
     batch_range, unsort_order = torch.sort(sort_order)
     sorted_batch = padded_batch[sort_order]
     seq_dim_first = torch.transpose(sorted_batch, 0, 1).to(device)
-    batches.append(doc_encoder(seq_dim_first)[unsort_order].tolist())
+    results.extend(doc_encoder(seq_dim_first)[unsort_order].tolist())
   with open('./forward_out.json', 'w+') as fh:
-    json.dump(batches, fh)
+    json.dump(results, fh)
 
 
 if __name__ == "__main__":
