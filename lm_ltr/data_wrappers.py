@@ -42,7 +42,7 @@ class QueryDataset(Dataset):
 
   def _get_document(self, elem_idx):
     if self.use_doc_out:
-      return elem_idx, None
+      return torch.tensor(elem_idx), torch.tensor(0)
     else:
       return self.padded_docs[0][elem_idx], self.padded_docs[1][elem_idx]
 
