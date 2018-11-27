@@ -213,7 +213,8 @@ def main():
                                       cache=name('./pointwise_train_ranking.json', names),
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
+                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                      use_doc_out=rabbit.model_params.use_doc_out)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
@@ -221,7 +222,8 @@ def main():
                                      num_doc_tokens=num_doc_tokens_to_consider,
                                      cache=name('./pointwise_test_ranking.json', names),
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                     use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
+                                     use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                     use_doc_out=rabbit.model_params.use_doc_out)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -237,7 +239,8 @@ def main():
                                                cache=name('./pairwise_train_ranking.json', names),
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
+                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                               use_doc_out=rabbit.model_params.use_doc_out)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
@@ -246,7 +249,8 @@ def main():
                                               num_doc_tokens=num_doc_tokens_to_consider,
                                               cache=name('./pairwise_test_ranking.json', names),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                              use_sequential_sampler=rabbit.train_params.use_sequential_sampler)
+                                              use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                              use_doc_out=rabbit.model_params.use_doc_out)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -255,7 +259,8 @@ def main():
   train_ranking_dataset = RankingDataset(documents,
                                          train_dl.dataset.rankings,
                                          num_doc_tokens=num_doc_tokens_to_consider,
-                                         query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                         query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                         use_doc_out=rabbit.model_params.use_doc_out)
   test_ranking_candidates = read_cache('./test_ranking_candidates.json',
                                        read_query_test_rankings)
   lookup_by_title = lambda title: document_title_to_id.get(title) or 0
@@ -268,12 +273,14 @@ def main():
                                         test_ranking_candidates,
                                         test_dl.dataset.rankings,
                                         num_doc_tokens=num_doc_tokens_to_consider,
-                                        query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                        query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                        use_doc_out=rabbit.model_params.use_doc_out)
   valid_dl = build_query_pairwise_dataloader(documents,
                                              test_data[:rabbit.train_params.batch_size],
                                              rabbit.train_params.batch_size,
                                              num_neg_samples=0,
-                                             num_doc_tokens=num_doc_tokens_to_consider)
+                                             num_doc_tokens=num_doc_tokens_to_consider,
+                                             use_doc_out=rabbit.model_params.use_doc_out)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset

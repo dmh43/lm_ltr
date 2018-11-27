@@ -29,7 +29,8 @@ class QueryDataset(Dataset):
                rel_method=score,
                num_doc_tokens=100,
                rankings=None,
-               query_tok_to_doc_tok=None):
+               query_tok_to_doc_tok=None,
+               use_doc_out=False):
     self.documents = documents
     self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
     self.data = data
@@ -37,16 +38,20 @@ class QueryDataset(Dataset):
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
     self.num_doc_tokens = num_doc_tokens
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
+    self.use_doc_out = use_doc_out
 
   def _get_document(self, elem_idx):
-    return self.padded_docs[0][elem_idx], self.padded_docs[1][elem_idx]
+    if self.use_doc_out:
+      return elem_idx, None
+    else:
+      return self.padded_docs[0][elem_idx], self.padded_docs[1][elem_idx]
 
   def __len__(self):
     return len(self.data)
 
   def __getitem__(self, idx):
     query = remap_if_exists(self.data[idx]['query'], self.query_tok_to_doc_tok)
-    return ((query, self._get_document(idx)),
+    return ((query, self._get_document(self.data[idx]['doc_id'])),
             self.rel_method(self.data[idx]))
 
 def _shuffle_doc_doc_ids(documents, doc_ids):
@@ -61,7 +66,8 @@ class RankingDataset(Dataset):
                relevant=None,
                num_doc_tokens=100,
                k=10,
-               query_tok_to_doc_tok=None):
+               query_tok_to_doc_tok=None,
+               use_doc_out=False):
     self.rankings = rankings
     self.documents = documents
     self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
@@ -71,6 +77,7 @@ class RankingDataset(Dataset):
     self.is_test = relevant is not None
     self.relevant = relevant
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
+    self.use_doc_out = use_doc_out
     if self.is_test:
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
       self.q_strs = list(set(rankings.keys()).intersection(set(self.rel_by_q_str.keys())))
@@ -91,7 +98,7 @@ class RankingDataset(Dataset):
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
                                               torch.tensor(ranking_with_neg, dtype=torch.long))
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': documents,
+            'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
             'ranking': ranking[:self.k],
             'relevant': relevant}
@@ -106,7 +113,7 @@ class RankingDataset(Dataset):
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': documents,
+            'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
             'ranking': self.rel_by_q_str[q_str][1][:self.k],
             'relevant': relevant}
@@ -146,7 +153,8 @@ class QueryPairwiseDataset(QueryDataset):
                num_neg_samples=90,
                num_doc_tokens=100,
                rankings=None,
-               query_tok_to_doc_tok=None):
+               query_tok_to_doc_tok=None,
+               use_doc_out=False):
     super().__init__(documents,
                      data,
                      rel_method=rel_method,
@@ -156,6 +164,7 @@ class QueryPairwiseDataset(QueryDataset):
     self.num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
     self.rankings_for_train = self.rankings
+    self.use_doc_out = use_doc_out
     self._insert_negs()
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                    lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
@@ -226,14 +235,16 @@ def build_query_dataloader(documents,
                            num_doc_tokens=100,
                            limit=None,
                            query_tok_to_doc_tok=None,
-                           use_sequential_sampler=False) -> DataLoader:
+                           use_sequential_sampler=False,
+                           use_doc_out=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
                          rel_method=rel_method,
                          rankings=rankings,
                          num_doc_tokens=num_doc_tokens,
-                         query_tok_to_doc_tok=query_tok_to_doc_tok)
+                         query_tok_to_doc_tok=query_tok_to_doc_tok,
+                         use_doc_out=use_doc_out)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
@@ -248,7 +259,8 @@ def build_query_pairwise_dataloader(documents,
                                     num_doc_tokens=100,
                                     limit=None,
                                     query_tok_to_doc_tok=None,
-                                    use_sequential_sampler=False) -> DataLoader:
+                                    use_sequential_sampler=False,
+                                    use_doc_out=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -256,7 +268,8 @@ def build_query_pairwise_dataloader(documents,
                                  num_neg_samples=num_neg_samples,
                                  rankings=rankings,
                                  num_doc_tokens=num_doc_tokens,
-                                 query_tok_to_doc_tok=query_tok_to_doc_tok)
+                                 query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                 use_doc_out=use_doc_out)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
