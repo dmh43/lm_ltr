@@ -13,7 +13,7 @@ def main():
   doc_encoder = doc_encoder.to(device)
   dont_update(doc_encoder)
   results = []
-  for from_idx, to_idx in zip(range(int(len(documents) / 200), 200),
+  for from_idx, to_idx in zip(0, range(int(len(documents) / 200), 200),
                               range(200, int(len(documents) / 200) + 200, 200)):
     doc_batch = [torch.tensor(doc[:500]) for doc in documents[from_idx:to_idx]]
     padded_batch, lens = pad(doc_batch)
