@@ -32,7 +32,7 @@ class DocumentEncoder(nn.Module):
     if self.use_doc_out:
       with open('./forward_out_flat.json') as fh:
         self.lm_outs = json.load(fh)
-    if doc_encoder:
+    if doc_encoder and not self.use_doc_out:
       self.use_lm = True
       self.pretrained_enc = doc_encoder
     else:
