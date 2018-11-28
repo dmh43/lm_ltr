@@ -13,7 +13,6 @@ import torch.nn.functional as F
 from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
-from .callbacks import ClampPositive
 
 def _get_pointwise_scorer(model):
   if hasattr(model.module.model, 'pointwise_scorer'):
@@ -48,8 +47,7 @@ def train_model(model,
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))
   callback_fns.extend([partial(PlottingRecorder, experiment),
-                       partial(LossesRecorder, experiment),
-                       partial(ClampPositive, ps=_get_term_weights_params(model))])
+                       partial(LossesRecorder, experiment)])
   print("Training:")
   learner = Learner(model_data,
                     model,
