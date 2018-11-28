@@ -49,7 +49,7 @@ def train_model(model,
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))
   callback_fns.extend([partial(PlottingRecorder, experiment),
                        partial(LossesRecorder, experiment),
-                       partial(ClampPositive, _get_term_weights_params(model))])
+                       partial(ClampPositive, ps=_get_term_weights_params(model))])
   print("Training:")
   learner = Learner(model_data,
                     model,
