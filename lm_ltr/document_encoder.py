@@ -20,13 +20,15 @@ class DocumentEncoder(nn.Module):
                use_cnn=False,
                use_lstm=False,
                lstm_hidden_size=None,
-               use_doc_out=False):
+               use_doc_out=False,
+               only_use_last_out=False):
     super().__init__()
     self.document_token_embeds = document_token_embeds
     self.use_cnn = use_cnn
     self.use_lstm = use_lstm
     self.lstm_hidden_size = lstm_hidden_size
     self.use_doc_out = use_doc_out
+    self.only_use_last_out = only_use_last_out
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if self.use_doc_out:
@@ -104,7 +106,8 @@ class DocumentEncoder(nn.Module):
                 self.projection)
 
   def _doc_out(self, document_ids):
-    return torch.tensor([self.lm_outs[doc_id] for doc_id in document_ids],
+    limit = 400 if self.only_use_last_out else None
+    return torch.tensor([self.lm_outs[doc_id][:limit] for doc_id in document_ids],
                         device=self.weights.weight.device)
 
   def forward(self, document, lens):
