@@ -182,7 +182,7 @@ class QueryPairwiseDataset(QueryDataset):
     elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, remapped_idx)
     order_int = elem['order_int']
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
-    doc_1 =self._get_document(elem['doc_id_1']),
+    doc_1 = self._get_document(elem['doc_id_1'])
     if use_neg_sample:
       doc_2 = self._get_document(choice(range(self.num_documents)))
       order_int = 1
