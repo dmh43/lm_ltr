@@ -12,4 +12,4 @@ class ClampPositive(LearnerCallback):
 
   def on_backward_end(self, **kwargs):
     for p in self.ps:
-      p.clamp_(min=0)
+      p.data.clamp_(min=0)

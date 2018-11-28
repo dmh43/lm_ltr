@@ -43,13 +43,13 @@ def train_model(model,
                                      train_ranking_dataset,
                                      test_ranking_dataset,
                                      experiment,
-                                     doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1),
-               ClampPositive(_get_term_weights_params(model))]
+                                     doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1)]
   callback_fns = []
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))
   callback_fns.extend([partial(PlottingRecorder, experiment),
-                       partial(LossesRecorder, experiment)])
+                       partial(LossesRecorder, experiment),
+                       partial(ClampPositive, _get_term_weights_params(model))])
   print("Training:")
   learner = Learner(model_data,
                     model,
