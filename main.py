@@ -160,6 +160,8 @@ def main():
                                                        query_token_lookup)
     if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
+    if rabbit.model_params.use_doc_out:
+      doc_encoder = None
   else:
     document_token_embeds = init_embedding(doc_glove_lookup,
                                            document_token_lookup,
