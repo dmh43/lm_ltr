@@ -13,6 +13,20 @@ import torch.nn.functional as F
 from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
+from .callbacks import ClampPositive
+
+def _get_pointwise_scorer(model):
+  if hasattr(model.module.model, 'pointwise_scorer'):
+    return model.module.model.pointwise_scorer
+  else:
+    return model.module.model
+
+def _get_term_weights_params(model):
+  pointwise_scorer = _get_pointwise_scorer(model)
+  params = []
+  params.extend(pointwise_scorer.document_encoder.weights.parameters())
+  params.extend(pointwise_scorer.query_encoder.weights.parameters())
+  return params
 
 def train_model(model,
                 model_data,
@@ -25,11 +39,12 @@ def train_model(model,
   model = nn.DataParallel(model)
   metrics = []
   callbacks = [RankingMetricRecorder(model_data.device,
-                                     model.module.model.pointwise_scorer if hasattr(model.module.model, 'pointwise_scorer') else model.module.model,
+                                     _get_pointwise_scorer(model),
                                      train_ranking_dataset,
                                      test_ranking_dataset,
                                      experiment,
-                                     doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1)]
+                                     doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1),
+               ClampPositive(_get_term_weights_params(model))]
   callback_fns = []
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))
