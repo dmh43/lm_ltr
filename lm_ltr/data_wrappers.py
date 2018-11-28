@@ -1,5 +1,5 @@
 import ast
-from random import sample, randint
+from random import sample, randint, choice
 from functools import reduce
 import pydash as _
 
@@ -137,14 +137,10 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx):
           'doc_id_2': doc_ids[doc_2_idx],
           'order_int': 1 if doc_1_idx < doc_2_idx else -1}
 
-def _get_num_pairs(rankings):
-  return reduce(lambda acc, ranking: acc + len(ranking[1]) ** 2 - len(ranking[1]),
+def _get_num_pairs(rankings, num_neg_samples):
+  return reduce(lambda acc, ranking: acc + (len(ranking[1]) ** 2) // 2 - len(ranking[1]) + len(ranking[1]) * num_neg_samples,
                 rankings,
                 0)
-
-def insert_negative_samples(num_documents, num_neg_samples, rankings):
-  for query, ranking in rankings:
-    ranking.extend(sample(range(num_documents), num_neg_samples))
 
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self,
@@ -166,34 +162,34 @@ class QueryPairwiseDataset(QueryDataset):
     self.num_neg_samples = num_neg_samples
     self.rankings_for_train = self.rankings
     self.use_doc_out = use_doc_out
-    self._insert_negs()
     num_pairs_per_ranking = _.map_(self.rankings_for_train,
-                                   lambda ranking: len(ranking[1]) ** 2 - len(ranking[1]))
+                                   lambda ranking: (len(ranking[1]) ** 2) // 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
     self._num_pairs = None
-    self._num_seen = 0
-
-  def _insert_negs(self):
-    if self.num_neg_samples > 0:
-      self.rankings_for_train = _.clone_deep(self.rankings)
-      insert_negative_samples(self.num_documents, self.num_neg_samples, self.rankings_for_train)
+    self._num_pos_pairs = _get_num_pairs(self.rankings_for_train, 0)
 
   def __len__(self):
-    self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train)
+    self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train,
+                                                        self.num_neg_samples)
     return self._num_pairs
 
   def __getitem__(self, idx):
-    if self._num_seen == len(self):
-      self._num_seen = 0
-      self._insert_negs()
+    remapped_idx = idx % self._num_pos_pairs
+    if idx >= self._num_pos_pairs:
+      use_neg_sample = True
     else:
-      self._num_seen += 1
-    elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, idx)
+      use_neg_sample = False
+    elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, remapped_idx)
+    order_int = elem['order_int']
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
-    return ((query,
-             self._get_document(elem['doc_id_1']),
-             self._get_document(elem['doc_id_2'])),
-            elem['order_int'])
+    doc_1 =self._get_document(elem['doc_id_1']),
+    if use_neg_sample:
+      doc_2 = self._get_document(choice(range(self.num_documents)))
+      order_int = 1
+    else:
+      doc_2 = self._get_document(elem['doc_id_2'])
+    return ((query, doc_1, doc_2), order_int)
+
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
   query_embeds = query_word_embeds(queries)
