@@ -31,9 +31,15 @@ class PointwiseScorer(nn.Module):
     self.query_encoder = QueryEncoder(query_token_embeds, model_params.use_max_pooling)
     if model_params.use_pretrained_doc_encoder or model_params.use_doc_out:
       if model_params.only_use_last_out:
-        concat_len = 800
+        if model_params.use_glove:
+          concat_len = 400 + model_params.query_token_embed_len
+        else:
+          concat_len = 800
       else:
-        concat_len = 1600
+        if model_params.use_glove:
+          concat_len = 1200 + model_params.query_token_embed_len
+        else:
+          concat_len = 1600
     else:
       concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
     self.layers = nn.ModuleList()
