@@ -61,6 +61,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_cosine_similarity', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_doc_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_truncated_hinge_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'use_glove', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_gradient_clipping', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_large_embed', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_lstm', 'for': 'model_params', 'type': 'flag', 'default': False},
@@ -120,6 +121,7 @@ def main():
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
                                                  lambda: prepare(train_query_lookup, train_query_name_to_id))
   if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
+    raise NotImplementedError
     query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
                             for query_token, idx in query_token_lookup.items()}
   else:
@@ -155,9 +157,15 @@ def main():
   if use_pretrained_doc_encoder or rabbit.model_params.use_doc_out:
     doc_encoder, document_token_embeds = get_doc_encoder_and_embeddings(document_token_lookup,
                                                                         rabbit.model_params.only_use_last_out)
-    query_token_embeds_init = from_doc_to_query_embeds(document_token_embeds,
-                                                       document_token_lookup,
-                                                       query_token_lookup)
+    if rabbit.model_params.use_glove:
+      query_token_embeds_init = init_embedding(q_glove_lookup,
+                                               query_token_lookup,
+                                               num_query_tokens,
+                                               query_token_embed_len)
+    else:
+      query_token_embeds_init = from_doc_to_query_embeds(document_token_embeds,
+                                                         document_token_lookup,
+                                                         query_token_lookup)
     if not rabbit.train_params.dont_freeze_pretrained_doc_encoder:
       dont_update(doc_encoder)
     if rabbit.model_params.use_doc_out:
