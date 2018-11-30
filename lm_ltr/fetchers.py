@@ -171,6 +171,7 @@ def read_or_cache(path, fn):
   return data
 
 def read_cache(path, fn):
+  path = './cache/' + path
   try:
     data = read_from_file(path)
   except FileNotFoundError:
