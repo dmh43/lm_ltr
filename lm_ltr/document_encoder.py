@@ -25,6 +25,8 @@ class DocumentEncoder(nn.Module):
                word_level_do_kp=1.0):
     super().__init__()
     self.document_token_embeds = document_token_embeds
+    self.document_token_embeds_do = nn.Sequential(document_token_embeds,
+                                                  nn.Dropout2d(word_level_do_kp))
     self.use_cnn = use_cnn
     self.use_lstm = use_lstm
     self.lstm_hidden_size = lstm_hidden_size
@@ -72,7 +74,7 @@ class DocumentEncoder(nn.Module):
     return doc_vecs
 
   def _lstm(self, document, state, lens):
-    document_tokens = self.document_token_embeds(document)
+    document_tokens = self.document_token_embeds_do(document)
     packed_document_tokens = pack_padded_sequence(document_tokens, lens, batch_first=True)
     return self.lstm(packed_document_tokens, state)
 
@@ -90,7 +92,7 @@ class DocumentEncoder(nn.Module):
     return self.concat(outputs)
 
   def _weighted_forward(self, document):
-    document_tokens = self.document_token_embeds(document)
+    document_tokens = self.document_token_embeds_do(document)
     token_weights = self.weights(document)
     normalized_weights = F.softmax(token_weights, 1)
     doc_vecs = torch.sum(normalized_weights * document_tokens, 1)
@@ -98,7 +100,7 @@ class DocumentEncoder(nn.Module):
     return encoded
 
   def _cnn_forward(self, document):
-    document_tokens = self.document_token_embeds(document)
+    document_tokens = self.document_token_embeds_do(document)
     return pipe(document_tokens,
                 lambda batch: torch.transpose(batch, 1, 2),
                 self.cnn,
@@ -113,15 +115,14 @@ class DocumentEncoder(nn.Module):
                         device=self.weights.weight.device)
 
   def forward(self, document, lens):
-    with_dropout = self.dropout(document)
     if self.use_cnn:
-      return self._cnn_forward(with_dropout)
+      return self._cnn_forward(document)
     elif self.use_lm:
-      return self._lm_forward(with_dropout)
+      return self._lm_forward(document)
     elif self.use_lstm:
-      return self._lstm_forward(with_dropout, lens)
+      return self._lstm_forward(document, lens)
     elif self.use_doc_out:
       document_ids = document
       return self._doc_out(document_ids)
     else:
-      return self._weighted_forward(with_dropout)
+      return self._weighted_forward(document)
