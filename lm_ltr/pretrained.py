@@ -16,7 +16,7 @@ class OutPooler(nn.Module):
   def pool(self, x, bs:int, is_max:bool):
     "Pool the tensor along the seq_len dimension."
     f = F.adaptive_max_pool1d if is_max else F.adaptive_avg_pool1d
-    return f(x.permute(0,2,1), (1,)).view(bs,-1)
+    return f(x.permute(1,2,0), (1,)).view(bs,-1)
 
   def forward(self, input):
     raw_outputs, outputs = input
