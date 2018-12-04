@@ -21,7 +21,8 @@ class DocumentEncoder(nn.Module):
                use_lstm=False,
                lstm_hidden_size=None,
                use_doc_out=False,
-               only_use_last_out=False):
+               only_use_last_out=False,
+               word_level_do_kp=1.0):
     super().__init__()
     self.document_token_embeds = document_token_embeds
     self.use_cnn = use_cnn
@@ -29,6 +30,7 @@ class DocumentEncoder(nn.Module):
     self.lstm_hidden_size = lstm_hidden_size
     self.use_doc_out = use_doc_out
     self.only_use_last_out = only_use_last_out
+    self.dropout = nn.Dropout2d(word_level_do_kp)
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if self.use_doc_out:
@@ -111,14 +113,15 @@ class DocumentEncoder(nn.Module):
                         device=self.weights.weight.device)
 
   def forward(self, document, lens):
+    with_dropout = self.dropout(document)
     if self.use_cnn:
-      return self._cnn_forward(document)
+      return self._cnn_forward(with_dropout)
     elif self.use_lm:
-      return self._lm_forward(document)
+      return self._lm_forward(with_dropout)
     elif self.use_lstm:
-      return self._lstm_forward(document, lens)
+      return self._lstm_forward(with_dropout, lens)
     elif self.use_doc_out:
       document_ids = document
       return self._doc_out(document_ids)
     else:
-      return self._weighted_forward(document)
+      return self._weighted_forward(with_dropout)

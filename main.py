@@ -70,7 +70,8 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
-         {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0}]
+         {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
+         {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0},]
 
 def name(path, notes):
   if len(notes) == 0: return path
