@@ -30,7 +30,7 @@ class DocumentEncoder(nn.Module):
     self.lstm_hidden_size = lstm_hidden_size
     self.use_doc_out = use_doc_out
     self.only_use_last_out = only_use_last_out
-    self.dropout = nn.Dropout2d(word_level_do_kp)
+    self.dropout = nn.Dropout(word_level_do_kp)
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if self.use_doc_out:
