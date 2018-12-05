@@ -11,6 +11,8 @@ import torch.nn as nn
 import pydash as _
 import torch.nn.functional as F
 
+import matplotlib.pyplot as plt
+
 from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
@@ -67,7 +69,9 @@ def train_model(model,
                     callback_fns=callback_fns,
                     wd=train_params.weight_decay)
   if train_params.use_cyclical_lr:
-    lr_find(learner)
+    lr_find(learner, num_it=1000)
+    learner.recorder.plot()
+    plt.savefig('./lr.png')
   else:
     learner.fit(train_params.num_epochs, lr=train_params.learning_rate)
   torch.save(model.state_dict(), './model_save_' + experiment.model_name)
