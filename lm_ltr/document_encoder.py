@@ -99,17 +99,17 @@ class DocumentEncoder(nn.Module):
 
   def _weighted_forward(self, document):
     document_tokens, mask = self.document_token_embeds_do(document)
-    token_weights = self.weights(document) * mask.unsqueeze(1).float()
+    token_weights = self.weights(document).squeeze() * mask.float()
     normalized_weights = F.softmax(token_weights, 1)
-    doc_vecs = torch.sum(normalized_weights * document_tokens, 1)
+    doc_vecs = torch.sum(normalized_weights.unsqueeze(2) * document_tokens, 1)
     encoded = doc_vecs
     return encoded
 
   def _cnn_forward(self, document):
     document_tokens, mask = self.document_token_embeds_do(document)
-    token_weights = self.weights(document) * mask.unsqueeze(1).float()
+    token_weights = self.weights(document).squeeze() * mask.float()
     normalized_weights = F.softmax(token_weights, 1)
-    weighted_vectors = normalized_weights * document_tokens
+    weighted_vectors = normalized_weights.unsqueeze(2) * document_tokens
     return pipe(weighted_vectors,
                 lambda batch: torch.transpose(batch, 1, 2),
                 self.cnn,
