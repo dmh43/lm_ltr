@@ -62,7 +62,7 @@ class DocumentEncoder(nn.Module):
     else:
       mask = torch.ones_like(document)
     masked_document = mask * document
-    return self.document_token_embeds(masked_document, mask)
+    return self.document_token_embeds(masked_document), mask
 
   def _init_state(self, batch_size):
     weight = next(self.lstm.parameters())
