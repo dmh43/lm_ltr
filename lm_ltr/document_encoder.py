@@ -26,13 +26,12 @@ class DocumentEncoder(nn.Module):
     super().__init__()
     self.document_token_embeds = document_token_embeds
     self.document_token_embeds_do = nn.Sequential(document_token_embeds,
-                                                  nn.Dropout2d(word_level_do_kp))
+                                                  nn.Dropout2d(1 - word_level_do_kp))
     self.use_cnn = use_cnn
     self.use_lstm = use_lstm
     self.lstm_hidden_size = lstm_hidden_size
     self.use_doc_out = use_doc_out
     self.only_use_last_out = only_use_last_out
-    self.dropout = nn.Dropout(word_level_do_kp)
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if self.use_doc_out:
