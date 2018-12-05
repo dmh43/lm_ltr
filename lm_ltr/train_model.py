@@ -3,6 +3,7 @@ from functools import partial
 
 from fastai.metrics import accuracy_thresh
 from fastai import fit, GradientClipping, Learner
+from fastai.train import lr_find
 
 import torch
 from torch.optim import Adam
@@ -57,5 +58,8 @@ def train_model(model,
                     callbacks=callbacks,
                     callback_fns=callback_fns,
                     wd=train_params.weight_decay)
-  learner.fit(train_params.num_epochs, lr=train_params.learning_rate)
+  if train_params.use_cyclical_lr:
+    lr_find(learner)
+  else:
+    learner.fit(train_params.num_epochs, lr=train_params.learning_rate)
   torch.save(model.state_dict(), './model_save_' + experiment.model_name)

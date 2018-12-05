@@ -59,6 +59,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'truncation', 'for': 'train_params', 'type': float, 'default': -1.0},
          {'name': 'use_cnn', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_cosine_similarity', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_cyclical_lr', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_doc_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_truncated_hinge_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_glove', 'for': 'model_params', 'type': 'flag', 'default': False},
