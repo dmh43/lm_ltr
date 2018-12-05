@@ -3,10 +3,10 @@ from functools import partial
 
 from fastai.metrics import accuracy_thresh
 from fastai import fit, GradientClipping, Learner
-from fastai.train import lr_find
+from fastai.train import lr_find, AdamW
 
 import torch
-from torch.optim import Adam, Adadelta, SGD, RMSprop
+from torch.optim import Adam, SGD, RMSprop
 import torch.nn as nn
 import pydash as _
 import torch.nn.functional as F
@@ -52,8 +52,8 @@ def train_model(model,
   print("Training:")
   if train_params.optimizer == 'adam':
     opt_func = Adam
-  elif train_params.optimizer == 'adadelta':
-    opt_func = Adadelta
+  elif train_params.optimizer == 'adamw':
+    opt_func = AdamW
   elif train_params.optimizer == 'rmsprop':
     opt_func = RMSprop
   elif train_params.optimizer == 'sgd':
