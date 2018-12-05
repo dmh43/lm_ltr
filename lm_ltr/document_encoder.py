@@ -25,8 +25,7 @@ class DocumentEncoder(nn.Module):
                word_level_do_kp=1.0):
     super().__init__()
     self.document_token_embeds = document_token_embeds
-    self.document_token_embeds_do = nn.Sequential(document_token_embeds,
-                                                  nn.Dropout2d(1 - word_level_do_kp))
+    self.word_level_do_kp = word_level_do_kp
     self.use_cnn = use_cnn
     self.use_lstm = use_lstm
     self.lstm_hidden_size = lstm_hidden_size
@@ -57,6 +56,14 @@ class DocumentEncoder(nn.Module):
                             batch_first=True)
         self.projection = nn.Linear(self._get_pooled_dim(), 100)
 
+  def document_token_embeds_do(self, document):
+    if self.training:
+      mask = torch.empty_like(document).bernoulli_(1 - self.word_level_do_kp)
+    else:
+      mask = torch.ones_like(document)
+    masked_document = mask * document
+    return self.document_token_embeds(masked_document, mask)
+
   def _init_state(self, batch_size):
     weight = next(self.lstm.parameters())
     return (weight.new_zeros(self.num_lstm_layers, batch_size, self.lstm_hidden_size),
@@ -73,7 +80,7 @@ class DocumentEncoder(nn.Module):
     return doc_vecs
 
   def _lstm(self, document, state, lens):
-    document_tokens = self.document_token_embeds_do(document)
+    document_tokens, mask = self.document_token_embeds_do(document)
     packed_document_tokens = pack_padded_sequence(document_tokens, lens, batch_first=True)
     return self.lstm(packed_document_tokens, state)
 
@@ -91,16 +98,19 @@ class DocumentEncoder(nn.Module):
     return self.concat(outputs)
 
   def _weighted_forward(self, document):
-    document_tokens = self.document_token_embeds_do(document)
-    token_weights = self.weights(document)
+    document_tokens, mask = self.document_token_embeds_do(document)
+    token_weights = self.weights(document) * mask
     normalized_weights = F.softmax(token_weights, 1)
     doc_vecs = torch.sum(normalized_weights * document_tokens, 1)
     encoded = doc_vecs
     return encoded
 
   def _cnn_forward(self, document):
-    document_tokens = self.document_token_embeds_do(document)
-    return pipe(document_tokens,
+    document_tokens, mask = self.document_token_embeds_do(document)
+    token_weights = self.weights(document) * mask
+    normalized_weights = F.softmax(token_weights, 1)
+    weighted_vectors = normalized_weights * document_tokens
+    return pipe(weighted_vectors,
                 lambda batch: torch.transpose(batch, 1, 2),
                 self.cnn,
                 self.relu,
