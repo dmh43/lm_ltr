@@ -24,9 +24,8 @@ def get_glove_lookup(path=None, embedding_dim=100, use_large_embed=False):
 def init_embedding(glove_lookup, token_lookup, num_tokens, embed_len):
   embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
   token_embed_weights = nn.Parameter(torch.Tensor(num_tokens,
-                                                  embed_len))
-  mean = sum(glove_lookup.values()) / len(glove_lookup)
-  token_embed_weights.data.normal_(mean, torch.norm(mean)/math.sqrt(embed_len))
+                                                    embed_len))
+  token_embed_weights.data.normal_(0, 1.0/math.sqrt(embed_len))
   if embed_len in [100, 300]:
     for token, index in token_lookup.items():
       if token in glove_lookup:
