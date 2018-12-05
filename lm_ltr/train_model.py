@@ -59,7 +59,7 @@ def train_model(model,
                     callback_fns=callback_fns,
                     wd=train_params.weight_decay)
   if train_params.use_cyclical_lr:
-    lr_find(learner, num_it=train_params.num_epochs * len(model_data.train_dl))
+    lr_find(learner)
   else:
     learner.fit(train_params.num_epochs, lr=train_params.learning_rate)
   torch.save(model.state_dict(), './model_save_' + experiment.model_name)
