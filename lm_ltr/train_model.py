@@ -6,7 +6,7 @@ from fastai import fit, GradientClipping, Learner
 from fastai.train import lr_find
 
 import torch
-from torch.optim import Adam
+from torch.optim import Adam, Adadelta, SGD, RMSprop
 import torch.nn as nn
 import pydash as _
 import torch.nn.functional as F
@@ -50,9 +50,17 @@ def train_model(model,
   callback_fns.extend([partial(PlottingRecorder, experiment),
                        partial(LossesRecorder, experiment)])
   print("Training:")
+  if train_params.optimizer == 'adam':
+    opt_func = Adam
+  elif train_params.optimizer == 'adadelta':
+    opt_func = Adadelta
+  elif train_params.optimizer == 'rmsprop':
+    opt_func = RMSprop
+  elif train_params.optimizer == 'sgd':
+    opt_func = partial(SGD, lr=train_params.learning_rate)
   learner = Learner(model_data,
                     model,
-                    opt_func=Adam,
+                    opt_func=opt_func,
                     loss_func=loss,
                     metrics=metrics,
                     callbacks=callbacks,

@@ -50,6 +50,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'num_pos_tokens_rel_score', 'for': 'train_params', 'type': int, 'default': 20},
          {'name': 'num_to_rank', 'for': 'run_params', 'type': int, 'default': 1000},
          {'name': 'only_use_last_out', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'optimizer', 'for': 'train_params', 'type': str, 'default': 'adam'},
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'query_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
          {'name': 'rel_method', 'for': 'train_params', 'type': eval, 'default': score},
