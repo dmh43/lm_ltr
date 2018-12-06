@@ -58,7 +58,7 @@ class DocumentEncoder(nn.Module):
 
   def document_token_embeds_do(self, document):
     if self.training:
-      mask = torch.empty_like(document).bernoulli_(1 - self.word_level_do_kp)
+      mask = torch.empty_like(document).bernoulli_(self.word_level_do_kp)
     else:
       mask = torch.ones_like(document)
     masked_document = mask * document
