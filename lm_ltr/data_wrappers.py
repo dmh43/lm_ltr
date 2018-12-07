@@ -68,7 +68,8 @@ class RankingDataset(Dataset):
                k=10,
                query_tok_to_doc_tok=None,
                use_doc_out=False,
-               num_to_rank=1000):
+               num_to_rank=1000,
+               cheat=False):
     self.rankings = rankings
     self.documents = documents
     self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
@@ -79,6 +80,7 @@ class RankingDataset(Dataset):
     self.relevant = relevant
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.use_doc_out = use_doc_out
+    self.cheat = cheat
     if self.is_test:
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
       self.q_strs = list(set(rankings.keys()).intersection(set(self.rel_by_q_str.keys())))
@@ -111,6 +113,11 @@ class RankingDataset(Dataset):
     query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
+    if self.cheat:
+      lookup_ranking = set(ranking)
+      for doc_id in relevant:
+        if doc_id not in lookup_ranking:
+          ranking.append(doc_id)
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
     return {'query': torch.tensor(query, dtype=torch.long),

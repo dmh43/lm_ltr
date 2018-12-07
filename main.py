@@ -27,6 +27,7 @@ from rabbit_ml.rabbit_ml.experiment import Experiment
 args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: string.split(','), 'default': []},
          {'name': 'add_rel_score', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 512},
+         {'name': 'cheat', 'for': 'run_params', 'type': bool, 'default': False},
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'document_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
@@ -290,7 +291,8 @@ def main():
                                         num_doc_tokens=num_doc_tokens_to_consider,
                                         query_tok_to_doc_tok=query_tok_to_doc_tok,
                                         use_doc_out=rabbit.model_params.use_doc_out,
-                                        num_to_rank=rabbit.run_params.num_to_rank)
+                                        num_to_rank=rabbit.run_params.num_to_rank,
+                                        cheat=rabbit.run_params.cheat)
   valid_dl = build_query_pairwise_dataloader(documents,
                                              test_data[:rabbit.train_params.batch_size],
                                              rabbit.train_params.batch_size,
