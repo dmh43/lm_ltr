@@ -78,7 +78,7 @@ class DocumentEncoder(nn.Module):
     return doc_vecs
 
   def _lstm_forward(self, document, lens):
-    pooled = self._pool(self._tbptt(document, lens))
+    pooled = self.pool(self._tbptt(document, lens))
     doc_vecs = self.projection(pooled)
     return doc_vecs
 
