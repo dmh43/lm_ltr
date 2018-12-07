@@ -48,6 +48,7 @@ class DocumentEncoder(nn.Module):
         self.pool = nn.AdaptiveMaxPool1d(1)
         self.projection = nn.Linear(num_filters, document_token_embeds.weight.shape[1])
       elif self.use_lstm:
+        self.pool = nn.AdaptiveMaxPool1d(1)
         self.num_lstm_layers = 1
         self.lstm = nn.LSTM(input_size=word_embed_size,
                             hidden_size=self.lstm_hidden_size,
