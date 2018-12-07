@@ -50,6 +50,7 @@ class DocumentEncoder(nn.Module):
       elif self.use_lstm:
         self.pool = nn.AdaptiveMaxPool1d(1)
         self.num_lstm_layers = 1
+        self.bptt = 10
         self.lstm = nn.LSTM(input_size=word_embed_size,
                             hidden_size=self.lstm_hidden_size,
                             num_layers=self.num_lstm_layers,
