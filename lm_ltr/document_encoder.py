@@ -54,7 +54,10 @@ class DocumentEncoder(nn.Module):
                             num_layers=self.num_lstm_layers,
                             bidirectional=True,
                             batch_first=True)
-        self.projection = nn.Linear(self._get_pooled_dim(), 100)
+        self.projection = nn.Linear(self._get_pooled_dim(), document_token_embeds.weight.shape[1])
+
+  def _get_pooled_dim(self):
+    return self.lstm_hidden_size * 2 * self.num_lstm_layers
 
   def document_token_embeds_do(self, document):
     if self.training:
