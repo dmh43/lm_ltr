@@ -97,10 +97,11 @@ class DocumentEncoder(nn.Module):
       o, new_state = self._lstm(document[:, i: min(i+self.bptt, sl)],
                                 state,
                                 torch.ones_like(lens) * min(i+self.bptt, sl) - i)
-      state = torch.where(i < lens,
-                          repackage_hidden(new_state),
-                          state)
-      if i>(sl-self.max_seq):
+      state_tens = torch.where(i < lens,
+                               torch.stack(repackage_hidden(new_state)),
+                               torch.stack(state))
+      state = (state_tens[0], state_tens[1])
+      if i>(sl-document.shape[1]):
         outputs.append(o)
     return self.concat(outputs)
 
