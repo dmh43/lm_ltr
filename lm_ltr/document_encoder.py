@@ -89,6 +89,9 @@ class DocumentEncoder(nn.Module):
     packed_document_tokens = pack_padded_sequence(document_tokens, lens, batch_first=True)
     return self.lstm(packed_document_tokens, state)
 
+  def concat(self, arrs):
+    return [torch.cat([l[si] for l in arrs]) for si in range(len(arrs[0]))]
+
   def _tbptt(self, document, lens):
     bs, sl = document.size()
     outputs = []
