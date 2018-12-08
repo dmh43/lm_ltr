@@ -7,8 +7,9 @@ from .query_encoder import QueryEncoder
 from .document_encoder import DocumentEncoder
 from .utils import Identity
 
-def _get_layer(from_size, to_size, dropout_keep_prob, activation=None):
+def _get_layer(from_size, to_size, dropout_keep_prob, activation=None, use_layer_norm=False):
   return [nn.Linear(from_size, to_size),
+          nn.LayerNorm(to_size) if use_layer_norm else Identity,
           nn.ReLU() if activation is None else activation,
           nn.Dropout(1 - dropout_keep_prob)]
 
@@ -20,6 +21,7 @@ class PointwiseScorer(nn.Module):
                model_params,
                train_params):
     super().__init__()
+    self.use_layer_norm = train_params.use_layer_norm
     self.frame_as_qa = model_params.frame_as_qa
     self.document_encoder = DocumentEncoder(document_token_embeds,
                                             doc_encoder,
@@ -47,7 +49,10 @@ class PointwiseScorer(nn.Module):
     if not model_params.use_cosine_similarity:
       from_size = concat_len
       for to_size in model_params.hidden_layer_sizes:
-        self.layers.extend(_get_layer(from_size, to_size, train_params.dropout_keep_prob))
+        self.layers.extend(_get_layer(from_size,
+                                      to_size,
+                                      train_params.dropout_keep_prob,
+                                      use_layer_norm=self.use_layer_norm))
         from_size = to_size
       self.layers.extend(_get_layer(from_size, 1, train_params.dropout_keep_prob, activation=Identity()))
     if not train_params.use_pointwise_loss:

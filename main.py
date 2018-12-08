@@ -67,6 +67,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_glove', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_gradient_clipping', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_large_embed', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_layer_norm', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_lstm', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_max_pooling', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_pointwise_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
