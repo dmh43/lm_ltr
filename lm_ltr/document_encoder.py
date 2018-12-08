@@ -71,8 +71,8 @@ class DocumentEncoder(nn.Module):
 
   def _init_state(self, batch_size):
     weight = next(self.lstm.parameters())
-    return (weight.new_zeros(self.num_lstm_layers, batch_size, self.lstm_hidden_size),
-            weight.new_zeros(self.num_lstm_layers, batch_size, self.lstm_hidden_size))
+    return (weight.new_zeros(self.num_lstm_layers * 2, batch_size, self.lstm_hidden_size),
+            weight.new_zeros(self.num_lstm_layers * 2, batch_size, self.lstm_hidden_size))
 
   def _lm_forward(self, document):
     seq_dim_first = torch.transpose(document, 0, 1)
