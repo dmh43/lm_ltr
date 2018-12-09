@@ -8,7 +8,8 @@ def parse_qrels(qrels_path='./data/robust04/qrels.robust2004.txt'):
     for line in fh:
       query_num, __, doc_id, rel = line.strip().split(' ')
       if int(rel) == 1:
-        append_at(query_doc_id_rels, query_num, doc_id)
+        if any([name in doc_id for name in ['FBIS', 'FT', 'LA']]):
+          append_at(query_doc_id_rels, query_num, doc_id)
     return query_doc_id_rels
 
 def parse_test_set(test_set_path):
