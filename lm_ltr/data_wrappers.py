@@ -144,10 +144,15 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx):
           'doc_id_2': doc_ids[doc_2_idx],
           'order_int': 1 if doc_1_idx < doc_2_idx else -1}
 
-def _get_num_pairs(rankings, num_neg_samples):
-  return reduce(lambda acc, ranking: acc + (len(ranking[1]) ** 2) // 2 - len(ranking[1]) + len(ranking[1]) * num_neg_samples,
-                rankings,
-                0)
+def _get_num_pairs(rankings, num_neg_samples, bin_rankings=None):
+  if bin_rankings:
+    return reduce(lambda acc, ranking: acc + (len(ranking) - 1) * bin_rankings + bin_rankings * num_neg_samples if len(ranking) > bin_rankings else acc,
+                  rankings,
+                  0)
+  else:
+    return reduce(lambda acc, ranking: acc + (len(ranking[1]) ** 2) // 2 - len(ranking[1]) + len(ranking[1]) * num_neg_samples,
+                  rankings,
+                  0)
 
 def _get_num_pos_pairs_with_bins(rankings, bin_rankings):
   return reduce(lambda acc, ranking: acc + (len(ranking) - 1) * bin_rankings if len(ranking) > bin_rankings else acc,
@@ -193,7 +198,8 @@ class QueryPairwiseDataset(QueryDataset):
 
   def __len__(self):
     self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train,
-                                                        self.num_neg_samples)
+                                                        self.num_neg_samples,
+                                                        self.bin_rankings)
     return self._num_pairs
 
   def __getitem__(self, idx):
