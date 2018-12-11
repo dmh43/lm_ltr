@@ -149,6 +149,11 @@ def _get_num_pairs(rankings, num_neg_samples):
                 rankings,
                 0)
 
+def _get_num_pos_pairs_with_bins(rankings, bin_rankings):
+  return reduce(lambda acc, ranking: acc + (len(ranking) - 1) * bin_rankings if len(ranking) > bin_rankings else acc,
+                rankings,
+                0)
+
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self,
                documents,
@@ -158,22 +163,33 @@ class QueryPairwiseDataset(QueryDataset):
                num_doc_tokens=100,
                rankings=None,
                query_tok_to_doc_tok=None,
-               use_doc_out=False):
+               use_doc_out=False,
+               bin_rankings=None):
     super().__init__(documents,
                      data,
                      rel_method=rel_method,
                      num_doc_tokens=num_doc_tokens,
                      rankings=rankings,
                      query_tok_to_doc_tok=query_tok_to_doc_tok)
+    self.bin_rankings = bin_rankings
     self.num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
     self.rankings_for_train = self.rankings
     self.use_doc_out = use_doc_out
-    num_pairs_per_ranking = _.map_(self.rankings_for_train,
-                                   lambda ranking: (len(ranking[1]) ** 2) // 2 - len(ranking[1]))
+    if bin_rankings:
+      num_pairs_per_ranking = _.map_(self.rankings_for_train,
+                                     lambda ranking: (len(ranking[1]) - 1) * bin_rankings if len(ranking) > bin_rankings else 0)
+    else:
+      num_pairs_per_ranking = _.map_(self.rankings_for_train,
+                                     lambda ranking: (len(ranking[1]) ** 2) // 2 - len(ranking[1]))
     self.cumu_ranking_lengths = np.cumsum(num_pairs_per_ranking)
     self._num_pairs = None
-    self._num_pos_pairs = _get_num_pairs(self.rankings_for_train, 0)
+    if self.bin_rankings:
+      if self.bin_rankings != 1: raise NotImplementedError
+      self._num_pos_pairs = _get_num_pos_pairs_with_bins(self.rankings_for_train,
+                                                         self.bin_rankings)
+    else:
+      self._num_pos_pairs = _get_num_pairs(self.rankings_for_train, 0)
 
   def __len__(self):
     self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train,
@@ -196,7 +212,6 @@ class QueryPairwiseDataset(QueryDataset):
     else:
       doc_2 = self._get_document(elem['doc_id_2'])
     return ((query, doc_1, doc_2), order_int)
-
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
   query_embeds = query_word_embeds(queries)
@@ -264,7 +279,8 @@ def build_query_pairwise_dataloader(documents,
                                     limit=None,
                                     query_tok_to_doc_tok=None,
                                     use_sequential_sampler=False,
-                                    use_doc_out=False) -> DataLoader:
+                                    use_doc_out=False,
+                                    bin_rankings=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -273,7 +289,8 @@ def build_query_pairwise_dataloader(documents,
                                  rankings=rankings,
                                  num_doc_tokens=num_doc_tokens,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                 use_doc_out=use_doc_out)
+                                 use_doc_out=use_doc_out,
+                                 bin_rankings=bin_rankings)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),

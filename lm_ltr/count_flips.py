@@ -15,12 +15,13 @@ def main():
   ordered_qrels = [qrels[query] for query in queries]
   ordered_rankings_to_eval = [rankings_to_eval[query] for query in queries]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
+  end = None if len(sys.argv) < 3 else int(sys.argv[2])
   num_swaps = []
   for indri_rank, true_rank in zip(ordered_rankings_to_eval, ordered_qrels):
     true_docs = set(true_rank)
     irrel_ctr = 0
     swap_ctr = 0
-    for pos, doc in enumerate(indri_rank):
+    for pos, doc in enumerate(indri_rank[:10]):
       if doc in true_docs:
         swap_ctr += irrel_ctr
       else:
@@ -28,6 +29,23 @@ def main():
     num_swaps.append(swap_ctr)
   print(np.sum(num_swaps), np.mean(num_swaps), np.std(num_swaps))
   print(num_swaps)
+  print('splitting into top and bottom half:')
+  num_other_swaps = []
+  first = k // 2 if end is None else k
+  end = end or k
+  for indri_rank, true_rank in zip(ordered_rankings_to_eval, ordered_qrels):
+    true_docs = set(true_rank)
+    num_irrel_in_top = 0
+    num_rel_in_bot = 0
+    for pos, doc in enumerate(indri_rank[:first]):
+      if doc not in true_docs:
+        num_irrel_in_top += 1
+    for pos, doc in enumerate(indri_rank[first:end]):
+      if doc in true_docs:
+        num_rel_in_bot += 1
+    num_other_swaps.append(num_irrel_in_top * num_rel_in_bot)
+  print(np.sum(num_other_swaps), np.mean(num_other_swaps), np.std(num_other_swaps))
+  print(num_other_swaps)
 
 if __name__ == "__main__":
   import ipdb

@@ -27,6 +27,7 @@ from rabbit_ml.rabbit_ml.experiment import Experiment
 args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: string.split(','), 'default': []},
          {'name': 'add_rel_score', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 512},
+         {'name': 'bin_rankings', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
          {'name': 'cheat', 'for': 'run_params', 'type': bool, 'default': False},
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
@@ -266,7 +267,8 @@ def main():
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
-                                               use_doc_out=rabbit.model_params.use_doc_out)
+                                               use_doc_out=rabbit.model_params.use_doc_out,
+                                               bin_rankings=rabbit.train_params.bin_rankings)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
