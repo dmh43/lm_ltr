@@ -98,6 +98,7 @@ def parse_xml_docs_and_titles(path):
     if texts is None and title is None: continue
     results = []
     for chunk in [title, texts]:
+      if chunk is None: continue
       if hasattr(chunk, 'text_content'):
         results.append(clean_text(chunk.text_content()))
       else:
