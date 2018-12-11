@@ -9,7 +9,7 @@ import torch.nn as nn
 from fastai.basic_data import DataBunch
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
-from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file
+from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
 from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup, normalize_scores_query_wise, process_rels
@@ -31,6 +31,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'document_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
+         {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_pretrained_doc_encoder', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_word_embeds', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
@@ -99,21 +100,29 @@ def main():
   use_pointwise_loss = rabbit.train_params.use_pointwise_loss
   query_token_embed_len = rabbit.model_params.query_token_embed_len
   document_token_embed_len = rabbit.model_params.document_token_embed_len
+  _names = []
+  if not rabbit.model_params.dont_include_titles:
+    _names.append('with_titles')
   if not rabbit.run_params.just_caches:
-    document_lookup = read_cache('./doc_lookup.json', get_robust_documents)
+    if rabbit.model_params.dont_include_titles:
+      document_lookup = read_cache(name('./doc_lookup.json', _names), get_robust_documents)
+    else:
+      document_lookup = read_cache(name('./doc_lookup.json', _names), get_robust_documents_with_titles)
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
   if not rabbit.model_params.dont_limit_num_uniq_tokens:
     with open('./60000_most_common_doc.json', 'r') as fh:
       doc_token_set = set(json.load(fh))
-    documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks.json',
+    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks.json',
+                                                       _names),
                                                   lambda: prepare(document_lookup,
                                                                   document_title_to_id,
                                                                   num_tokens=num_doc_tokens_to_consider,
                                                                   token_set=doc_token_set))
   else:
-    documents, document_token_lookup = read_cache(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_no_pad.json',
+    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_no_pad.json',
+                                                       _names),
                                                   lambda: prepare(document_lookup,
                                                                   document_title_to_id,
                                                                   num_tokens=num_doc_tokens_to_consider))

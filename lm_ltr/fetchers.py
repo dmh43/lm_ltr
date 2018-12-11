@@ -67,6 +67,46 @@ def parse_xml_docs(path):
     docs[(doc.find('docno')).text.strip()] = text
   return docs
 
+def parse_xml_docs_for_titles(path):
+  with open(path, 'rb') as fh:
+    text = str(fh.read().decode('latin-1'))
+  text_to_parse = text if '<root>' in text else '<root>' + text + '</root>'
+  tree = html.fromstring(text_to_parse)
+  docs = {}
+  for doc in tree:
+    texts = doc.find('headline') or doc.find('header')
+    if texts is None: continue
+    if hasattr(texts, 'text_content'):
+      text = clean_text(texts.text_content())
+    else:
+      text = reduce(lambda acc, p: acc + clean_text(p.text_content()),
+                    texts.getchildren(),
+                    '')
+    docs[(doc.find('docno')).text.strip()] = text
+  return docs
+
+
+def parse_xml_docs_and_titles(path):
+  with open(path, 'rb') as fh:
+    text = str(fh.read().decode('latin-1'))
+  text_to_parse = text if '<root>' in text else '<root>' + text + '</root>'
+  tree = html.fromstring(text_to_parse)
+  docs = {}
+  for doc in tree:
+    title = doc.find('headline') or doc.find('header')
+    texts = doc.find('text')
+    if texts is None and title is None: continue
+    results = []
+    for chunk in [title, texts]:
+      if hasattr(chunk, 'text_content'):
+        results.append(clean_text(chunk.text_content()))
+      else:
+        results.append(reduce(lambda acc, p: acc + clean_text(p.text_content()),
+                              chunk.getchildren(),
+                              ''))
+    docs[(doc.find('docno')).text.strip()] = '\n'.join(results)
+  return docs
+
 def get_raw_documents(id_document_title_mapping):
   el_connection = pymysql.connect(host='localhost' ,
                                   user='danyhaddad',
@@ -182,6 +222,10 @@ def read_cache(path, fn):
 def get_robust_documents():
   doc_paths = ['./fbis', './la', './ft']
   return _.merge({}, *[parse_xml_docs(doc_path) for doc_path in doc_paths])
+
+def get_robust_documents_with_titles():
+  doc_paths = ['./fbis', './la', './ft']
+  return _.merge({}, *[parse_xml_docs_and_titles(doc_path) for doc_path in doc_paths])
 
 def get_robust_test_queries():
   return parse_test_set('./data/robust04/04.testset')
