@@ -143,7 +143,7 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False):
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'order_int': (doc_2_idx - doc_1_idx) / len(doc_ids)}
+            'order_int': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
   else:
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
@@ -161,7 +161,7 @@ def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx, use_
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'order_int': (doc_2_idx - doc_1_idx) / len(doc_ids)}
+            'order_int': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
   else:
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
