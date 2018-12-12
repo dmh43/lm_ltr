@@ -193,7 +193,8 @@ class QueryPairwiseDataset(QueryDataset):
                rankings=None,
                query_tok_to_doc_tok=None,
                use_doc_out=False,
-               bin_rankings=None):
+               bin_rankings=None,
+               use_variable_loss=False):
     super().__init__(documents,
                      data,
                      rel_method=rel_method,
