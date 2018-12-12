@@ -76,6 +76,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
          {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0},]
 
@@ -268,7 +269,8 @@ def main():
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                                use_doc_out=rabbit.model_params.use_doc_out,
-                                               bin_rankings=rabbit.train_params.bin_rankings)
+                                               bin_rankings=rabbit.train_params.bin_rankings,
+                                               use_variable_loss=rabbit.train_params.use_variable_loss)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,

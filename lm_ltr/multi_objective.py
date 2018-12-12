@@ -25,13 +25,20 @@ class MultiObjective(nn.Module):
       self.loss_fn = partial(truncated_hinge_loss,
                              margin=self.margin,
                              truncation=self.truncation)
+    elif self.use_variable_loss:
+      self.loss_fn = hinge_loss
     else:
       self.loss_fn = partial(hinge_loss,
                              margin=self.margin)
 
   def loss(self, multi_objective_out, target):
     pred_out = multi_objective_out[0]
-    pred_loss = self.loss_fn(pred_out, target)
+    if self.use_variable_loss:
+      margin = torch.abs(target)
+      rounded_target = (target > 0).float() - (target < 0).float()
+      pred_loss = self.loss_fn(pred_out, rounded_target, margin)
+    else:
+      pred_loss = self.loss_fn(pred_out, target)
     if self.add_rel_score:
       side_loss = torch.sum(sum(multi_objective_out[1:]))
       reg = torch.sum(sum([p ** 2 for p in self.additive.parameters()]))

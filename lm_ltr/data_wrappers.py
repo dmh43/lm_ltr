@@ -129,7 +129,7 @@ class RankingDataset(Dataset):
   def __getitem__(self, idx):
     return self._get_test_item(idx) if self.is_test else self._get_train_item(idx)
 
-def _get_nth_pair(rankings, cumu_num_pairs, idx):
+def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False):
   ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
   offset = idx - cumu_num_pairs[ranking_idx - 1] if ranking_idx != 0 else idx
   query = rankings[ranking_idx][0]
@@ -139,22 +139,34 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx):
   doc_2_idx = offset % (num_doc_ids - 1)
   if doc_2_idx >= doc_1_idx:
     doc_2_idx += 1
-  return {'query': query,
-          'doc_id_1': doc_ids[doc_1_idx],
-          'doc_id_2': doc_ids[doc_2_idx],
-          'order_int': 1 if doc_1_idx < doc_2_idx else -1}
+  if use_variable_loss:
+    return {'query': query,
+            'doc_id_1': doc_ids[doc_1_idx],
+            'doc_id_2': doc_ids[doc_2_idx],
+            'order_int': (doc_2_idx - doc_1_idx) / len(doc_ids)}
+  else:
+    return {'query': query,
+            'doc_id_1': doc_ids[doc_1_idx],
+            'doc_id_2': doc_ids[doc_2_idx],
+            'order_int': 1 if doc_1_idx < doc_2_idx else -1}
 
-def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx):
+def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx, use_variable_loss=False):
   ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
   offset = idx - cumu_num_pairs[ranking_idx - 1] if ranking_idx != 0 else idx
   query = rankings[ranking_idx][0]
   doc_ids = rankings[ranking_idx][1]
   doc_1_idx = 0
   doc_2_idx = offset + 1
-  return {'query': query,
-          'doc_id_1': doc_ids[doc_1_idx],
-          'doc_id_2': doc_ids[doc_2_idx],
-          'order_int': 1 if doc_1_idx < doc_2_idx else -1}
+  if use_variable_loss:
+    return {'query': query,
+            'doc_id_1': doc_ids[doc_1_idx],
+            'doc_id_2': doc_ids[doc_2_idx],
+            'order_int': (doc_2_idx - doc_1_idx) / len(doc_ids)}
+  else:
+    return {'query': query,
+            'doc_id_1': doc_ids[doc_1_idx],
+            'doc_id_2': doc_ids[doc_2_idx],
+            'order_int': 1 if doc_1_idx < doc_2_idx else -1}
 
 def _get_num_pairs(rankings, num_neg_samples, bin_rankings=None):
   if bin_rankings:
@@ -188,6 +200,7 @@ class QueryPairwiseDataset(QueryDataset):
                      num_doc_tokens=num_doc_tokens,
                      rankings=rankings,
                      query_tok_to_doc_tok=query_tok_to_doc_tok)
+    self.use_variable_loss = use_variable_loss
     self.bin_rankings = bin_rankings
     self.num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
@@ -224,9 +237,13 @@ class QueryPairwiseDataset(QueryDataset):
       elem = _get_nth_pair_bin_rankings(self.rankings_for_train,
                                         self.cumu_ranking_lengths,
                                         self.bin_rankings,
-                                        remapped_idx)
+                                        remapped_idx,
+                                        self.use_variable_loss)
     else:
-      elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, remapped_idx)
+      elem = _get_nth_pair(self.rankings_for_train,
+                           self.cumu_ranking_lengths,
+                           remapped_idx,
+                           self.use_variable_loss)
     order_int = elem['order_int']
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     doc_1 = self._get_document(elem['doc_id_1'])
@@ -304,7 +321,8 @@ def build_query_pairwise_dataloader(documents,
                                     query_tok_to_doc_tok=None,
                                     use_sequential_sampler=False,
                                     use_doc_out=False,
-                                    bin_rankings=None) -> DataLoader:
+                                    bin_rankings=None,
+                                    use_variable_loss=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -314,7 +332,8 @@ def build_query_pairwise_dataloader(documents,
                                  num_doc_tokens=num_doc_tokens,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok,
                                  use_doc_out=use_doc_out,
-                                 bin_rankings=bin_rankings)
+                                 bin_rankings=bin_rankings,
+                                 use_variable_loss=use_variable_loss)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
