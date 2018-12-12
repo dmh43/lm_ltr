@@ -333,7 +333,11 @@ def main():
   del test_query_lookup
   del train_queries
   del test_queries
-  del glove_lookup
+  try:
+    del glove_lookup
+  except UnboundLocalError:
+    del q_glove_lookup
+    del doc_glove_lookup
   train_model(multi_objective_model,
               model_data,
               train_ranking_dataset,
