@@ -12,6 +12,7 @@ class MultiObjective(nn.Module):
     self.add_rel_score = train_params.add_rel_score
     self.use_pointwise_loss = train_params.use_pointwise_loss
     self.use_truncated_hinge_loss = train_params.use_truncated_hinge_loss
+    self.use_variable_loss = train_params.use_variable_loss
     self.truncation = train_params.truncation
     self.rel_score_penalty = train_params.rel_score_penalty
     self.rel_score_obj_scale = train_params.rel_score_obj_scale
