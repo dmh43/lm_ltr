@@ -7,7 +7,7 @@ class QueryEncoder(nn.Module):
     super().__init__()
     self.query_token_embeds = query_token_embeds
     self.weights = nn.Embedding(len(query_token_embeds.weight), 1)
-    torch.nn.init.constant_(self.weights.data, 1)
+    torch.nn.init.constant_(self.weights.weight.data, 1)
     self.use_max_pooling = use_max_pooling
     self.max_pool = nn.AdaptiveMaxPool1d(1)
 
