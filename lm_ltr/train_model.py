@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
+from .inits import weight_init
 
 def _get_pointwise_scorer(model):
   if hasattr(model.module.model, 'pointwise_scorer'):
@@ -37,6 +38,7 @@ def train_model(model,
                 train_params,
                 model_params,
                 experiment):
+  model.apply(weight_init)
   loss = model.loss
   model = nn.DataParallel(model)
   metrics = []
