@@ -41,7 +41,7 @@ class DocumentEncoder(nn.Module):
       self.pretrained_enc = doc_encoder
     else:
       self.weights = nn.Embedding(len(document_token_embeds.weight), 1)
-      torch.nn.init.constant_(self.weights.weight.data, 1)
+      torch.nn.init.xavier_normal_(self.weights.weight.data)
       if self.use_cnn:
         num_filters = int(document_token_embeds.weight.shape[1] / 2)
         self.cnn = nn.Conv1d(word_embed_size, num_filters, 5)
