@@ -144,6 +144,18 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx):
           'doc_id_2': doc_ids[doc_2_idx],
           'order_int': 1 if doc_1_idx < doc_2_idx else -1}
 
+def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx):
+  ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
+  offset = idx - cumu_num_pairs[ranking_idx - 1] if ranking_idx != 0 else idx
+  query = rankings[ranking_idx][0]
+  doc_ids = rankings[ranking_idx][1]
+  doc_1_idx = 0
+  doc_2_idx = offset + 1
+  return {'query': query,
+          'doc_id_1': doc_ids[doc_1_idx],
+          'doc_id_2': doc_ids[doc_2_idx],
+          'order_int': 1 if doc_1_idx < doc_2_idx else -1}
+
 def _get_num_pairs(rankings, num_neg_samples, bin_rankings=None):
   if bin_rankings:
     return reduce(lambda acc, ranking: acc + (len(ranking) - 1) * bin_rankings + bin_rankings * num_neg_samples if len(ranking) > bin_rankings else acc,
@@ -208,7 +220,13 @@ class QueryPairwiseDataset(QueryDataset):
       use_neg_sample = True
     else:
       use_neg_sample = False
-    elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, remapped_idx)
+    if self.bin_rankings:
+      elem = _get_nth_pair_bin_rankings(self.rankings_for_train,
+                                        self.cumu_ranking_lengths,
+                                        self.bin_rankings,
+                                        remapped_idx)
+    else:
+      elem = _get_nth_pair(self.rankings_for_train, self.cumu_ranking_lengths, remapped_idx)
     order_int = elem['order_int']
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     doc_1 = self._get_document(elem['doc_id_1'])
