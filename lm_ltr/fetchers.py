@@ -184,7 +184,9 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
         if doc_title not in document_title_to_id: continue
         query_id = query_name_to_id[query_name]
         score = float(doc_score)
-        if query_id not in queries: continue
+        if query_id not in queries:
+          query_id = str(query_id)
+          if query_id not in queries: continue
         results.append({'query': queries[query_id],
                         'doc_id': document_title_to_id[doc_title],
                         'score': score,
