@@ -129,6 +129,7 @@ def main():
   train_queries, query_token_lookup = read_cache('./parsed_robust_queries_106756.json',
                                                  lambda: prepare(train_query_lookup,
                                                                  train_query_name_to_id,
+                                                                 token_lookup=document_token_lookup,
                                                                  token_set=doc_token_set,
                                                                  drop_if_any_unk=True))
   if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
