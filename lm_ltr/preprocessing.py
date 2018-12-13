@@ -15,11 +15,16 @@ pad_token_idx = 1
 unk_token_idx = 0
 
 def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None, drop_if_any_unk=False):
+  def _append(coll, val, idx):
+    if isinstance(coll, dict):
+      coll[idx] = val
+    else:
+      coll.append(val)
   is_test = lookup is not None
   if lookup is None:
     lookup: dict = {'<unk>': unk_token_idx, '<pad>': pad_token_idx}
-  result = []
-  for tokens_chunk in tokens:
+  result = [] if not drop_if_any_unk else {}
+  for idx, tokens_chunk in enumerate(tokens):
     tokens_to_parse = tokens_chunk if num_tokens is None else tokens_chunk[:num_tokens]
     chunk_result = []
     for token in tokens_to_parse:
@@ -38,7 +43,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None, drop
           break
         chunk_result.append(unk_token_idx)
     if len(chunk_result) > 0:
-      result.append(chunk_result)
+      _append(result, chunk_result, idx)
   return result, lookup
 
 def preprocess_texts(texts, token_lookup=None, num_tokens=None, token_set=None, drop_if_any_unk=False):

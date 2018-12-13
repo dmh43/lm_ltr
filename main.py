@@ -126,7 +126,7 @@ def main():
     train_query_lookup = read_cache('./robust_train_queries.json', get_robust_train_queries)
     train_query_name_to_id = read_cache('./train_query_name_to_id.json',
                                         lambda: create_id_lookup(train_query_lookup.keys()))
-  train_queries, query_token_lookup = read_cache('./parsed_robust_queries_106756.json',
+  train_queries, query_token_lookup = read_cache('./parsed_robust_queries_dict.json',
                                                  lambda: prepare(train_query_lookup,
                                                                  train_query_name_to_id,
                                                                  token_lookup=document_token_lookup,
