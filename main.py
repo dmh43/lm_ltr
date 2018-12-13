@@ -199,7 +199,6 @@ def main():
   else:
     do_update(document_token_embeds)
     do_update(query_token_embeds_init)
-  dont_update(query_token_embeds_init)
   if rabbit.train_params.add_rel_score:
     query_token_embeds, additive = get_additive_regularized_embeds(query_token_embeds_init)
     rel_score = RelScore(query_token_embeds, document_token_embeds, rabbit.model_params, rabbit.train_params)
