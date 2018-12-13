@@ -114,7 +114,7 @@ def main():
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  with open('./106756_most_common_doc.json', 'r') as fh:
+  with open('./caches/106756_most_common_doc.json', 'r') as fh:
     doc_token_set = set(json.load(fh))
     documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
                                                        _names),
