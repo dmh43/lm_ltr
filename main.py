@@ -95,6 +95,7 @@ experiment = None
 def main():
   global model_to_save
   global experiment
+  if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError
   rabbit = MyRabbit(args)
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
@@ -113,29 +114,23 @@ def main():
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  if not rabbit.model_params.dont_limit_num_uniq_tokens:
-    with open('./60000_most_common_doc.json', 'r') as fh:
-      doc_token_set = set(json.load(fh))
-    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks.json',
+  with open('./106756_most_common_doc.json', 'r') as fh:
+    doc_token_set = set(json.load(fh))
+    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
                                                        _names),
                                                   lambda: prepare(document_lookup,
                                                                   document_title_to_id,
                                                                   num_tokens=num_doc_tokens_to_consider,
                                                                   token_set=doc_token_set))
-  else:
-    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_no_pad.json',
-                                                       _names),
-                                                  lambda: prepare(document_lookup,
-                                                                  document_title_to_id,
-                                                                  num_tokens=num_doc_tokens_to_consider))
   if not rabbit.run_params.just_caches:
     train_query_lookup = read_cache('./robust_train_queries.json', get_robust_train_queries)
     train_query_name_to_id = read_cache('./train_query_name_to_id.json',
                                         lambda: create_id_lookup(train_query_lookup.keys()))
-  with open('./60000_most_common_query.json', 'r') as fh:
-    query_token_set = set(json.load(fh))
-  train_queries, query_token_lookup = read_cache('./parsed_robust_queries.json',
-                                                 lambda: prepare(train_query_lookup, train_query_name_to_id))
+  train_queries, query_token_lookup = read_cache('./parsed_robust_queries_106756.json',
+                                                 lambda: prepare(train_query_lookup,
+                                                                 train_query_name_to_id,
+                                                                 token_set=doc_token_set,
+                                                                 drop_if_any_unk=True))
   if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
     raise NotImplementedError
     query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
