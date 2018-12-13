@@ -140,12 +140,12 @@ def main():
     query_tok_to_doc_tok = None
   if rabbit.train_params.use_pointwise_loss:
     if rabbit.train_params.train_dataset_size:
-      train_data = read_cache(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}.json',
+      train_data = read_cache(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}_106756.json',
                               lambda: read_query_result(train_query_name_to_id,
                                                         document_title_to_id,
                                                         train_queries)[:rabbit.train_params.train_dataset_size])
     else:
-      train_data = read_cache(f'./robust_train_query_results_tokens.json',
+      train_data = read_cache(f'./robust_train_query_results_tokens_106756.json',
                               lambda: read_query_result(train_query_name_to_id,
                                                         document_title_to_id,
                                                         train_queries))
@@ -213,11 +213,11 @@ def main():
                                                    get_robust_rels)
   test_query_name_to_id = read_cache('./test_query_name_to_id.json',
                                      lambda: create_id_lookup(test_query_lookup.keys()))
-  test_queries, __ = read_cache('./parsed_test_robust_queries.json',
+  test_queries, __ = read_cache('./parsed_test_robust_queries_106756.json',
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  test_data = read_cache('./parsed_robust_rels.json',
+  test_data = read_cache('./parsed_robust_rels_106756.json',
                          lambda: process_rels(test_query_name_document_title_rels,
                                               document_title_to_id,
                                               test_query_name_to_id,
@@ -226,14 +226,14 @@ def main():
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
   if use_pointwise_loss:
-    normalized_train_data = read_cache('./normalized_train_query_data.json',
+    normalized_train_data = read_cache('./normalized_train_query_data_106756.json',
                                        lambda: normalize_scores_query_wise(train_data))
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data[:rabbit.train_params.train_dataset_size],
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
-                                      cache=name('./pointwise_train_ranking.json', names),
+                                      cache=name('./pointwise_train_ranking_106756.json', names),
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
@@ -243,7 +243,7 @@ def main():
                                      rabbit.train_params.batch_size,
                                      rel_method=rabbit.train_params.rel_method,
                                      num_doc_tokens=num_doc_tokens_to_consider,
-                                     cache=name('./pointwise_test_ranking.json', names),
+                                     cache=name('./pointwise_test_ranking_106756.json', names),
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                      use_doc_out=rabbit.model_params.use_doc_out)
@@ -259,7 +259,7 @@ def main():
                                                rel_method=rabbit.train_params.rel_method,
                                                num_neg_samples=rabbit.train_params.num_neg_samples,
                                                num_doc_tokens=num_doc_tokens_to_consider,
-                                               cache=name('./pairwise_train_ranking.json', names),
+                                               cache=name('./pairwise_train_ranking_106756.json', names),
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
@@ -272,7 +272,7 @@ def main():
                                               rel_method=rabbit.train_params.rel_method,
                                               num_neg_samples=rabbit.train_params.num_neg_samples if rabbit.train_params.memorize_test else 0,
                                               num_doc_tokens=num_doc_tokens_to_consider,
-                                              cache=name('./pairwise_test_ranking.json', names),
+                                              cache=name('./pairwise_test_ranking_106756.json', names),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                               use_doc_out=rabbit.model_params.use_doc_out)
