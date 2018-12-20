@@ -26,6 +26,8 @@ from rabbit_ml.rabbit_ml.experiment import Experiment
 
 args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: string.split(','), 'default': []},
          {'name': 'add_rel_score', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'append_hadamard', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'append_difference', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 512},
          {'name': 'bin_rankings', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
          {'name': 'cheat', 'for': 'run_params', 'type': bool, 'default': False},
@@ -78,7 +80,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
-         {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0},]
+         {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0}]
 
 def name(path, notes):
   if len(notes) == 0: return path
@@ -153,6 +155,8 @@ def main():
     train_data = []
   q_embed_len = rabbit.model_params.query_token_embed_len
   doc_embed_len = rabbit.model_params.document_token_embed_len
+  if rabbit.model_params.append_difference or rabbit.model_params.append_hadamard:
+    assert q_embed_len == doc_embed_len, 'Must use same size doc and query embeds when appending diff or hadamard'
   if q_embed_len == doc_embed_len:
     glove_lookup = get_glove_lookup(embedding_dim=q_embed_len,
                                     use_large_embed=rabbit.model_params.use_large_embed)

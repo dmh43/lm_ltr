@@ -47,7 +47,9 @@ class PointwiseScorer(nn.Module):
       concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
     self.layers = nn.ModuleList()
     if not model_params.use_cosine_similarity:
-      from_size = concat_len
+      from_size = concat_len + sum([model_params.query_token_embed_len
+                                    for i in [model_params.append_hadamard, model_params.append_difference]
+                                    if i])
       for to_size in model_params.hidden_layer_sizes:
         self.layers.extend(_get_layer(from_size,
                                       to_size,
@@ -58,6 +60,8 @@ class PointwiseScorer(nn.Module):
     if not train_params.use_pointwise_loss:
       self.layers.append(nn.Tanh())
     self.use_cosine_similarity = model_params.use_cosine_similarity
+    self.append_difference = model_params.append_difference
+    self.append_hadamard = model_params.append_hadamard
 
 
   def forward(self, query, document, lens):
@@ -74,6 +78,10 @@ class PointwiseScorer(nn.Module):
       hidden = torch.sum(doc_embed * query_embed, 1)
     else:
       hidden = torch.cat([doc_embed, query_embed], 1)
+    if self.append_difference:
+      hidden = torch.cat([hidden, doc_embed - query_embed], 1)
+    if self.append_hadamard:
+      hidden = torch.cat([hidden, doc_embed * query_embed], 1)
     return pipe(hidden,
                 *self.layers,
                 torch.squeeze)[unsort_order]
