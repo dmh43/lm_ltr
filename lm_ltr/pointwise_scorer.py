@@ -10,7 +10,7 @@ from .utils import Identity
 def _get_layer(from_size, to_size, dropout_keep_prob, activation=None, use_layer_norm=False, use_batch_norm=False):
   return [nn.Linear(from_size, to_size),
           nn.LayerNorm(to_size) if use_layer_norm else Identity(),
-          nn.BatchNorm1d(from_size) if use_batch_norm else Identity(),
+          nn.BatchNorm1d(to_size) if use_batch_norm else Identity(),
           nn.ReLU() if activation is None else activation,
           nn.Dropout(1 - dropout_keep_prob)]
 
