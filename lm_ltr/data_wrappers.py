@@ -95,7 +95,7 @@ class RankingDataset(Dataset):
     query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(ranking[:self.k])
     if len(ranking) < self.num_to_rank:
-      neg_samples = sample(set(range(self.num_to_rank)) - set(ranking),
+      neg_samples = sample(set(range(len(documents))) - set(ranking),
                            self.num_to_rank - len(ranking))
       ranking_with_neg = ranking + neg_samples
     else:
@@ -103,7 +103,9 @@ class RankingDataset(Dataset):
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
                                               torch.tensor(ranking_with_neg, dtype=torch.long))
     if self.normalized_score_lookup is not None:
+      smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
       doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
+                                 if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                  for doc_id in doc_ids.tolist()])
     else:
       doc_scores = torch.zeros(len(documents))
@@ -129,7 +131,9 @@ class RankingDataset(Dataset):
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
     if self.normalized_score_lookup is not None:
+      smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
       doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
+                                 if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                  for doc_id in doc_ids.tolist()])
     else:
       doc_scores = torch.zeros(len(documents))
