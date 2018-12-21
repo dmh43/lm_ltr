@@ -71,5 +71,4 @@ class MultiObjective(nn.Module):
       query, document, lens = args
       return self._pointwise_forward(query, document, lens)
     else:
-      query, document_1, document_2, lens_1, lens_2 = args
-      return self._pairwise_forward(query, document_1, document_2, lens_1, lens_2)
+      return self._pairwise_forward(*args)
