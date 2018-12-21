@@ -186,7 +186,7 @@ def get_normalized_score_lookup(data):
     normalized_scores = scores - query_score_total
     for doc_info, score in zip(doc_infos, normalized_scores.tolist()):
       normalized_lookup[tuple(doc_info[2])][doc_info[0]] = score
-  return normalized_lookup
+  return dict(normalized_lookup)
 
 def process_rels(query_name_document_title_rels, document_title_to_id, query_name_to_id, queries):
   data = []
