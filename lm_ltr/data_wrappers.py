@@ -95,7 +95,7 @@ class RankingDataset(Dataset):
     query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(ranking[:self.k])
     if len(ranking) < self.num_to_rank:
-      neg_samples = sample(set(range(len(documents))) - set(ranking),
+      neg_samples = sample(set(range(len(self.documents))) - set(ranking),
                            self.num_to_rank - len(ranking))
       ranking_with_neg = ranking + neg_samples
     else:
