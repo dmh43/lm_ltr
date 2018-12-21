@@ -108,7 +108,7 @@ class RankingDataset(Dataset):
                                  if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                  for doc_id in doc_ids.tolist()])
     else:
-      doc_scores = torch.zeros(len(documents))
+      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
@@ -136,7 +136,7 @@ class RankingDataset(Dataset):
                                  if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                  for doc_id in doc_ids.tolist()])
     else:
-      doc_scores = torch.zeros(len(documents))
+      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
