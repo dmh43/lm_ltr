@@ -195,8 +195,12 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
         return results
 
 def write_to_file(path, rows):
-  with open(path, 'w+') as fh:
-    json.dump(rows, fh)
+  if '.pkl' in path:
+    with open(path, 'wb+') as fh:
+      pickle.dump(rows, fh)
+  else:
+    with open(path, 'w+') as fh:
+      json.dump(rows, fh)
 
 def read_from_file(path):
   if '.pkl' in path:
