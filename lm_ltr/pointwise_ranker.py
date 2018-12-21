@@ -33,6 +33,7 @@ class PointwiseRanker:
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
     k = k if k is not None else len(documents)
     ranks = []
+    doc_scores = doc_scores.to(self.device)
     for query in query.to(self.device):
       if self.doc_chunk_size != -1:
         all_scores = []
