@@ -103,7 +103,8 @@ class RankingDataset(Dataset):
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
                                               torch.tensor(ranking_with_neg, dtype=torch.long))
     if self.normalized_score_lookup is not None:
-      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id] for doc_id in doc_ids])
+      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
+                                 for doc_id in doc_ids.tolist()])
     else:
       doc_scores = torch.zeros(len(documents))
     return {'query': torch.tensor(query, dtype=torch.long),
@@ -128,7 +129,8 @@ class RankingDataset(Dataset):
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
     if self.normalized_score_lookup is not None:
-      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id] for doc_id in doc_ids])
+      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
+                                 for doc_id in doc_ids.tolist()])
     else:
       doc_scores = torch.zeros(len(documents))
     return {'query': torch.tensor(query, dtype=torch.long),
