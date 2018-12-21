@@ -277,8 +277,8 @@ class QueryPairwiseDataset(QueryDataset):
       doc_1_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_1']]
       doc_2_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_2']]
     else:
-      doc_1_score = 0
-      doc_2_score = 0
+      doc_1_score = 0.0
+      doc_2_score = 0.0
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), order_int)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
