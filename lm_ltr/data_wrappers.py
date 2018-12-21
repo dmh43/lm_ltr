@@ -69,7 +69,8 @@ class RankingDataset(Dataset):
                query_tok_to_doc_tok=None,
                use_doc_out=False,
                num_to_rank=1000,
-               cheat=False):
+               cheat=False,
+               normalized_score_lookup=None):
     self.rankings = rankings
     self.documents = documents
     self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
@@ -81,6 +82,7 @@ class RankingDataset(Dataset):
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.use_doc_out = use_doc_out
     self.cheat = cheat
+    self.normalized_score_lookup = normalized_score_lookup
     if self.is_test:
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
       self.q_strs = list(set(rankings.keys()).intersection(set(self.rel_by_q_str.keys())))
@@ -100,11 +102,16 @@ class RankingDataset(Dataset):
       ranking_with_neg = ranking[:self.num_to_rank]
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
                                               torch.tensor(ranking_with_neg, dtype=torch.long))
+    if self.normalized_score_lookup is not None:
+      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id] for doc_id in doc_ids])
+    else:
+      doc_scores = torch.zeros(len(documents))
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
             'ranking': ranking[:self.k],
-            'relevant': relevant}
+            'relevant': relevant,
+            'doc_scores': doc_scores}
 
   def _get_test_item(self, idx):
     q_str = self.q_strs[idx]
@@ -120,11 +127,16 @@ class RankingDataset(Dataset):
           ranking.append(doc_id)
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
+    if self.normalized_score_lookup is not None:
+      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id] for doc_id in doc_ids])
+    else:
+      doc_scores = torch.zeros(len(documents))
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
             'ranking': self.rel_by_q_str[q_str][1][:self.k],
-            'relevant': relevant}
+            'relevant': relevant,
+            'doc_scores': doc_scores}
 
   def __getitem__(self, idx):
     return self._get_test_item(idx) if self.is_test else self._get_train_item(idx)
@@ -194,7 +206,8 @@ class QueryPairwiseDataset(QueryDataset):
                query_tok_to_doc_tok=None,
                use_doc_out=False,
                bin_rankings=None,
-               use_variable_loss=False):
+               use_variable_loss=False,
+               normalized_score_lookup=None):
     super().__init__(documents,
                      data,
                      rel_method=rel_method,
@@ -207,6 +220,7 @@ class QueryPairwiseDataset(QueryDataset):
     self.num_neg_samples = num_neg_samples
     self.rankings_for_train = self.rankings
     self.use_doc_out = use_doc_out
+    self.normalized_score_lookup = normalized_score_lookup
     if bin_rankings:
       num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                      lambda ranking: (len(ranking[1]) - 1) * bin_rankings if len(ranking) > bin_rankings else 0)
@@ -253,7 +267,13 @@ class QueryPairwiseDataset(QueryDataset):
       order_int = 1
     else:
       doc_2 = self._get_document(elem['doc_id_2'])
-    return ((query, doc_1, doc_2), order_int)
+    if self.normalized_score_lookup is not None:
+      doc_1_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_1']]
+      doc_2_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_2']]
+    else:
+      doc_1_score = 0
+      doc_2_score = 0
+    return ((query, doc_1, doc_2, doc_1_score, doc_2_score), order_int)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
   query_embeds = query_word_embeds(queries)
@@ -323,7 +343,8 @@ def build_query_pairwise_dataloader(documents,
                                     use_sequential_sampler=False,
                                     use_doc_out=False,
                                     bin_rankings=None,
-                                    use_variable_loss=False) -> DataLoader:
+                                    use_variable_loss=False,
+                                    normalized_score_lookup=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -334,7 +355,8 @@ def build_query_pairwise_dataloader(documents,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok,
                                  use_doc_out=use_doc_out,
                                  bin_rankings=bin_rankings,
-                                 use_variable_loss=use_variable_loss)
+                                 use_variable_loss=use_variable_loss,
+                                 normalized_score_lookup=normalized_score_lookup)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),

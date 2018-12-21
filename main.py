@@ -12,7 +12,7 @@ from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_to
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
-from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup, normalize_scores_query_wise, process_rels
+from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
@@ -41,6 +41,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': lambda string: [int(size) for size in string.split(',')], 'default': [128, 64, 16]},
+         {'name': 'dont_include_normalized_score', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'dont_limit_num_uniq_tokens', 'for': 'model_params', 'type': 'flag', 'default': False},
@@ -227,6 +228,14 @@ def main():
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
+  if not rabbit.model_params.dont_include_normalized_score:
+    train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.json',
+                                               lambda: get_normalized_score_lookup(train_data))
+    test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.json',
+                                               lambda: get_normalized_score_lookup(test_data))
+  else:
+    train_normalized_score_lookup = None
+    test_normalized_score_lookup = None
   names = []
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
@@ -270,7 +279,8 @@ def main():
                                                use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                                use_doc_out=rabbit.model_params.use_doc_out,
                                                bin_rankings=rabbit.train_params.bin_rankings,
-                                               use_variable_loss=rabbit.train_params.use_variable_loss)
+                                               use_variable_loss=rabbit.train_params.use_variable_loss,
+                                               normalized_score_lookup=train_normalized_score_lookup)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
@@ -280,7 +290,8 @@ def main():
                                               cache=name('./pairwise_test_ranking_106756.json', names),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
-                                              use_doc_out=rabbit.model_params.use_doc_out)
+                                              use_doc_out=rabbit.model_params.use_doc_out,
+                                              normalized_score_lookup=test_normalized_score_lookup)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -291,7 +302,8 @@ def main():
                                          num_doc_tokens=num_doc_tokens_to_consider,
                                          query_tok_to_doc_tok=query_tok_to_doc_tok,
                                          use_doc_out=rabbit.model_params.use_doc_out,
-                                         num_to_rank=rabbit.run_params.num_to_rank)
+                                         num_to_rank=rabbit.run_params.num_to_rank,
+                                         normalized_score_lookup=train_normalized_score_lookup)
   test_ranking_candidates = read_cache('./test_ranking_candidates.json',
                                        read_query_test_rankings)
   lookup_by_title = lambda title: document_title_to_id.get(title) or 0
@@ -307,7 +319,8 @@ def main():
                                         query_tok_to_doc_tok=query_tok_to_doc_tok,
                                         use_doc_out=rabbit.model_params.use_doc_out,
                                         num_to_rank=rabbit.run_params.num_to_rank,
-                                        cheat=rabbit.run_params.cheat)
+                                        cheat=rabbit.run_params.cheat,
+                                        normalized_score_lookup=test_normalized_score_lookup)
   valid_dl = build_query_pairwise_dataloader(documents,
                                              test_data[:rabbit.train_params.batch_size],
                                              rabbit.train_params.batch_size,

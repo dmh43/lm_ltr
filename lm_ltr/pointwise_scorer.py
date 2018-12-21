@@ -47,6 +47,7 @@ class PointwiseScorer(nn.Module):
           concat_len = 1600
     else:
       concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
+    concat_len += 1
     self.layers = nn.ModuleList()
     if not model_params.use_cosine_similarity:
       from_size = concat_len + sum([model_params.query_token_embed_len
@@ -67,7 +68,7 @@ class PointwiseScorer(nn.Module):
     self.append_hadamard = model_params.append_hadamard
 
 
-  def forward(self, query, document, lens):
+  def forward(self, query, document, lens, doc_score):
     sorted_lens, sort_order = torch.sort(lens, descending=True)
     batch_range, unsort_order = torch.sort(sort_order)
     if self.frame_as_qa:
@@ -85,6 +86,7 @@ class PointwiseScorer(nn.Module):
       hidden = torch.cat([hidden, doc_embed - query_embed], 1)
     if self.append_hadamard:
       hidden = torch.cat([hidden, doc_embed * query_embed], 1)
+    hidden = torch.cat([hidden, doc_score.unsqueeze(1)], 1)
     return pipe(hidden,
                 *self.layers,
                 torch.squeeze)[unsort_order]

@@ -1,3 +1,4 @@
+from collections import defaultdict
 import ast
 import random
 
@@ -88,11 +89,15 @@ def collate_query_pairwise_samples(samples):
   query = pad_to_max_len(x[0])
   doc_1, lens_1 = list(zip(*x[1]))
   doc_2, lens_2 = list(zip(*x[2]))
+  doc_1_score = x[3]
+  doc_2_score = x[4]
   return ((torch.tensor(query),
            torch.stack(doc_1),
            torch.stack(doc_2),
            torch.stack(lens_1),
-           torch.stack(lens_2)),
+           torch.stack(lens_2),
+           torch.stack(doc_1_score),
+           torch.stack(doc_2_score)),
           torch.tensor(rel, dtype=torch.float32))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
@@ -167,6 +172,21 @@ def normalize_scores_query_wise(data):
                              'score': score}
                             for doc_info, score in zip(doc_infos, normalized_scores.tolist())])
   return normalized_data
+
+def get_normalized_score_lookup(data):
+  device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+  query_doc_info = {}
+  for row in data:
+    score = row.get('score') or 0.0
+    append_at(query_doc_info, str(row['query'])[1:-1], [row['doc_id'], score, row['query']])
+  normalized_lookup = defaultdict(lambda: {})
+  for doc_infos in query_doc_info.values():
+    scores = torch.tensor([doc_score for doc_id, doc_score, query in doc_infos], device=device)
+    query_score_total = torch.logsumexp(scores, 0)
+    normalized_scores = scores - query_score_total
+    for doc_info, score in zip(doc_infos, normalized_scores.tolist()):
+      normalized_lookup[tuple(doc_info[2])][doc_info[0]] = score
+  return normalized_lookup
 
 def process_rels(query_name_document_title_rels, document_title_to_id, query_name_to_id, queries):
   data = []
