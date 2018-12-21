@@ -96,8 +96,8 @@ def collate_query_pairwise_samples(samples):
            torch.stack(doc_2),
            torch.stack(lens_1),
            torch.stack(lens_2),
-           torch.stack(doc_1_score),
-           torch.stack(doc_2_score)),
+           torch.tensor(doc_1_score),
+           torch.tensor(doc_2_score)),
           torch.tensor(rel, dtype=torch.float32))
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
