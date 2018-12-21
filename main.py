@@ -229,9 +229,9 @@ def main():
                                               test_query_name_to_id,
                                               test_queries))
   if not rabbit.model_params.dont_include_normalized_score:
-    train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.json',
+    train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
                                                lambda: get_normalized_score_lookup(train_data))
-    test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.json',
+    test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.pkl',
                                                lambda: get_normalized_score_lookup(test_data))
   else:
     train_normalized_score_lookup = None
