@@ -326,7 +326,8 @@ def main():
                                              rabbit.train_params.batch_size,
                                              num_neg_samples=0,
                                              num_doc_tokens=num_doc_tokens_to_consider,
-                                             use_doc_out=rabbit.model_params.use_doc_out)
+                                             use_doc_out=rabbit.model_params.use_doc_out,
+                                             normalized_score_lookup=test_normalized_score_lookup)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset
