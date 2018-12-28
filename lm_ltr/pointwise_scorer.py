@@ -63,7 +63,7 @@ class PointwiseScorer(nn.Module):
       self.layers.extend(_get_layer(from_size, 1, train_params.dropout_keep_prob, activation=Identity()))
     if not train_params.use_pointwise_loss:
       if not train_params.use_bce_loss:
-        self.layers.append(torch.tanh)
+        self.layers.append(nn.Tanh())
     self.use_cosine_similarity = model_params.use_cosine_similarity
     self.append_difference = model_params.append_difference
     self.append_hadamard = model_params.append_hadamard
