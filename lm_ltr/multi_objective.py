@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from toolz import cons, partial
 
-from .losses import hinge_loss, truncated_hinge_loss
+from .losses import hinge_loss, truncated_hinge_loss, bce_loss
 
 class MultiObjective(nn.Module):
   def __init__(self, model, train_params, rel_score=None, additive=None):
@@ -13,6 +13,7 @@ class MultiObjective(nn.Module):
     self.use_pointwise_loss = train_params.use_pointwise_loss
     self.use_truncated_hinge_loss = train_params.use_truncated_hinge_loss
     self.use_variable_loss = train_params.use_variable_loss
+    self.use_bce_loss = train_params.use_bce_loss
     self.truncation = train_params.truncation
     self.rel_score_penalty = train_params.rel_score_penalty
     self.rel_score_obj_scale = train_params.rel_score_obj_scale
@@ -28,6 +29,8 @@ class MultiObjective(nn.Module):
                              truncation=self.truncation)
     elif self.use_variable_loss:
       self.loss_fn = hinge_loss
+    elif self.use_bce_loss:
+      self.loss_fn = bce_loss
     else:
       self.loss_fn = partial(hinge_loss,
                              margin=self.margin)
