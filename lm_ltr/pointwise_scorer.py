@@ -87,7 +87,8 @@ class PointwiseScorer(nn.Module):
       hidden = torch.cat([hidden, doc_embed - query_embed], 1)
     if self.append_hadamard:
       hidden = torch.cat([hidden, doc_embed * query_embed], 1)
-    hidden = torch.cat([hidden, doc_score.unsqueeze(1)], 1)
+    if not self.use_cosine_similarity:
+      hidden = torch.cat([hidden, doc_score.unsqueeze(1)], 1)
     return pipe(hidden,
                 *self.layers,
                 torch.squeeze)[unsort_order]
