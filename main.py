@@ -65,6 +65,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'train_dataset_size', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
          {'name': 'truncation', 'for': 'train_params', 'type': float, 'default': -1.0},
          {'name': 'use_batch_norm', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'use_bce_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_cnn', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_cosine_similarity', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_cyclical_lr', 'for': 'train_params', 'type': 'flag', 'default': False},
