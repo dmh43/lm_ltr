@@ -42,3 +42,4 @@ indri/out/*
 
 *.pkl
 *.prof
+/data
