@@ -30,7 +30,8 @@ class QueryDataset(Dataset):
                num_doc_tokens=100,
                rankings=None,
                query_tok_to_doc_tok=None,
-               use_doc_out=False):
+               use_doc_out=False,
+               normalized_score_lookup=None):
     self.documents = documents
     self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
     self.data = data
@@ -39,6 +40,7 @@ class QueryDataset(Dataset):
     self.num_doc_tokens = num_doc_tokens
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.use_doc_out = use_doc_out
+    self.normalized_score_lookup = normalized_score_lookup
 
   def _get_document(self, elem_idx):
     if self.use_doc_out:
@@ -51,7 +53,12 @@ class QueryDataset(Dataset):
 
   def __getitem__(self, idx):
     query = remap_if_exists(self.data[idx]['query'], self.query_tok_to_doc_tok)
-    return ((query, self._get_document(self.data[idx]['doc_id'])),
+    doc_id = self.data[idx]['doc_id']
+    if self.normalized_score_lookup is not None:
+      doc_score = self.normalized_score_lookup[tuple(query)][doc_id]
+    else:
+      doc_score = 0.0
+    return ((query, self._get_document(doc_id), doc_score),
             self.rel_method(self.data[idx]))
 
 def _shuffle_doc_doc_ids(documents, doc_ids):
@@ -323,7 +330,8 @@ def build_query_dataloader(documents,
                            limit=None,
                            query_tok_to_doc_tok=None,
                            use_sequential_sampler=False,
-                           use_doc_out=False) -> DataLoader:
+                           use_doc_out=False,
+                           normalized_score_lookup=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
@@ -331,7 +339,8 @@ def build_query_dataloader(documents,
                          rankings=rankings,
                          num_doc_tokens=num_doc_tokens,
                          query_tok_to_doc_tok=query_tok_to_doc_tok,
-                         use_doc_out=use_doc_out)
+                         use_doc_out=use_doc_out,
+                         normalized_score_lookup=normalized_score_lookup)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),

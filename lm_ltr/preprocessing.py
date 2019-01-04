@@ -78,9 +78,11 @@ def collate_query_samples(samples):
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   doc, lens = list(zip(*x[1]))
+  doc_score = x[2]
   return ((torch.tensor(query),
            torch.stack(doc),
-           torch.stack(lens)),
+           torch.stack(lens),
+           torch.tensor(doc_score)),
           torch.tensor(rel, dtype=torch.float32))
 
 def collate_query_pairwise_samples(samples):

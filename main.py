@@ -253,7 +253,8 @@ def main():
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
-                                      use_doc_out=rabbit.model_params.use_doc_out)
+                                      use_doc_out=rabbit.model_params.use_doc_out,
+                                      normalized_score_lookup=train_normalized_score_lookup)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
@@ -262,7 +263,8 @@ def main():
                                      cache=name('./pointwise_test_ranking_106756.json', names),
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
-                                     use_doc_out=rabbit.model_params.use_doc_out)
+                                     use_doc_out=rabbit.model_params.use_doc_out,
+                                     normalized_score_lookup=test_normalized_score_lookup)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
