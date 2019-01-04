@@ -74,7 +74,6 @@ class MultiObjective(nn.Module):
 
   def forward(self, *args):
     if self.use_pointwise_loss:
-      query, document, lens = args
-      return self._pointwise_forward(query, document, lens)
+      return self._pointwise_forward(*args)
     else:
       return self._pairwise_forward(*args)
