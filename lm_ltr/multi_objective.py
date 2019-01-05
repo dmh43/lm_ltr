@@ -53,13 +53,13 @@ class MultiObjective(nn.Module):
     else:
       return pred_loss
 
-  def _pointwise_forward(self, query, document, lens):
+  def _pointwise_forward(self, query, document, lens, doc_score):
     if self.add_rel_score:
       rel_score = self.rel_score(query, document) if self.add_rel_score else 0
-      out = self.model(query, document, lens)
+      out = self.model(query, document, lens, doc_score)
       return (out, rel_score)
     else:
-      out = self.model(query, document, lens)
+      out = self.model(query, document, lens, doc_score)
       return (out,)
 
   def _pairwise_forward(self, query, document_1, document_2, lens_1, lens_2, doc_1_scores, doc_2_scores):
