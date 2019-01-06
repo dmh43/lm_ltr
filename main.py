@@ -325,9 +325,10 @@ def main():
                                         num_to_rank=rabbit.run_params.num_to_rank,
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup)
+  test_data_row_ids = [str(i) for i in range(rabbit.train_params.batch_size)]
   if use_pointwise_loss:
     valid_dl = build_query_dataloader(documents,
-                                      test_data[:rabbit.train_params.batch_size],
+                                      _.pick(test_data, test_data_row_ids),
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
@@ -335,7 +336,7 @@ def main():
                                       normalized_score_lookup=test_normalized_score_lookup)
   else:
     valid_dl = build_query_pairwise_dataloader(documents,
-                                               test_data[:rabbit.train_params.batch_size],
+                                               _.pick(test_data, test_data_row_ids),
                                                rabbit.train_params.batch_size,
                                                num_neg_samples=0,
                                                num_doc_tokens=num_doc_tokens_to_consider,
