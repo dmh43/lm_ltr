@@ -11,6 +11,10 @@ def bce_loss(score_difference, target):
   y = (target > 0).float()
   return nn.functional.binary_cross_entropy_with_logits(score_difference, y)
 
+def l1_loss(score_difference, target):
+  y = (target > 0).float()
+  return F.l1_loss(score_difference, y)
+
 def smoothed_bce_loss(score_difference, target):
   device = score_difference.device
   total_loss = torch.tensor(0.0, device=device)
