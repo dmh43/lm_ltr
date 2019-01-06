@@ -8,6 +8,7 @@ import pymysql.cursors
 import pickle
 import json
 import shelve
+from dbm import error as DbmFileError
 
 import pydash as _
 
@@ -213,7 +214,7 @@ def read_from_file(path):
       shelve_path = ''.join(path.split('.json')[:-1]) + '_store' + '.json'
       try:
         return shelve.open(shelve_path, flag='r')
-      except FileNotFoundError:
+      except DbmFileError:
         shelf = shelve.open(shelve_path)
         shelf.update(dict(json.load(fh)))
         return shelf
