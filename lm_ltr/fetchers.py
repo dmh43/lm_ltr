@@ -214,14 +214,16 @@ def read_from_file(path):
     if os.path.getsize(path) > 2e9:
       shelve_path = ''.join(path.split('.json')[:-1]) + '_store' + '.json'
       try:
-        return ShelveArray(shelve.open(shelve_path, flag='r'))
+        with shelve.open(shelve_path, flag='r') as shelf:
+          return ShelveArray(shelf)
       except DbmFileError:
-        shelf = ShelveArray(shelve.open(shelve_path))
-        with open(path, 'r') as fh:
-          data = json.load(fh)
-          shelf.shelf.update(dict(zip((str(i) for i in range(len(data))),
-                                      data)))
-        return shelf
+        with shelve.open(shelve_path) as shelf:
+          shelf_array = ShelveArray(shelf)
+          with open(path, 'r') as fh:
+            data = json.load(fh)
+            shelf_array.shelf.update(dict(zip((str(i) for i in range(len(data))),
+                                              data)))
+            return shelf_array
     else:
       with open(path, 'r') as fh:
         return json.load(fh)
