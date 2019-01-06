@@ -7,9 +7,9 @@ import os
 import pymysql.cursors
 import pickle
 import json
+import shelve
 
 import pydash as _
-from json_store import JSONStore
 
 from .trec_doc_parse import parse_test_set, parse_qrels
 from .utils import append_at
@@ -210,7 +210,13 @@ def read_from_file(path):
       return pickle.load(fh)
   else:
     if os.path.getsize(path) > 2e9:
-      return JSONStore(path)
+      shelve_path = ''.join(path.split('.json')[:-1]) + '_store' + '.json'
+      try:
+        return shelve.open(shelve_path, flag='r')
+      except FileNotFoundError:
+        shelf = shelve.open(shelve_path)
+        shelf.update(dict(json.load(fh)))
+        return shelf
     else:
       with open(path, 'r') as fh:
         return json.load(fh)
