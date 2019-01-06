@@ -53,7 +53,7 @@ def check_overlap(ranks_1, ranks_2):
   return agree_ctr, num_combos
 
 def main():
-  query_lookup = read_cache('./robust_test_queries.pkl', get_robust_test_queries)
+  query_lookup = read_cache('./robust_train_queries.json', get_robust_test_queries)
   query_name_to_id = create_id_lookup(query_lookup.keys())
   query_id_to_name = _.invert(query_name_to_id)
   query_ids = range(len(query_id_to_name))
