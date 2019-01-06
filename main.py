@@ -245,12 +245,8 @@ def main():
   if use_pointwise_loss:
     normalized_train_data = read_cache('./normalized_train_query_data_106756.json',
                                        lambda: normalize_scores_query_wise(train_data))
-    if rabbit.train_params.train_dataset_size is not None:
-      _train_data = _.pick(normalized_train_data, [str(i) for i in range(rabbit.train_params.train_dataset_size)])
-    else:
-      _train_data = normalized_train_data
     train_dl = build_query_dataloader(documents,
-                                      _train_data,
+                                      normalized_train_data,
                                       rabbit.train_params.batch_size,
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
