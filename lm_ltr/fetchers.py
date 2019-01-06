@@ -217,7 +217,8 @@ def read_from_file(path):
       except DbmFileError:
         shelf = shelve.open(shelve_path)
         with open(path, 'r') as fh:
-          shelf.update(dict(json.load(fh)))
+          data = json.load(fh)
+          shelf.update(dict(zip(range(len(data)), data)))
         return shelf
     else:
       with open(path, 'r') as fh:
