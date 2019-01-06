@@ -325,13 +325,22 @@ def main():
                                         num_to_rank=rabbit.run_params.num_to_rank,
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup)
-  valid_dl = build_query_pairwise_dataloader(documents,
-                                             test_data[:rabbit.train_params.batch_size],
-                                             rabbit.train_params.batch_size,
-                                             num_neg_samples=0,
-                                             num_doc_tokens=num_doc_tokens_to_consider,
-                                             use_doc_out=rabbit.model_params.use_doc_out,
-                                             normalized_score_lookup=test_normalized_score_lookup)
+  if use_pointwise_loss:
+    valid_dl = build_query_dataloader(documents,
+                                      test_data[:rabbit.train_params.batch_size],
+                                      rabbit.train_params.batch_size,
+                                      rel_method=rabbit.train_params.rel_method,
+                                      num_doc_tokens=num_doc_tokens_to_consider,
+                                      use_doc_out=rabbit.model_params.use_doc_out,
+                                      normalized_score_lookup=test_normalized_score_lookup)
+  else:
+    valid_dl = build_query_pairwise_dataloader(documents,
+                                               test_data[:rabbit.train_params.batch_size],
+                                               rabbit.train_params.batch_size,
+                                               num_neg_samples=0,
+                                               num_doc_tokens=num_doc_tokens_to_consider,
+                                               use_doc_out=rabbit.model_params.use_doc_out,
+                                               normalized_score_lookup=test_normalized_score_lookup)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset
