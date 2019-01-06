@@ -218,7 +218,8 @@ def read_from_file(path):
         shelf = shelve.open(shelve_path)
         with open(path, 'r') as fh:
           data = json.load(fh)
-          shelf.update(dict(zip(range(len(data)), data)))
+          shelf.update(dict(zip((str(i) for i in range(len(data))),
+                                data)))
         return shelf
     else:
       with open(path, 'r') as fh:
