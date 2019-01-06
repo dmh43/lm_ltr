@@ -14,6 +14,7 @@ import pydash as _
 
 from .trec_doc_parse import parse_test_set, parse_qrels
 from .utils import append_at
+from .shelve_array import ShelveArray
 
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
@@ -213,13 +214,13 @@ def read_from_file(path):
     if os.path.getsize(path) > 2e9:
       shelve_path = ''.join(path.split('.json')[:-1]) + '_store' + '.json'
       try:
-        return shelve.open(shelve_path, flag='r')
+        return ShelveArray(shelve.open(shelve_path, flag='r'))
       except DbmFileError:
-        shelf = shelve.open(shelve_path)
+        shelf = ShelveArray(shelve.open(shelve_path))
         with open(path, 'r') as fh:
           data = json.load(fh)
-          shelf.update(dict(zip((str(i) for i in range(len(data))),
-                                data)))
+          shelf.shelf.update(dict(zip((str(i) for i in range(len(data))),
+                                      data)))
         return shelf
     else:
       with open(path, 'r') as fh:
