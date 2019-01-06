@@ -209,7 +209,7 @@ def read_from_file(path):
     with open(path, 'rb') as fh:
       return pickle.load(fh)
   else:
-    if os.path.getsize(path) > 2e6:
+    if os.path.getsize(path) > 2e9:
       return JSONStore(path)
     else:
       with open(path, 'r') as fh:
