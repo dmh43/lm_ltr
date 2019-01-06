@@ -2,12 +2,14 @@ import glob
 from functools import reduce
 import re
 from lxml import html
+import os
 
 import pymysql.cursors
 import pickle
 import json
 
 import pydash as _
+from json_store import JSONStore
 
 from .trec_doc_parse import parse_test_set, parse_qrels
 from .utils import append_at
@@ -207,8 +209,11 @@ def read_from_file(path):
     with open(path, 'rb') as fh:
       return pickle.load(fh)
   else:
-    with open(path, 'r') as fh:
-      return json.load(fh)
+    if os.path.getsize(path) > 1e6:
+      return JSONStore(path)
+    else:
+      with open(path, 'r') as fh:
+        return json.load(fh)
 
 def read_or_cache(path, fn):
   try:
