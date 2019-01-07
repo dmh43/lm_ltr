@@ -37,7 +37,7 @@ def get_bm25_results(queries, num_ranks=None):
 def get_qml_results(queries, num_ranks=None):
   with open('./caches/pairwise_train_ranking_106756.json') as fh:
     rankings = json.load(fh)
-    return [rankings[str(query)[1:-1]] for query in queries]
+    return [rankings[query] for query in queries]
 
 def check_overlap(ranks_1, ranks_2):
   agree_ctr = 0
@@ -59,10 +59,8 @@ def main():
   query_id_to_name = _.invert(query_name_to_id)
   query_ids = range(len(query_id_to_name))
   queries = [query_lookup[query_id_to_name[query_id]] for query_id in query_ids]
-  parsed_queries, query_token_lookup = read_cache('./parsed_robust_queries_dict.json',
-                                                  lambda: print('failed'))
   bm25 = get_bm25_results(queries)
-  qml = get_qml_results(parsed_queries)
+  qml = get_qml_results(query_ids)
   agree_ctr, num_combos = check_overlap(bm25, qml)
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
