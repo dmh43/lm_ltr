@@ -35,7 +35,7 @@ def get_bm25_results(queries, num_ranks=None):
                   tokenized_queries))
 
 def get_qml_results(queries, num_ranks=None):
-  with open('./pairwise_train_ranking_106756.json') as fh:
+  with open('./caches/pairwise_train_ranking_106756.json') as fh:
     rankings = json.load(fh)
     return [rankings[str(query)[1:-1]] for query in queries]
 
