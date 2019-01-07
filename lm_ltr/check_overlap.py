@@ -54,12 +54,15 @@ def check_overlap(ranks_1, ranks_2):
 
 def main():
   query_lookup = read_cache('./robust_train_queries.json', get_robust_test_queries)
-  query_name_to_id = create_id_lookup(query_lookup.keys())
+  query_name_to_id = read_cache('./train_query_name_to_id.json',
+                                lambda: create_id_lookup(query_lookup.keys()))
   query_id_to_name = _.invert(query_name_to_id)
   query_ids = range(len(query_id_to_name))
   queries = [query_lookup[query_id_to_name[query_id]] for query_id in query_ids]
+  parsed_queries, query_token_lookup = read_cache('./parsed_robust_queries_dict.json',
+                                                  lambda: print('failed'))
   bm25 = get_bm25_results(queries)
-  qml = get_qml_results(queries)
+  qml = get_qml_results(parsed_queries)
   agree_ctr, num_combos = check_overlap(bm25, qml)
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
