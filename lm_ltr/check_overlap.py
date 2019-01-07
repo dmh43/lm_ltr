@@ -19,7 +19,7 @@ def get_bm25_results(queries, num_ranks=None):
       scores.append(score)
     scores = np.array(scores)
     return scores[np.argpartition(scores, -10)[-10:]]
-  document_lookup = read_cache('./doc_lookup.pkl', get_robust_documents)
+  document_lookup = read_cache('./doc_lookup.json', get_robust_documents)
   document_title_to_id = create_id_lookup(document_lookup.keys())
   document_id_to_title = _.invert(document_title_to_id)
   doc_ids = range(len(document_id_to_title))
