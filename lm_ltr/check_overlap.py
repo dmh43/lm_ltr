@@ -34,11 +34,6 @@ def get_bm25_results(queries, num_ranks=None):
   return list(map(lambda document: _get_scores(bm25, document, average_idf=average_idf),
                   tokenized_queries))
 
-def get_qml_results(queries, num_ranks=None):
-  with open('./caches/pairwise_train_ranking_106756.json') as fh:
-    rankings = json.load(fh)
-    return [rankings[query] for query in queries]
-
 def check_overlap(ranks_1, ranks_2):
   agree_ctr = 0
   num_combos = 0
@@ -53,14 +48,14 @@ def check_overlap(ranks_1, ranks_2):
   return agree_ctr, num_combos
 
 def main():
-  query_lookup = read_cache('./robust_train_queries.json', get_robust_test_queries)
-  query_name_to_id = read_cache('./train_query_name_to_id.json',
-                                lambda: create_id_lookup(query_lookup.keys()))
-  query_id_to_name = _.invert(query_name_to_id)
-  query_ids = range(len(query_id_to_name))
-  queries = [query_lookup[query_id_to_name[query_id]] for query_id in query_ids]
+  with open('./caches/pairwise_train_ranking_106756.json') as fh:
+    query_ranking_pairs = json.load(fh)
+  queries_by_tok_id, qml = zip(*query_ranking_pairs)
+  parsed_queries, query_token_lookup = read_cache('./parsed_robust_queries_dict.json',
+                                                  lambda: print('failed'))
+  inv = _.invert(query_token_lookup)
+  queries = [' '.join([inv[q] for q in query]) for query in queries_by_tok_id]
   bm25 = get_bm25_results(queries)
-  qml = get_qml_results(query_ids)
   agree_ctr, num_combos = check_overlap(bm25, qml)
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
