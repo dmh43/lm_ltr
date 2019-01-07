@@ -64,4 +64,14 @@ def main():
   agree_ctr, num_combos = check_overlap(bm25, qml)
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+  import ipdb
+  import traceback
+  import sys
+
+  try:
+    main()
+  except: # pylint: disable=bare-except
+    extype, value, tb = sys.exc_info()
+    traceback.print_exc()
+  ipdb.post_mortem(tb)
