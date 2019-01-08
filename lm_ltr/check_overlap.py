@@ -28,7 +28,7 @@ def get_bm25_results(queries, num_ranks=None):
   tokenized_documents = read_cache('tok_docs.pkl',
                                    lambda: tokenizer.process_all(documents))
   tokenized_queries = read_cache('tok_train_queries.json',
-                                 lambda: tokenizer.process_all(queries))
+                                 lambda: tokenizer.process_all(queries))[:len(queries)]
   bm25 = BM25(tokenized_documents)
   average_idf = sum(float(val) for val in bm25.idf.values()) / len(bm25.idf)
   return list(map(lambda document: _get_scores(bm25, document, average_idf=average_idf),
