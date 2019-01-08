@@ -209,7 +209,7 @@ def _get_num_pos_pairs_with_bins(rankings, bin_rankings):
                 0)
 
 def _drop_next_n_from_ranking(num_to_drop_in_ranking, rankings):
-  return [ranking[:1] + ranking[1 + num_to_drop_in_ranking:] for ranking in rankings]
+  return [[query, ranking[:1] + ranking[1 + num_to_drop_in_ranking:]] for query, ranking in rankings]
 
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self,
