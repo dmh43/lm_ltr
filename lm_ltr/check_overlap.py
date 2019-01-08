@@ -55,8 +55,12 @@ def main():
                                                   lambda: print('failed'))
   inv = _.invert(query_token_lookup)
   queries = [' '.join([inv[q] for q in query]) for query in queries_by_tok_id]
-  bm25 = get_bm25_results(queries)
-  agree_ctr, num_combos = check_overlap(bm25, qml)
+  if len(sys.argv) > 1:
+    lim = sys.argv[1]
+  else:
+    lim = None
+  bm25 = get_bm25_results(queries[:lim])
+  agree_ctr, num_combos = check_overlap(bm25, qml[:lim])
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
 if __name__ == "__main__":
