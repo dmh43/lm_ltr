@@ -6,6 +6,7 @@ import json
 from gensim.summarization.bm25 import BM25
 from fastai.text import Tokenizer
 import numpy as np
+from progressbar import progressbar
 
 from lm_ltr.fetchers import read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents
 from lm_ltr.preprocessing import create_id_lookup
@@ -31,8 +32,10 @@ def get_bm25_results(queries, num_ranks=None):
                                  lambda: tokenizer.process_all(queries))[:len(queries)]
   bm25 = BM25(tokenized_documents)
   average_idf = sum(float(val) for val in bm25.idf.values()) / len(bm25.idf)
-  return list(map(lambda document: _get_scores(bm25, document, average_idf=average_idf),
-                  tokenized_queries))
+  rankings = []
+  for q in progressbar(tokenized_queries):
+    rankings.append(_get_scores(bm25, q, average_idf=average_idf))
+  return rankings
 
 def check_overlap(ranks_1, ranks_2):
   agree_ctr = 0
