@@ -59,7 +59,7 @@ def main():
   inv = _.invert(query_token_lookup)
   queries = [' '.join([inv[q] for q in query]) for query in queries_by_tok_id]
   if len(sys.argv) > 1:
-    lim = sys.argv[1]
+    lim = int(sys.argv[1])
   else:
     lim = None
   bm25 = get_bm25_results(queries[:lim])
