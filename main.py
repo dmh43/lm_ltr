@@ -38,6 +38,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'dont_freeze_pretrained_doc_encoder', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_word_embeds', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
+         {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': lambda string: [int(size) for size in string.split(',')], 'default': [128, 64, 16]},
@@ -285,7 +286,8 @@ def main():
                                                use_doc_out=rabbit.model_params.use_doc_out,
                                                bin_rankings=rabbit.train_params.bin_rankings,
                                                use_variable_loss=rabbit.train_params.use_variable_loss,
-                                               normalized_score_lookup=train_normalized_score_lookup)
+                                               normalized_score_lookup=train_normalized_score_lookup,
+                                               num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
@@ -296,7 +298,8 @@ def main():
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                               use_doc_out=rabbit.model_params.use_doc_out,
-                                              normalized_score_lookup=test_normalized_score_lookup)
+                                              normalized_score_lookup=test_normalized_score_lookup,
+                                              num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -341,7 +344,8 @@ def main():
                                                num_neg_samples=0,
                                                num_doc_tokens=num_doc_tokens_to_consider,
                                                use_doc_out=rabbit.model_params.use_doc_out,
-                                               normalized_score_lookup=test_normalized_score_lookup)
+                                               normalized_score_lookup=test_normalized_score_lookup,
+                                               num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset

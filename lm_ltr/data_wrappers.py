@@ -208,6 +208,9 @@ def _get_num_pos_pairs_with_bins(rankings, bin_rankings):
                 rankings,
                 0)
 
+def _drop_next_n_from_ranking(num_to_drop_in_ranking, rankings):
+  return [ranking[:1] + ranking[1 + num_to_drop_in_ranking:] for ranking in rankings]
+
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self,
                documents,
@@ -220,7 +223,11 @@ class QueryPairwiseDataset(QueryDataset):
                use_doc_out=False,
                bin_rankings=None,
                use_variable_loss=False,
-               normalized_score_lookup=None):
+               normalized_score_lookup=None,
+               num_to_drop_in_ranking=0):
+    if num_to_drop_in_ranking > 0:
+      assert bin_rankings == 1, 'bin_rankings != 1 is not supported'
+      rankings = _drop_next_n_from_ranking(num_to_drop_in_ranking, rankings)
     super().__init__(documents,
                      data,
                      rel_method=rel_method,
@@ -359,7 +366,8 @@ def build_query_pairwise_dataloader(documents,
                                     use_doc_out=False,
                                     bin_rankings=None,
                                     use_variable_loss=False,
-                                    normalized_score_lookup=None) -> DataLoader:
+                                    normalized_score_lookup=None,
+                                    num_to_drop_in_ranking=0) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -371,7 +379,8 @@ def build_query_pairwise_dataloader(documents,
                                  use_doc_out=use_doc_out,
                                  bin_rankings=bin_rankings,
                                  use_variable_loss=use_variable_loss,
-                                 normalized_score_lookup=normalized_score_lookup)
+                                 normalized_score_lookup=normalized_score_lookup,
+                                 num_to_drop_in_ranking=num_to_drop_in_ranking)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
