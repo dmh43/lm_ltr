@@ -298,8 +298,7 @@ def main():
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                               use_doc_out=rabbit.model_params.use_doc_out,
-                                              normalized_score_lookup=test_normalized_score_lookup,
-                                              num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking)
+                                              normalized_score_lookup=test_normalized_score_lookup)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -344,8 +343,7 @@ def main():
                                                num_neg_samples=0,
                                                num_doc_tokens=num_doc_tokens_to_consider,
                                                use_doc_out=rabbit.model_params.use_doc_out,
-                                               normalized_score_lookup=test_normalized_score_lookup,
-                                               num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking)
+                                               normalized_score_lookup=test_normalized_score_lookup)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset
