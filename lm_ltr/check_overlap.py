@@ -1,4 +1,3 @@
-from operator import itemgetter
 from six.moves import xrange
 import pydash as _
 from itertools import combinations
@@ -16,7 +15,7 @@ from lm_ltr.preprocessing import create_id_lookup
 def get_bm25_results(queries, qml_rankings, num_ranks=None):
   def _get_scores(bm25, qml_ranking, document, average_idf):
     scores = []
-    for doc_id in xrange(qml_ranking):
+    for doc_id in qml_ranking:
       score = bm25.get_score(document, doc_id, average_idf)
       scores.append(score)
     scores = np.array(scores)
@@ -34,8 +33,7 @@ def get_bm25_results(queries, qml_rankings, num_ranks=None):
   bm25 = BM25(tokenized_documents)
   average_idf = sum(float(val) for val in bm25.idf.values()) / len(bm25.idf)
   rankings = []
-  for q, qml_ranking in progressbar(zip(tokenized_queries,
-                                        map(itemgetter(1), qml_rankings))):
+  for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     rankings.append(_get_scores(bm25, qml_ranking, q, average_idf=average_idf))
   return rankings
 
