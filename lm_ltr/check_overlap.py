@@ -14,6 +14,8 @@ from lm_ltr.preprocessing import create_id_lookup
 
 def get_bm25_results(queries, qml_rankings, num_ranks=None):
   def _get_scores(bm25, qml_ranking, document, average_idf):
+    if len(sys.argv) > 2:
+      qml_ranking = xrange(bm25.corpus_size)
     scores = []
     for doc_id in qml_ranking:
       score = bm25.get_score(document, doc_id, average_idf)
@@ -43,8 +45,8 @@ def check_overlap(ranks_1, ranks_2):
   for ranks_1, ranks_2 in zip(ranks_1, ranks_2):
     for doc_1, doc_2 in combinations(ranks_1, 2):
       num_combos += 1
-      d_1_in_2 = _.index_of(ranks_2, doc_1)
-      d_2_in_2 = _.index_of(ranks_2, doc_2)
+      d_1_in_2 = _.index_of(ranks_2[:len(ranks_1)], doc_1)
+      d_2_in_2 = _.index_of(ranks_2[:len(ranks_1)], doc_2)
       d_1_in_1 = _.index_of(ranks_1, doc_1)
       d_2_in_1 = _.index_of(ranks_1, doc_2)
       if d_1_in_2 == -1: continue
@@ -68,7 +70,7 @@ def main():
   else:
     lim = None
   bm25 = get_bm25_results(queries[:lim], qml[:lim])
-  agree_ctr, num_combos = check_overlap(bm25, qml[:lim])
+  agree_ctr, num_combos = check_overlap(qml[:lim], bm25)
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
 if __name__ == "__main__":
