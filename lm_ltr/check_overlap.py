@@ -12,29 +12,29 @@ from lm_ltr.fetchers import read_cache, get_robust_test_queries, get_robust_rels
 from lm_ltr.preprocessing import create_id_lookup
 
 
-def get_bm25_results(queries, num_ranks=None):
-  def _get_scores(bm25, document, average_idf):
+def get_bm25_results(queries, qml_rankings, num_ranks=None):
+  def _get_scores(bm25, qml_ranking, document, average_idf):
     scores = []
-    for index in xrange(bm25.corpus_size):
-      score = bm25.get_score(document, index, average_idf)
+    for doc_id in xrange(qml_ranking):
+      score = bm25.get_score(document, doc_id, average_idf)
       scores.append(score)
     scores = np.array(scores)
-    return scores[np.argpartition(scores, -10)[-10:]]
+    return np.argsort(-scores)
   document_lookup = read_cache('./doc_lookup.json', get_robust_documents)
-  document_title_to_id = create_id_lookup(document_lookup.keys())
+  document_title_to_id = read_cache('./document_title_to_id.json',
+                                    lambda: print('failed'))
   document_id_to_title = _.invert(document_title_to_id)
   doc_ids = range(len(document_id_to_title))
   documents = [document_lookup[document_id_to_title[doc_id]] for doc_id in doc_ids]
   tokenizer = Tokenizer()
-  tokenized_documents = read_cache('tok_docs.pkl',
+  tokenized_documents = read_cache('tok_docs.json',
                                    lambda: tokenizer.process_all(documents))
-  tokenized_queries = read_cache('tok_train_queries.json',
-                                 lambda: tokenizer.process_all(queries))[:len(queries)]
+  tokenized_queries = tokenizer.process_all(queries)
   bm25 = BM25(tokenized_documents)
   average_idf = sum(float(val) for val in bm25.idf.values()) / len(bm25.idf)
   rankings = []
-  for q in progressbar(tokenized_queries):
-    rankings.append(_get_scores(bm25, q, average_idf=average_idf))
+  for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
+    rankings.append(_get_scores(bm25, qml_ranking, q, average_idf=average_idf))
   return rankings
 
 def check_overlap(ranks_1, ranks_2):
@@ -46,8 +46,12 @@ def check_overlap(ranks_1, ranks_2):
     d_2_in_2 = _.index_of(ranks_2, doc_2)
     d_1_in_1 = _.index_of(ranks_1, doc_1)
     d_2_in_1 = _.index_of(ranks_1, doc_2)
-    if any(rank == -1 for rank in [d_2_in_2, d_2_in_2, d_1_in_1, d_1_in_2]): continue
-    if (d_1_in_1 < d_2_in_1) == (d_1_in_2 < d_2_in_2): agree_ctr += 1
+    if d_1_in_2 == -1: continue
+    if d_2_in_2 == -1:
+      agree_ctr += 1
+      continue
+    if (d_1_in_1 < d_2_in_1) == (d_1_in_2 < d_2_in_2):
+      agree_ctr += 1
   return agree_ctr, num_combos
 
 def main():
@@ -62,9 +66,11 @@ def main():
     lim = int(sys.argv[1])
   else:
     lim = None
-  bm25 = get_bm25_results(queries[:lim])
+  bm25 = get_bm25_results(queries[:lim], qml[:lim])
   agree_ctr, num_combos = check_overlap(bm25, qml[:lim])
   print(agree_ctr, num_combos, agree_ctr/num_combos)
+  import ipdb
+  ipdb.set_trace()
 
 if __name__ == "__main__":
   import ipdb
