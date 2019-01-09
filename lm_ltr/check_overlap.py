@@ -19,7 +19,7 @@ def get_bm25_results(queries, qml_rankings, num_ranks=None):
       score = bm25.get_score(document, doc_id, average_idf)
       scores.append(score)
     scores = np.array(scores)
-    return np.argsort(-scores)
+    return [qml_ranking[idx] for idx in np.argsort(-scores)]
   document_lookup = read_cache('./doc_lookup.json', get_robust_documents)
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: print('failed'))
@@ -38,20 +38,21 @@ def get_bm25_results(queries, qml_rankings, num_ranks=None):
   return rankings
 
 def check_overlap(ranks_1, ranks_2):
-  agree_ctr = 0
-  num_combos = 0
-  for doc_1, doc_2 in combinations(ranks_1, 2):
-    num_combos += 1
-    d_1_in_2 = _.index_of(ranks_2, doc_1)
-    d_2_in_2 = _.index_of(ranks_2, doc_2)
-    d_1_in_1 = _.index_of(ranks_1, doc_1)
-    d_2_in_1 = _.index_of(ranks_1, doc_2)
-    if d_1_in_2 == -1: continue
-    if d_2_in_2 == -1:
-      agree_ctr += 1
-      continue
-    if (d_1_in_1 < d_2_in_1) == (d_1_in_2 < d_2_in_2):
-      agree_ctr += 1
+  for ranks_1, ranks_2 in zip(ranks_1, ranks_2):
+    agree_ctr = 0
+    num_combos = 0
+    for doc_1, doc_2 in combinations(ranks_1, 2):
+      num_combos += 1
+      d_1_in_2 = _.index_of(ranks_2, doc_1)
+      d_2_in_2 = _.index_of(ranks_2, doc_2)
+      d_1_in_1 = _.index_of(ranks_1, doc_1)
+      d_2_in_1 = _.index_of(ranks_1, doc_2)
+      if d_1_in_2 == -1: continue
+      if d_2_in_2 == -1:
+        agree_ctr += 1
+        continue
+      if (d_1_in_1 < d_2_in_1) == (d_1_in_2 < d_2_in_2):
+        agree_ctr += 1
   return agree_ctr, num_combos
 
 def main():
