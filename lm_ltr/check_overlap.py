@@ -125,8 +125,12 @@ def main():
     lim = int(sys.argv[1])
   else:
     lim = None
-  bm25 = get_bm25_results(queries[:lim], qml[:lim])
-  agree_ctr, num_combos = check_overlap(qml[:lim], bm25)
+  bm25_rankings, glove_rankings, rm3_rankings = get_other_results(queries[:lim], qml[:lim])
+  agree_ctr, num_combos = check_overlap(qml[:lim], bm25_rankings)
+  print(agree_ctr, num_combos, agree_ctr/num_combos)
+  agree_ctr, num_combos = check_overlap(qml[:lim], glove_rankings)
+  print(agree_ctr, num_combos, agree_ctr/num_combos)
+  agree_ctr, num_combos = check_overlap(qml[:lim], rm3_rankings)
   print(agree_ctr, num_combos, agree_ctr/num_combos)
 
 if __name__ == "__main__":
