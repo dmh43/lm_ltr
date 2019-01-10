@@ -97,19 +97,15 @@ def parse_xml_docs_and_titles(path):
   tree = html.fromstring(text_to_parse)
   docs = {}
   for doc in tree:
-    title = doc.find('headline') or doc.find('header')
-    texts = doc.find('text')
-    if texts is None and title is None: continue
-    results = []
-    for chunk in [title, texts]:
-      if chunk is None: continue
-      if hasattr(chunk, 'text_content'):
-        results.append(clean_text(chunk.text_content()))
+    def _get_text(node):
+      results = []
+      if len(node.getchildren()) == 0 and node.tag not in ['docno', 'docid', 'date', 'date1', 'ht']:
+        results.append(clean_text(node.text_content()))
       else:
-        results.append(reduce(lambda acc, p: acc + clean_text(p.text_content()),
-                              chunk.getchildren(),
-                              ''))
-    docs[(doc.find('docno')).text.strip()] = '\n'.join(results)
+        for child in node.getchildren():
+          results.extend(_get_text(child))
+      return results
+    docs[(doc.find('docno')).text.strip()] = '\n'.join(_get_text(doc))
   return docs
 
 def get_raw_documents(id_document_title_mapping):

@@ -5,7 +5,7 @@ import json
 from collections import Counter, defaultdict
 
 from gensim.summarization.bm25 import BM25
-from fastai.text import Tokenizer
+from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
 import numpy as np
 from progressbar import progressbar
 import torch
@@ -26,12 +26,12 @@ def _get_bm25_ranking(bm25, qml_ranking, document, average_idf):
   return [qml_ranking[idx] for idx in np.argsort(-scores)]
 
 def _encode_glove(glove, tokens):
-  return torch.sum(torch.stack([glove[token] for token in tokens]), 1) / len(tokens)
+  return torch.sum(torch.stack([glove[token] for token in tokens if token in glove]).cuda(), 1) / len(tokens)
 
 def _get_glove_ranking(glove, documents, qml_ranking, query):
   if len(sys.argv) > 2:
     qml_ranking = xrange(len(documents))
-  encoded_docs = torch.tensor([_encode_glove(glove, documents[doc_id]) for doc_id in qml_ranking])
+  encoded_docs = torch.stack([_encode_glove(glove, documents[doc_id]) for doc_id in qml_ranking])
   return [documents[idx]
           for idx in torch.sort(torch.dot(encoded_docs, _encode_glove(glove, query)),
                                 descending=True)[1]]
@@ -79,7 +79,7 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   document_id_to_title = _.invert(document_title_to_id)
   doc_ids = range(len(document_id_to_title))
   documents = [document_lookup[document_id_to_title[doc_id]] for doc_id in doc_ids]
-  tokenizer = Tokenizer()
+  tokenizer = Tokenizer(rules=[fix_html, spec_add_spaces, rm_useless_spaces])
   tokenized_documents = read_cache('tok_docs.json',
                                    lambda: tokenizer.process_all(documents))
   tokenized_queries = tokenizer.process_all(queries)
@@ -91,7 +91,7 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
   for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     bm25_rankings.append(_get_bm25_ranking(bm25, qml_ranking, q, average_idf=average_idf))
-    glove_rankings.append(_get_glove_ranking(glove, documents, qml_ranking, q))
+    glove_rankings.append(_get_glove_ranking(glove, tokenized_documents, qml_ranking, q))
     rm3_rankings.append(_get_rm3_ranking(bm25.df, bm25.f, qml_ranking, q))
   return bm25_rankings, glove_rankings, rm3_rankings
 
