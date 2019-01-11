@@ -16,7 +16,7 @@ from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
-from lm_ltr.utils import dont_update, do_update
+from lm_ltr.utils import dont_update, do_update, name
 from lm_ltr.multi_objective import MultiObjective
 from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
@@ -87,11 +87,6 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
          {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0}]
-
-def name(path, notes):
-  if len(notes) == 0: return path
-  path_segs = path.split('.json')
-  return '_'.join([path_segs[0]] + notes) + '.json'
 
 class MyRabbit(Rabbit):
   def run(self):

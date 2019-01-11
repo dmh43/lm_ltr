@@ -30,6 +30,11 @@ def dont_update(module):
   for p in module.parameters():
     p.requires_grad = False
 
+def name(path, notes):
+  if len(notes) == 0: return path
+  path_segs = path.split('.json')
+  return '_'.join([path_segs[0]] + notes) + '.json'
+
 def do_update(module):
   for p in module.parameters():
     p.requires_grad = True

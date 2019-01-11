@@ -7,8 +7,8 @@ from progressbar import progressbar
 
 from lm_ltr.trec_doc_parse import parse_qrels
 from lm_ltr.metrics import metrics_at_k
-from lm_ltr.utils import append_at
-from lm_ltr.fetchers import read_query_test_rankings, read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents
+from lm_ltr.utils import append_at, name
+from lm_ltr.fetchers import read_query_test_rankings, read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents_with_titles
 from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
 from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25
@@ -20,7 +20,7 @@ def main():
   ordered_qrels = [qrels[query] for query in queries]
   ordered_rankings_to_eval = [rankings_to_eval[query] for query in queries]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
-  document_lookup = read_cache('./doc_lookup.json', get_robust_documents)
+  document_lookup = read_cache(name('./doc_lookup.json', ['with_titles']), get_robust_documents_with_titles)
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: print('failed'))
   document_id_to_title = _.invert(document_title_to_id)
