@@ -367,7 +367,7 @@ def main():
   model_data = DataBunch(train_dl,
                          valid_dl,
                          test_dl,
-                         collate_fn=lambda samples: collate_query_samples(samples, use_bow_model=use_bow_model) if use_pointwise_loss else lambda samples: collate_query_pairwise_samples(samples, use_bow_model=use_bow_model),
+                         collate_fn=(lambda samples: collate_query_samples(samples, use_bow_model=use_bow_model)) if use_pointwise_loss else (lambda samples: collate_query_pairwise_samples(samples, use_bow_model=use_bow_model)),
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
