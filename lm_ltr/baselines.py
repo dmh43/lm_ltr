@@ -29,10 +29,9 @@ def _encode_glove(glove, tokens):
 def _encode_glove_fs(glove, doc_fs):
   vec = torch.sum(torch.stack([cnt * glove[token]
                                for token, cnt in doc_fs.items() if token in glove and cnt > 0]).cuda(), 0)
-  return vec / torch.norm(vec)
+  return vec
 
-def rank_glove(glove, docs_fs, query, k=10):
-  encoded_docs = torch.stack([_encode_glove_fs(glove, doc_fs) for doc_fs in docs_fs])
+def rank_glove(glove, encoded_docs, query, k=10):
   topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs * _encode_glove(glove, query), 1),
                                       k=k)
   sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
@@ -98,9 +97,11 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   rm3_rankings = []
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
   docs_lms = calc_docs_lms(bm25.df, bm25.f)
+  encoded_docs = torch.stack([_encode_glove_fs(glove, doc_fs) for doc_fs in docs_fs])
+  encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1)
   for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf))
-    glove_rankings.append(rank_glove(glove, bm25.f, q))
+    glove_rankings.append(rank_glove(glove, encoded_docs, q))
     rm3_rankings.append(rank_rm3(docs_lms, bm25.f, qml_ranking, q))
   return bm25_rankings, glove_rankings, rm3_rankings
 
