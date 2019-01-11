@@ -20,7 +20,8 @@ class PointwiseScorer(nn.Module):
                document_token_embeds,
                doc_encoder,
                model_params,
-               train_params):
+               train_params,
+               use_bow_model=False):
     super().__init__()
     self.use_layer_norm = train_params.use_layer_norm
     self.use_batch_norm = train_params.use_batch_norm
@@ -32,7 +33,8 @@ class PointwiseScorer(nn.Module):
                                             model_params.lstm_hidden_size,
                                             model_params.use_doc_out,
                                             model_params.only_use_last_out,
-                                            train_params.word_level_do_kp)
+                                            train_params.word_level_do_kp,
+                                            use_bow_model=use_bow_model)
     self.query_encoder = QueryEncoder(query_token_embeds, model_params.use_max_pooling)
     if model_params.use_pretrained_doc_encoder or model_params.use_doc_out:
       if model_params.only_use_last_out:

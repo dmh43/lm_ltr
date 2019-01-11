@@ -12,7 +12,7 @@ from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_to
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
-from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup
+from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, prepare_fs, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
@@ -119,12 +119,25 @@ def main():
                                     lambda: create_id_lookup(document_lookup.keys()))
   with open('./caches/106756_most_common_doc.json', 'r') as fh:
     doc_token_set = set(json.load(fh))
-    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
+  if not any([rabbit.model_params[attr] for attr in ['use_doc_out',
+                                                     'use_cnn',
+                                                     'use_lstm',
+                                                     'use_pretrained_doc_encoder']]):
+    use_bow_model = True
+    documents, document_token_lookup = read_cache(name(f'./docs_fs_tokens_limit_uniq_toks_106756.pkl',
                                                        _names),
-                                                  lambda: prepare(document_lookup,
-                                                                  document_title_to_id,
-                                                                  num_tokens=num_doc_tokens_to_consider,
-                                                                  token_set=doc_token_set))
+                                                lambda: prepare_fs(document_lookup,
+                                                                   document_title_to_id,
+                                                                   num_tokens=num_doc_tokens_to_consider,
+                                                                   token_set=doc_token_set))
+  else:
+    use_bow_model = False
+    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
+                                                     _names),
+                                                lambda: prepare(document_lookup,
+                                                                document_title_to_id,
+                                                                num_tokens=num_doc_tokens_to_consider,
+                                                                token_set=doc_token_set))
   if not rabbit.run_params.just_caches:
     train_query_lookup = read_cache('./robust_train_queries.json', get_robust_train_queries)
     train_query_name_to_id = read_cache('./train_query_name_to_id.json',
@@ -251,7 +264,8 @@ def main():
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                       use_doc_out=rabbit.model_params.use_doc_out,
-                                      normalized_score_lookup=train_normalized_score_lookup)
+                                      normalized_score_lookup=train_normalized_score_lookup,
+                                      use_bow_model=use_bow_model)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params.batch_size,
@@ -261,7 +275,8 @@ def main():
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                      use_doc_out=rabbit.model_params.use_doc_out,
-                                     normalized_score_lookup=test_normalized_score_lookup)
+                                     normalized_score_lookup=test_normalized_score_lookup,
+                                     use_bow_model=use_bow_model)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -282,7 +297,8 @@ def main():
                                                bin_rankings=rabbit.train_params.bin_rankings,
                                                use_variable_loss=rabbit.train_params.use_variable_loss,
                                                normalized_score_lookup=train_normalized_score_lookup,
-                                               num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking)
+                                               num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking,
+                                               use_bow_model=use_bow_model)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params.batch_size,
@@ -293,19 +309,22 @@ def main():
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                               use_doc_out=rabbit.model_params.use_doc_out,
-                                              normalized_score_lookup=test_normalized_score_lookup)
+                                              normalized_score_lookup=test_normalized_score_lookup,
+                                              use_bow_model=use_bow_model)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
                            rabbit.model_params,
-                           rabbit.train_params)
+                           rabbit.train_params,
+                           use_bow_model=use_bow_model)
   train_ranking_dataset = RankingDataset(documents,
                                          train_dl.dataset.rankings,
                                          num_doc_tokens=num_doc_tokens_to_consider,
                                          query_tok_to_doc_tok=query_tok_to_doc_tok,
                                          use_doc_out=rabbit.model_params.use_doc_out,
                                          num_to_rank=rabbit.run_params.num_to_rank,
-                                         normalized_score_lookup=train_normalized_score_lookup)
+                                         normalized_score_lookup=train_normalized_score_lookup,
+                                         use_bow_model=use_bow_model)
   test_ranking_candidates = read_cache('./test_ranking_candidates.json',
                                        read_query_test_rankings)
   lookup_by_title = lambda title: document_title_to_id.get(title) or 0
@@ -322,7 +341,8 @@ def main():
                                         use_doc_out=rabbit.model_params.use_doc_out,
                                         num_to_rank=rabbit.run_params.num_to_rank,
                                         cheat=rabbit.run_params.cheat,
-                                        normalized_score_lookup=test_normalized_score_lookup)
+                                        normalized_score_lookup=test_normalized_score_lookup,
+                                        use_bow_model=use_bow_model)
   if use_pointwise_loss:
     valid_dl = build_query_dataloader(documents,
                                       test_data[:rabbit.train_params.batch_size],
@@ -330,7 +350,8 @@ def main():
                                       rel_method=rabbit.train_params.rel_method,
                                       num_doc_tokens=num_doc_tokens_to_consider,
                                       use_doc_out=rabbit.model_params.use_doc_out,
-                                      normalized_score_lookup=test_normalized_score_lookup)
+                                      normalized_score_lookup=test_normalized_score_lookup,
+                                      use_bow_model=use_bow_model)
   else:
     valid_dl = build_query_pairwise_dataloader(documents,
                                                test_data[:rabbit.train_params.batch_size],
@@ -338,7 +359,8 @@ def main():
                                                num_neg_samples=0,
                                                num_doc_tokens=num_doc_tokens_to_consider,
                                                use_doc_out=rabbit.model_params.use_doc_out,
-                                               normalized_score_lookup=test_normalized_score_lookup)
+                                               normalized_score_lookup=test_normalized_score_lookup,
+                                               use_bow_model=use_bow_model)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset

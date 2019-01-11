@@ -22,9 +22,11 @@ class DocumentEncoder(nn.Module):
                lstm_hidden_size=None,
                use_doc_out=False,
                only_use_last_out=False,
-               word_level_do_kp=1.0):
+               word_level_do_kp=1.0,
+               use_bow_model=False):
     super().__init__()
     self.document_token_embeds = document_token_embeds
+    self.use_bow_model = use_bow_model
     self.word_level_do_kp = word_level_do_kp
     self.use_cnn = use_cnn
     self.use_lstm = use_lstm
@@ -34,21 +36,25 @@ class DocumentEncoder(nn.Module):
     word_embed_size = document_token_embeds.weight.shape[1]
     self.use_lm = False
     if self.use_doc_out:
+      assert not self.use_bow_model
       with open('./forward_out.json') as fh:
         self.lm_outs = json.load(fh)
     if doc_encoder and not self.use_doc_out:
+      assert not self.use_bow_model
       self.use_lm = True
       self.pretrained_enc = doc_encoder
     else:
       self.weights = nn.Embedding(len(document_token_embeds.weight), 1)
       torch.nn.init.xavier_normal_(self.weights.weight.data)
       if self.use_cnn:
+        assert not self.use_bow_model
         num_filters = int(document_token_embeds.weight.shape[1] / 2)
         self.cnn = nn.Conv1d(word_embed_size, num_filters, 5)
         self.relu = nn.ReLU()
         self.pool = nn.AdaptiveMaxPool1d(1)
         self.projection = nn.Linear(num_filters, document_token_embeds.weight.shape[1])
       elif self.use_lstm:
+        assert not self.use_bow_model
         self.pool = nn.AdaptiveMaxPool1d(1)
         self.num_lstm_layers = 1
         self.bptt = 10
@@ -117,6 +123,15 @@ class DocumentEncoder(nn.Module):
     encoded = doc_vecs
     return encoded
 
+  def _weighted_forward_bow(self, document):
+    terms, cnts = document
+    token_weights = self.weights(terms).squeeze() * cnts
+    normalized_weights = F.softmax(token_weights,1)
+    document_tokens = self.document_token_embeds(terms)
+    doc_vecs = torch.sum(normalized_weights.unsqueeze(2) * document_tokens, 1)
+    encoded = doc_vecs
+    return encoded
+
   def _cnn_forward(self, document):
     document_tokens, mask = self.document_token_embeds_do(document)
     token_weights = self.weights(document).squeeze() * mask.float()
@@ -145,5 +160,7 @@ class DocumentEncoder(nn.Module):
     elif self.use_doc_out:
       document_ids = document
       return self._doc_out(document_ids)
+    elif self.use_bow_model:
+      return self._weighted_forward_bow(document)
     else:
       return self._weighted_forward(document)

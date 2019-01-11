@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 import ast
 import random
 import re
@@ -81,19 +81,32 @@ def pad(batch, device=torch.device('cpu')):
   return (pad_sequence(batch, batch_first=True, padding_value=1).to(device),
           batch_lengths)
 
-def collate_query_samples(samples):
+def collate_query_samples(samples, use_bow_model=False):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   doc, lens = list(zip(*x[1]))
   doc_score = x[2]
   return ((torch.tensor(query),
-           torch.stack(doc),
+           torch.stack(doc) if not use_bow_model else _collate_bow_doc(doc),
            torch.stack(lens),
            torch.tensor(doc_score)),
           torch.tensor(rel, dtype=torch.float32))
 
-def collate_query_pairwise_samples(samples):
+def _collate_bow_doc(bow_doc):
+  terms = []
+  cnts = []
+  max_len = 0
+  for doc in bow_doc:
+    doc_terms = list(doc.keys())
+    max_len = max(max_len, len(doc_terms))
+    terms.append(torch.tensor(doc_terms))
+    cnts.append(torch.tensor([bow_doc[term] for term in doc_terms]))
+  terms = torch.stack(pad_to_len(terms, max_len))
+  cnts = torch.stack(pad_to_len(cnts, max_len))
+  return terms, cnts
+
+def collate_query_pairwise_samples(samples, use_bow_model=False):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
@@ -102,8 +115,8 @@ def collate_query_pairwise_samples(samples):
   doc_1_score = x[3]
   doc_2_score = x[4]
   return ((torch.tensor(query),
-           torch.stack(doc_1),
-           torch.stack(doc_2),
+           torch.stack(doc_1) if not use_bow_model else _collate_bow_doc(doc_1),
+           torch.stack(doc_2) if not use_bow_model else _collate_bow_doc(doc_2),
            torch.stack(lens_1),
            torch.stack(lens_2),
            torch.tensor(doc_1_score),
@@ -165,6 +178,22 @@ def prepare(lookup, title_to_id, token_lookup=None, num_tokens=None, token_set=N
                                                  token_set=token_set,
                                                  drop_if_any_unk=drop_if_any_unk)
   return numericalized, token_lookup
+
+def prepare_fs(lookup,
+               title_to_id,
+               token_lookup=None,
+               num_tokens=None,
+               token_set=None,
+               drop_if_any_unk=False):
+  id_to_title_lookup = _.invert(title_to_id)
+  ids = range(len(id_to_title_lookup))
+  contents = [lookup[id_to_title_lookup[id]] for id in ids]
+  numericalized, token_lookup = preprocess_texts(contents,
+                                                 token_lookup=token_lookup,
+                                                 token_set=token_set,
+                                                 drop_if_any_unk=drop_if_any_unk)
+  numericalized_fs = [Counter(doc) for doc in numericalized]
+  return numericalized_fs, token_lookup
 
 def normalize_scores_query_wise(data):
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

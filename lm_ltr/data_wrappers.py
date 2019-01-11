@@ -31,9 +31,11 @@ class QueryDataset(Dataset):
                rankings=None,
                query_tok_to_doc_tok=None,
                use_doc_out=False,
-               normalized_score_lookup=None):
+               normalized_score_lookup=None,
+               use_bow_model=False):
     self.documents = documents
-    self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
+    if not self.use_bow_model:
+      self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
     self.data = data
     self.rel_method = rel_method
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
@@ -41,10 +43,13 @@ class QueryDataset(Dataset):
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.use_doc_out = use_doc_out
     self.normalized_score_lookup = normalized_score_lookup
+    self.use_bow_model = use_bow_model
 
   def _get_document(self, elem_idx):
     if self.use_doc_out:
       return torch.tensor(elem_idx), torch.tensor(0)
+    elif self.use_bow_model:
+      return self.documents[elem_idx], sum(self.documents[elem_idx].values())
     else:
       return self.padded_docs[0][elem_idx], self.padded_docs[1][elem_idx]
 
@@ -224,7 +229,8 @@ class QueryPairwiseDataset(QueryDataset):
                bin_rankings=None,
                use_variable_loss=False,
                normalized_score_lookup=None,
-               num_to_drop_in_ranking=0):
+               num_to_drop_in_ranking=0,
+               use_bow_model=False):
     if num_to_drop_in_ranking > 0:
       assert bin_rankings == 1, 'bin_rankings != 1 is not supported'
       rankings = _drop_next_n_from_ranking(num_to_drop_in_ranking, rankings)
@@ -233,14 +239,15 @@ class QueryPairwiseDataset(QueryDataset):
                      rel_method=rel_method,
                      num_doc_tokens=num_doc_tokens,
                      rankings=rankings,
-                     query_tok_to_doc_tok=query_tok_to_doc_tok)
+                     query_tok_to_doc_tok=query_tok_to_doc_tok,
+                     use_doc_out=use_doc_out,
+                     normalized_score_lookup=normalized_score_lookup,
+                     use_bow_model=use_bow_model)
     self.use_variable_loss = use_variable_loss
     self.bin_rankings = bin_rankings
     self.num_documents = len(documents)
     self.num_neg_samples = num_neg_samples
     self.rankings_for_train = self.rankings
-    self.use_doc_out = use_doc_out
-    self.normalized_score_lookup = normalized_score_lookup
     if bin_rankings:
       num_pairs_per_ranking = _.map_(self.rankings_for_train,
                                      lambda ranking: (len(ranking[1]) - 1) * bin_rankings if len(ranking) > bin_rankings else 0)
@@ -338,7 +345,8 @@ def build_query_dataloader(documents,
                            query_tok_to_doc_tok=None,
                            use_sequential_sampler=False,
                            use_doc_out=False,
-                           normalized_score_lookup=None) -> DataLoader:
+                           normalized_score_lookup=None,
+                           use_bow_model=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
@@ -351,7 +359,8 @@ def build_query_dataloader(documents,
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
-                    collate_fn=collate_query_samples)
+                    collate_fn=lambda samples: collate_query_samples(samples,
+                                                                     use_bow_model=use_bow_model))
 
 def build_query_pairwise_dataloader(documents,
                                     data,
@@ -367,7 +376,8 @@ def build_query_pairwise_dataloader(documents,
                                     bin_rankings=None,
                                     use_variable_loss=False,
                                     normalized_score_lookup=None,
-                                    num_to_drop_in_ranking=0) -> DataLoader:
+                                    num_to_drop_in_ranking=0,
+                                    use_bow_model=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -384,4 +394,5 @@ def build_query_pairwise_dataloader(documents,
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
-                    collate_fn=collate_query_pairwise_samples)
+                    collate_fn=lambda samples: collate_query_pairwise_samples(samples,
+                                                                              use_bow_model=use_bow_model))
