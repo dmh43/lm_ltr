@@ -11,7 +11,7 @@ from progressbar import progressbar
 import torch
 
 from lm_ltr.fetchers import read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents
-from lm_ltr.preprocessing import create_id_lookup
+from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
 
 
@@ -79,7 +79,7 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   document_id_to_title = _.invert(document_title_to_id)
   doc_ids = range(len(document_id_to_title))
   documents = [document_lookup[document_id_to_title[doc_id]] for doc_id in doc_ids]
-  tokenizer = Tokenizer(rules=[fix_html, spec_add_spaces, rm_useless_spaces])
+  tokenizer = Tokenizer(rules=[handle_caps, fix_html, spec_add_spaces, rm_useless_spaces])
   tokenized_documents = read_cache('tok_docs.json',
                                    lambda: tokenizer.process_all(documents))
   tokenized_queries = tokenizer.process_all(queries)

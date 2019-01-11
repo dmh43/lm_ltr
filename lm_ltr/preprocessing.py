@@ -1,6 +1,7 @@
 from collections import defaultdict
 import ast
 import random
+import re
 
 import pydash as _
 import numpy as np
@@ -47,8 +48,15 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None, drop
       _append(result, chunk_result, idx)
   return result, lookup
 
+def handle_caps(t:str) -> str:
+  "Replace words in all caps in `t`."
+  res = []
+  for s in re.findall(r'\w+|\W+', t):
+    res += ([f' ', s.lower()] if (s.isupper() and (len(s)>2)) else [s.lower()])
+  return ''.join(res)
+
 def preprocess_texts(texts, token_lookup=None, num_tokens=None, token_set=None, drop_if_any_unk=False):
-  tokenizer = Tokenizer(rules=[fix_html, spec_add_spaces, rm_useless_spaces])
+  tokenizer = Tokenizer(rules=[handle_caps, fix_html, spec_add_spaces, rm_useless_spaces])
   tokenized = tokenizer.process_all(texts)
   idx_texts, token_lookup = tokens_to_indexes(tokenized,
                                               token_lookup,
