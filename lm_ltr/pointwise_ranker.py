@@ -3,7 +3,7 @@ import pydash as _
 import torch
 import torch.nn as nn
 
-from .preprocessing import pad
+from .preprocessing import pad, _collate_bow_doc
 from .utils import at_least_one_dim
 
 class PointwiseRanker:
@@ -16,8 +16,12 @@ class PointwiseRanker:
     if isinstance(documents, torch.Tensor) and len(documents.shape) == 1:
       padded_doc = documents
       lens = torch.zeros_like(documents)
-    else:
+    elif isinstance(documents[0], torch.Tensor):
       padded_doc, lens = pad(documents, self.device)
+    else:
+      padded_doc = tuple([tens.to(device) for tens in _collate_bow_doc(documents)])
+      lens = torch.tensor([sum(doc.values()) for doc in documents],
+                          device=self.device)
     with torch.no_grad():
       try:
         self.pointwise_scorer.eval()
