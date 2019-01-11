@@ -11,7 +11,7 @@ from lm_ltr.utils import append_at, name
 from lm_ltr.fetchers import read_query_test_rankings, read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents_with_titles
 from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
-from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25
+from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, _encode_glove_fs
 
 def main():
   rankings_to_eval = read_query_test_rankings()
@@ -39,10 +39,12 @@ def main():
   rm3_rankings = []
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
   docs_lms = calc_docs_lms(bm25.df, bm25.f)
+  encoded_docs = torch.stack([_encode_glove_fs(glove, doc_fs) for doc_fs in bm25.f])
+  encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1)
   for q, qml_ranking in progressbar(zip(tokenized_queries, ordered_rankings_to_eval),
                                     max_value=len(tokenized_queries)):
     bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf))
-    glove_rankings.append(rank_glove(glove, bm25.f, q))
+    glove_rankings.append(rank_glove(glove, encoded_docs, q))
     rm3_rankings.append(rank_rm3(docs_lms, bm25.f, qml_ranking, q))
   print('indri:', metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
   print('bm25:', metrics_at_k(bm25_rankings, ordered_qrels, k))
