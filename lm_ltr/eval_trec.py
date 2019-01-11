@@ -16,9 +16,10 @@ from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25
 def main():
   rankings_to_eval = read_query_test_rankings()
   qrels = parse_qrels()
-  queries = list(set(qrels.keys()).intersection(set(rankings_to_eval.keys())))
-  ordered_qrels = [qrels[query] for query in queries]
-  ordered_rankings_to_eval = [rankings_to_eval[query] for query in queries]
+  query_ids = list(set(qrels.keys()).intersection(set(rankings_to_eval.keys())))
+  ordered_qrels = [qrels[query] for query in query_ids]
+  ordered_rankings_to_eval = [rankings_to_eval[query] for query in query_ids]
+  queries = get_robust_test_queries()
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
   document_lookup = read_cache(name('./doc_lookup.json', ['with_titles']), get_robust_documents_with_titles)
   document_title_to_id = read_cache('./document_title_to_id.json',
