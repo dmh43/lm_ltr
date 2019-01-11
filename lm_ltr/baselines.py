@@ -98,7 +98,7 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
   docs_lms = calc_docs_lms(bm25.df, bm25.f)
   encoded_docs = torch.stack([_encode_glove_fs(glove, doc_fs) for doc_fs in bm25.f])
-  encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1)
+  encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1).unsqueeze(1)
   for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf))
     glove_rankings.append(rank_glove(glove, encoded_docs, q))
