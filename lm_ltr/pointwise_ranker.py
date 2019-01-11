@@ -19,7 +19,7 @@ class PointwiseRanker:
     elif isinstance(documents[0], torch.Tensor):
       padded_doc, lens = pad(documents, self.device)
     else:
-      padded_doc = tuple([tens.to(device) for tens in _collate_bow_doc(documents)])
+      padded_doc = tuple([tens.to(self.device) for tens in _collate_bow_doc(documents)])
       lens = torch.tensor([sum(doc.values()) for doc in documents],
                           device=self.device)
     with torch.no_grad():
