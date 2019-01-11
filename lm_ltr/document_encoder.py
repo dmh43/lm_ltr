@@ -125,7 +125,7 @@ class DocumentEncoder(nn.Module):
 
   def _weighted_forward_bow(self, document):
     terms, cnts = document
-    token_weights = self.weights(terms).squeeze() * cnts
+    token_weights = self.weights(terms).squeeze() * cnts.float()
     normalized_weights = F.softmax(token_weights,1)
     document_tokens = self.document_token_embeds(terms)
     doc_vecs = torch.sum(normalized_weights.unsqueeze(2) * document_tokens, 1)
