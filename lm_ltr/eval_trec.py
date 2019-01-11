@@ -4,6 +4,7 @@ import sys
 from gensim.summarization.bm25 import BM25
 from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
 from progressbar import progressbar
+import torch
 
 from lm_ltr.trec_doc_parse import parse_qrels
 from lm_ltr.metrics import metrics_at_k

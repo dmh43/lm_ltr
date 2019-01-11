@@ -88,7 +88,10 @@ class RankingDataset(Dataset):
     self.use_bow_model = use_bow_model
     self.rankings = rankings
     self.documents = documents
-    self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
+    if not self.use_bow_model:
+      self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
+    else:
+      self.short_docs = documents
     self.k = k
     self.num_doc_tokens = num_doc_tokens
     self.num_to_rank = num_to_rank
