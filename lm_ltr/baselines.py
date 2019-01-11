@@ -97,30 +97,10 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   rm3_rankings = []
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
   docs_lms = calc_docs_lms(bm25.df, bm25.f)
-  encoded_docs = torch.stack([_encode_glove_fs(glove, doc_fs) for doc_fs in docs_fs])
+  encoded_docs = torch.stack([_encode_glove_fs(glove, doc_fs) for doc_fs in bm25.f])
   encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1)
   for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf))
     glove_rankings.append(rank_glove(glove, encoded_docs, q))
     rm3_rankings.append(rank_rm3(docs_lms, bm25.f, qml_ranking, q))
   return bm25_rankings, glove_rankings, rm3_rankings
-
-def main():
-  with open('./caches/pairwise_train_ranking_106756.json') as fh:
-    query_ranking_pairs = json.load(fh)
-  queries_by_tok_id, qml = zip(*query_ranking_pairs)
-  parsed_queries, query_token_lookup = read_cache('./parsed_robust_queries_dict.json',
-                                                  lambda: print('failed'))
-  inv = _.invert(query_token_lookup)
-  queries = [' '.join([inv[q] for q in query]) for query in queries_by_tok_id]
-  if len(sys.argv) > 1:
-    lim = int(sys.argv[1])
-  else:
-    lim = None
-  bm25_rankings, glove_rankings, rm3_rankings = get_other_results(queries[:lim], qml[:lim])
-  agree_ctr, num_combos = check_overlap(qml[:lim], bm25_rankings)
-  print(agree_ctr, num_combos, agree_ctr/num_combos)
-  agree_ctr, num_combos = check_overlap(qml[:lim], glove_rankings)
-  print(agree_ctr, num_combos, agree_ctr/num_combos)
-  agree_ctr, num_combos = check_overlap(qml[:lim], rm3_rankings)
-  print(agree_ctr, num_combos, agree_ctr/num_combos)
