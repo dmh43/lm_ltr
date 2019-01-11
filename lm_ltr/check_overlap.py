@@ -33,7 +33,7 @@ def _get_glove_ranking(glove, documents, qml_ranking, query):
   if len(sys.argv) > 2:
     qml_ranking = xrange(len(documents))
   encoded_docs = torch.stack([_encode_glove(glove, documents[doc_id]) for doc_id in qml_ranking])
-  return [documents[idx]
+  return [qml_ranking[idx]
           for idx in torch.sort(torch.sum(encoded_docs * _encode_glove(glove, query), 1),
                                 descending=True)[1]]
 
