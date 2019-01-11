@@ -83,7 +83,9 @@ class RankingDataset(Dataset):
                use_doc_out=False,
                num_to_rank=1000,
                cheat=False,
-               normalized_score_lookup=None):
+               normalized_score_lookup=None,
+               use_bow_model=use_bow_model):
+    self.use_bow_model = use_bow_model
     self.rankings = rankings
     self.documents = documents
     self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
