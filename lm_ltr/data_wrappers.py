@@ -356,7 +356,8 @@ def build_query_dataloader(documents,
                          num_doc_tokens=num_doc_tokens,
                          query_tok_to_doc_tok=query_tok_to_doc_tok,
                          use_doc_out=use_doc_out,
-                         normalized_score_lookup=normalized_score_lookup)
+                         normalized_score_lookup=normalized_score_lookup,
+                         use_bow_model=use_bow_model)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
@@ -391,7 +392,8 @@ def build_query_pairwise_dataloader(documents,
                                  bin_rankings=bin_rankings,
                                  use_variable_loss=use_variable_loss,
                                  normalized_score_lookup=normalized_score_lookup,
-                                 num_to_drop_in_ranking=num_to_drop_in_ranking)
+                                 num_to_drop_in_ranking=num_to_drop_in_ranking,
+                                 use_bow_model=use_bow_model)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), batch_size, False),
