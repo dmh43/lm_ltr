@@ -84,7 +84,7 @@ class RankingDataset(Dataset):
                num_to_rank=1000,
                cheat=False,
                normalized_score_lookup=None,
-               use_bow_model=use_bow_model):
+               use_bow_model=False):
     self.use_bow_model = use_bow_model
     self.rankings = rankings
     self.documents = documents
