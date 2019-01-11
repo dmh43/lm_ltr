@@ -34,6 +34,7 @@ class QueryDataset(Dataset):
                normalized_score_lookup=None,
                use_bow_model=False):
     self.documents = documents
+    self.use_bow_model = use_bow_model
     if not self.use_bow_model:
       self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
     self.data = data
