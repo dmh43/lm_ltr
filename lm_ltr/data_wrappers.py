@@ -50,7 +50,7 @@ class QueryDataset(Dataset):
     if self.use_doc_out:
       return torch.tensor(elem_idx), torch.tensor(0)
     elif self.use_bow_model:
-      return self.documents[elem_idx], sum(self.documents[elem_idx].values())
+      return self.documents[elem_idx], torch.tensor(sum(self.documents[elem_idx].values()))
     else:
       return self.padded_docs[0][elem_idx], self.padded_docs[1][elem_idx]
 
