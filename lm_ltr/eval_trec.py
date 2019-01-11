@@ -19,7 +19,8 @@ def main():
   query_ids = list(set(qrels.keys()).intersection(set(rankings_to_eval.keys())))
   ordered_qrels = [qrels[query] for query in query_ids]
   ordered_rankings_to_eval = [rankings_to_eval[query] for query in query_ids]
-  queries = get_robust_test_queries()
+  query_lookup = get_robust_test_queries()
+  queries = [query_lookup[query_id] for query_id in query_ids]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
   document_lookup = read_cache(name('./doc_lookup.json', ['with_titles']), get_robust_documents_with_titles)
   document_title_to_id = read_cache('./document_title_to_id.json',
