@@ -26,26 +26,27 @@ def _get_bm25_ranking(bm25, qml_ranking, document, average_idf):
   return [qml_ranking[idx] for idx in np.argsort(-scores)]
 
 def _encode_glove(glove, tokens):
-  return torch.sum(torch.stack([glove[token] for token in tokens if token in glove]).cuda(), 1) / len(tokens)
+  vec = torch.sum(torch.stack([glove[token] for token in tokens if token in glove]).cuda(), 0)
+  return vec / torch.norm(vec)
 
 def _get_glove_ranking(glove, documents, qml_ranking, query):
   if len(sys.argv) > 2:
     qml_ranking = xrange(len(documents))
   encoded_docs = torch.stack([_encode_glove(glove, documents[doc_id]) for doc_id in qml_ranking])
   return [documents[idx]
-          for idx in torch.sort(torch.dot(encoded_docs, _encode_glove(glove, query)),
+          for idx in torch.sort(torch.sum(encoded_docs * _encode_glove(glove, query), 1),
                                 descending=True)[1]]
 
 def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
   query_lm = defaultdict(lambda: -np.inf,
-                         {np.log(cnt / len(q.split())) for q_term, cnt in Counter(q.split()).items()})
+                         {q_term: np.log(cnt / len(q)) for q_term, cnt in Counter(q).items()})
   rel_lm = defaultdict(lambda: -np.inf)
   for doc_id in qml_ranking:
-    q_prob_in_doc = np.sum([docs_lms[doc_id][q_term] for q_term in q.split()])
+    q_prob_in_doc = np.sum([docs_lms[doc_id][q_term] for q_term in q])
     for key, val in docs_lms[doc_id].items():
       rel_lm[key] = np.logaddexp(rel_lm[key], val + q_prob_in_doc)
-  return defaultdict(lambda: -np.inf, {np.logaddexp(rel_lm[term] + np.log(smooth),
-                                                    query_lm[term] + np.log(1 - smooth))
+  return defaultdict(lambda: -np.inf, {term: np.logaddexp(rel_lm[term] + np.log(smooth),
+                                                          query_lm[term] + np.log(1 - smooth))
                                              for term in rel_lm})
 
 def _calc_score_under_lm(lm, doc_f):
@@ -65,8 +66,7 @@ def _calc_docs_lms(corpus_fs, docs_fs, prior=2000):
     docs_lms.append(doc_lm)
   return docs_lms
 
-def _get_rm3_ranking(corpus_fs, docs_fs, qml_ranking, q):
-  docs_lms = _calc_docs_lms(corpus_fs, docs_fs)
+def _get_rm3_ranking(docs_lms, docs_fs, qml_ranking, q):
   rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
   return [qml_ranking[idx]
           for idx in np.argsort([_calc_score_under_lm(rel_lm, docs_fs[doc_id])
@@ -89,10 +89,11 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   glove_rankings = []
   rm3_rankings = []
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
+  docs_lms = _calc_docs_lms(bm25.df, bm25.f)
   for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     bm25_rankings.append(_get_bm25_ranking(bm25, qml_ranking, q, average_idf=average_idf))
     glove_rankings.append(_get_glove_ranking(glove, tokenized_documents, qml_ranking, q))
-    rm3_rankings.append(_get_rm3_ranking(bm25.df, bm25.f, qml_ranking, q))
+    rm3_rankings.append(_get_rm3_ranking(docs_lms, bm25.f, qml_ranking, q))
   return bm25_rankings, glove_rankings, rm3_rankings
 
 def check_overlap(ranks_1, ranks_2):
