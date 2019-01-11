@@ -26,6 +26,7 @@ class PointwiseScorer(nn.Module):
     self.use_layer_norm = train_params.use_layer_norm
     self.use_batch_norm = train_params.use_batch_norm
     self.frame_as_qa = model_params.frame_as_qa
+    self.use_bow_model = use_bow_model
     self.document_encoder = DocumentEncoder(document_token_embeds,
                                             doc_encoder,
                                             model_params.use_cnn,
@@ -79,7 +80,10 @@ class PointwiseScorer(nn.Module):
       doc_embed = self.document_encoder(qa, sorted_lens)
       query_embed = torch.tensor([], device=doc_embed.device)
     else:
-      doc_embed = self.document_encoder(document[sort_order], sorted_lens)
+      if self.use_bow_model:
+        doc_embed = self.document_encoder(document, lens)
+      else:
+        doc_embed = self.document_encoder(document[sort_order], sorted_lens)
       query_embed = self.query_encoder(query)[sort_order]
     if self.use_cosine_similarity:
       hidden = torch.sum(doc_embed * query_embed, 1)
@@ -91,6 +95,11 @@ class PointwiseScorer(nn.Module):
       hidden = torch.cat([hidden, doc_embed * query_embed], 1)
     if not self.use_cosine_similarity:
       hidden = torch.cat([hidden, doc_score.unsqueeze(1)], 1)
-    return pipe(hidden,
-                *self.layers,
-                torch.squeeze)[unsort_order]
+    if self.use_bow_model:
+      return pipe(hidden,
+                  *self.layers,
+                  torch.squeeze)
+    else:
+      return pipe(hidden,
+                  *self.layers,
+                  torch.squeeze)[unsort_order]
