@@ -7,7 +7,7 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
-from fastai.text import Tokenizer
+from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
 from torch.nn.utils.rnn import pad_sequence
 
 from .utils import append_at
@@ -48,7 +48,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None, drop
   return result, lookup
 
 def preprocess_texts(texts, token_lookup=None, num_tokens=None, token_set=None, drop_if_any_unk=False):
-  tokenizer = Tokenizer()
+  tokenizer = Tokenizer(rules=[fix_html, spec_add_spaces, rm_useless_spaces])
   tokenized = tokenizer.process_all(texts)
   idx_texts, token_lookup = tokens_to_indexes(tokenized,
                                               token_lookup,
