@@ -124,7 +124,7 @@ def main():
                                                      'use_lstm',
                                                      'use_pretrained_doc_encoder']]):
     use_bow_model = True
-    documents, document_token_lookup = read_cache(name(f'./docs_fs_tokens_limit_uniq_toks_106756.json',
+    documents, document_token_lookup = read_cache(name(f'./docs_fs_tokens_limit_uniq_toks_106756.pkl',
                                                        _names),
                                                 lambda: prepare_fs(document_lookup,
                                                                    document_title_to_id,
