@@ -128,7 +128,6 @@ def main():
                                                        _names),
                                                 lambda: prepare_fs(document_lookup,
                                                                    document_title_to_id,
-                                                                   num_tokens=num_doc_tokens_to_consider,
                                                                    token_set=doc_token_set))
   else:
     use_bow_model = False
