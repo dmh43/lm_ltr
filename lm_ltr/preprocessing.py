@@ -56,7 +56,7 @@ def handle_caps(t:str) -> str:
   return ''.join(res)
 
 def preprocess_texts(texts, token_lookup=None, num_tokens=None, token_set=None, drop_if_any_unk=False):
-  tokenizer = Tokenizer(rules=[handle_caps, fix_html, spec_add_spaces, rm_useless_spaces])
+  tokenizer = Tokenizer()
   tokenized = tokenizer.process_all(texts)
   idx_texts, token_lookup = tokens_to_indexes(tokenized,
                                               token_lookup,
@@ -182,7 +182,6 @@ def prepare(lookup, title_to_id, token_lookup=None, num_tokens=None, token_set=N
 def prepare_fs(lookup,
                title_to_id,
                token_lookup=None,
-               num_tokens=None,
                token_set=None,
                drop_if_any_unk=False):
   id_to_title_lookup = _.invert(title_to_id)
