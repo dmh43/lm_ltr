@@ -27,9 +27,11 @@ def _encode_glove(glove, tokens):
   return vec / torch.norm(vec)
 
 def _encode_glove_fs(glove, doc_fs):
-  vec = torch.sum(torch.stack([cnt * glove[token]
-                               for token, cnt in doc_fs.items() if token in glove and cnt > 0]).cuda(), 0)
-  return vec
+  words = torch.stack([glove[token]
+                       for token, cnt in doc_fs.items() if token in glove and cnt > 0]).cuda()
+  freqs = torch.tensor([cnt
+                        for token, cnt in doc_fs.items() if token in glove and cnt > 0], dtype=torch.float).cuda()
+  return torch.sum(words * freqs.unsqueeze(1), 0)
 
 def rank_glove(glove, encoded_docs, query, k=10):
   topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs * _encode_glove(glove, query), 1),

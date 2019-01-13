@@ -102,8 +102,8 @@ def _collate_bow_doc(bow_doc):
     max_len = max(max_len, len(doc_terms))
     terms.append(doc_terms)
     cnts.append([doc[term] for term in doc_terms])
-  terms = torch.tensor([pad_to_len(doc_terms, max_len, pad_with=1) for doc_terms in terms])
-  cnts = torch.tensor([pad_to_len(doc_term_cnts, max_len) for doc_term_cnts in cnts])
+  terms = torch.tensor([pad_to_len(doc_terms, max_len) for doc_terms in terms])
+  cnts = torch.tensor([pad_to_len(doc_term_cnts, max_len, pad_with=0) for doc_term_cnts in cnts])
   return terms, cnts
 
 def collate_query_pairwise_samples(samples, use_bow_model=False):
