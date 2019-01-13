@@ -82,9 +82,10 @@ class PointwiseScorer(nn.Module):
     else:
       if self.use_bow_model:
         doc_embed = self.document_encoder(document, lens)
+        query_embed = self.query_encoder(query)
       else:
         doc_embed = self.document_encoder(document[sort_order], sorted_lens)
-      query_embed = self.query_encoder(query)[sort_order]
+        query_embed = self.query_encoder(query)[sort_order]
     if self.use_cosine_similarity:
       hidden = torch.sum(doc_embed * query_embed, 1)
     else:
