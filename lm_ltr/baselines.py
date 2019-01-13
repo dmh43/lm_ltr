@@ -64,7 +64,7 @@ def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
     doc_lm = defaultdict(lambda: -np.inf)
     doc_len = sum(doc_fs.values())
     for term in doc_fs:
-      doc_lm[term] = np.log((doc_fs[term] + corpus_fs[term] * prior / corpus_size) / doc_len)
+      doc_lm[term] = np.log((doc_fs[term] + corpus_fs[term] * prior / corpus_size) / (doc_len + prior))
     docs_lms.append(doc_lm)
   return docs_lms
 
