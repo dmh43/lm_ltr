@@ -51,10 +51,10 @@ def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
                                                           query_lm[term] + np.log(1 - smooth))
                                              for term in rel_lm})
 
-def _calc_score_under_lm(lm, doc_f):
-  score = -np.inf
-  for term, cnt in doc_f.items():
-    score = np.logaddexp(score, np.log(cnt) + lm[term])
+def _calc_score_under_lm(lm, doc_lm):
+  score = 0
+  for term, log_prob in doc_lm.items():
+    score += np.exp(log_prob) * lm[term]
   return score
 
 def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
@@ -75,9 +75,9 @@ def top_k(score_fn, doc_ids, k=10):
                   key=itemgetter(0))
   return [doc_id for score, doc_id in sorted(topk, key=itemgetter(0))]
 
-def rank_rm3(docs_lms, docs_fs, qml_ranking, q, k=10):
+def rank_rm3(docs_lms, qml_ranking, q, k=10):
   rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
-  return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_fs[doc_id]),
+  return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id]),
                range(len(docs_lms)),
                k=k)
 
@@ -104,5 +104,5 @@ def get_other_results(queries, qml_rankings, num_ranks=None):
   for q, qml_ranking in progressbar(zip(tokenized_queries, qml_rankings)):
     bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf))
     glove_rankings.append(rank_glove(glove, encoded_docs, q))
-    rm3_rankings.append(rank_rm3(docs_lms, bm25.f, qml_ranking, q))
+    rm3_rankings.append(rank_rm3(docs_lms, qml_ranking, q))
   return bm25_rankings, glove_rankings, rm3_rankings
