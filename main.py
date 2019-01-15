@@ -109,6 +109,8 @@ def main():
   _names = []
   if not rabbit.model_params.dont_include_titles:
     _names.append('with_titles')
+  if rabbit.model_params.num_doc_tokens_to_consider != -1:
+    _names.append('num_doc_toks_' + str(rabbit.model_params.num_doc_tokens_to_consider))
   if not rabbit.run_params.just_caches:
     if rabbit.model_params.dont_include_titles:
       document_lookup = read_cache(name('./doc_lookup.json', _names), get_robust_documents)
@@ -128,6 +130,7 @@ def main():
                                                        _names),
                                                 lambda: prepare_fs(document_lookup,
                                                                    document_title_to_id,
+                                                                   num_tokens=num_doc_tokens_to_consider,
                                                                    token_set=doc_token_set))
   else:
     use_bow_model = False

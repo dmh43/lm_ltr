@@ -183,13 +183,16 @@ def prepare_fs(lookup,
                title_to_id,
                token_lookup=None,
                token_set=None,
+               num_tokens=None,
                drop_if_any_unk=False):
   id_to_title_lookup = _.invert(title_to_id)
   ids = range(len(id_to_title_lookup))
   contents = [lookup[id_to_title_lookup[id]] for id in ids]
+  if num_tokens == -1: num_tokens = None
   numericalized, token_lookup = preprocess_texts(contents,
                                                  token_lookup=token_lookup,
                                                  token_set=token_set,
+                                                 num_tokens=num_tokens,
                                                  drop_if_any_unk=drop_if_any_unk)
   numericalized_fs = [Counter(doc) for doc in numericalized]
   return numericalized_fs, token_lookup
