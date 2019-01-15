@@ -59,7 +59,7 @@ def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
 def _calc_score_under_lm(lm, doc_lm):
   score = 0
   for term, log_prob in doc_lm.items():
-    score += np.exp(log_prob) * lm[term]
+    score += np.exp(lm[term]) * log_prob
   return score
 
 def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
