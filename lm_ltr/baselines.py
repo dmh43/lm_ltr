@@ -30,7 +30,7 @@ def _encode_glove(glove, idf, tokens):
   return vec / torch.norm(vec)
 
 def encode_glove_fs(glove, idf, doc_fs):
-  weights = torch.tensor([idf[token] if (token in idf) and cnt > 0 else 0.0 for token, cnt in doc_fs.items()]).float().cuda()
+  weights = torch.tensor([idf[token] if token in glove else 0.0 for token, cnt in doc_fs.items()]).float().cuda()
   words = torch.stack([glove[token]
                        for token, cnt in doc_fs.items() if token in glove and cnt > 0]).cuda()
   freqs = torch.tensor([cnt
