@@ -52,7 +52,7 @@ class RankingMetricRecorder(MetricRecorder):
           ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
                                                             to_rank['documents'],
                                                             to_rank['doc_scores'],
-                                                            smooth,
+                                                            smooth=smooth,
                                                             k=k))
           ranking = to_rank['doc_ids'][ranking_ids_for_batch]
           yield at_least_one_dim(ranking)

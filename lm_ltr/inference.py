@@ -7,5 +7,6 @@ def rank_documents(query, documents, ranker, doc_ids=None, k=None):
   k = k if k is not None else num_documents
   ranking_ids_for_batch = torch.squeeze(ranker(torch.unsqueeze(query, 0),
                                                documents,
-                                               k))
+                                               smooth=0.0,
+                                               k=k))
   return doc_ids[ranking_ids_for_batch]

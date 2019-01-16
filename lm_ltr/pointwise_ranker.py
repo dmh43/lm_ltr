@@ -38,7 +38,7 @@ class PointwiseRanker:
         self.pointwise_scorer.train()
     return at_least_one_dim(scores)
 
-  def __call__(self, query, documents, doc_scores, k=None, smooth=None):
+  def __call__(self, query, documents, doc_scores, smooth=None, k=None):
     assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
     k = k if k is not None else len(documents)
     ranks = []
