@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from lm_ltr.fetchers import read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents
+from lm_ltr.fetchers import read_cache, get_robust_eval_queries, get_robust_rels, get_robust_documents
 from lm_ltr.preprocessing import create_id_lookup
 from lm_ltr.metrics import metrics_at_k
 

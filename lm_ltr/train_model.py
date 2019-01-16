@@ -34,6 +34,7 @@ def _get_term_weights_params(model):
 def train_model(model,
                 model_data,
                 train_ranking_dataset,
+                valid_ranking_dataset,
                 test_ranking_dataset,
                 train_params,
                 model_params,
@@ -45,9 +46,11 @@ def train_model(model,
   callbacks = [RankingMetricRecorder(model_data.device,
                                      _get_pointwise_scorer(model),
                                      train_ranking_dataset,
+                                     valid_ranking_dataset,
                                      test_ranking_dataset,
                                      experiment,
-                                     doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1)]
+                                     doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1,
+                                     dont_smooth=model_params.dont_smooth)]
   callback_fns = []
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))

@@ -20,16 +20,26 @@ class MetricRecorder(Callback):
     self.model = model
 
 class RankingMetricRecorder(MetricRecorder):
-  def __init__(self, device, model, train_ranking_dl, test_ranking_dl, experiment, doc_chunk_size=-1):
+  def __init__(self,
+               device,
+               model,
+               train_ranking_dataset,
+               valid_ranking_dataset,
+               test_ranking_dataset,
+               experiment,
+               doc_chunk_size=-1,
+               dont_smooth=False):
     super().__init__(model)
     self.device = device
     self.ranker = PointwiseRanker(device, self.model, doc_chunk_size)
-    self.train_ranking_dl = train_ranking_dl
-    self.test_ranking_dl = test_ranking_dl
+    self.train_ranking_dataset = train_ranking_dataset
+    self.valid_ranking_dataset = valid_ranking_dataset
+    self.test_ranking_dataset = test_ranking_dataset
     self.experiment_context = None
     self.experiment = experiment
+    self.dont_smooth = dont_smooth
 
-  def metrics_at_k(self, dataset, k=10):
+  def metrics_at_k(self, dataset, smooth, k=10):
     relevant_doc_ids = (to_rank['relevant'] for to_rank in dataset)
     def rank_dataset_contents():
       with torch.no_grad():
@@ -42,18 +52,38 @@ class RankingMetricRecorder(MetricRecorder):
           ranking_ids_for_batch = torch.squeeze(self.ranker(torch.unsqueeze(to_rank['query'], 0),
                                                             to_rank['documents'],
                                                             to_rank['doc_scores'],
-                                                            k))
+                                                            smooth,
+                                                            k=k))
           ranking = to_rank['doc_ids'][ranking_ids_for_batch]
           yield at_least_one_dim(ranking)
           num_rankings_considered += 1
     return metrics_at_k(rank_dataset_contents(), relevant_doc_ids, k=k)
 
+  def _find_best_smooth(self, inc=0.01, metric='ndcg'):
+    best_smooth = None
+    best_metric_val = None
+    val_best_metrics = None
+    for smooth in np.arange(0, 1, inc):
+      val_metrics = self.metrics_at_k(self.valid_ranking_dataset, smooth)
+      smooth_metric_val = val_metrics[metric]
+      if (best_smooth is None) or (smooth_metric_val > best_metric_val):
+        best_metric_val = smooth_metric_val
+        best_smooth = smooth
+        val_best_metrics = val_metrics
+    return best_smooth, val_best_metrics
+
   def _check(self, batch_num=0):
-    train_results = self.metrics_at_k(self.train_ranking_dl)
-    test_results = self.metrics_at_k(self.test_ranking_dl)
+    if self.dont_smooth:
+      smooth = 0.0
+      val_results = self.metrics_at_k(self.train_ranking_dataset, smooth)
+    else:
+      smooth, val_results = self._find_best_smooth()
+    train_results = self.metrics_at_k(self.train_ranking_dataset, smooth)
+    test_results = self.metrics_at_k(self.test_ranking_dataset, smooth)
     self.experiment.record_metrics(_.assign({},
                                             _.map_keys(train_results, lambda val, key: 'train_' + key),
-                                            _.map_keys(test_results, lambda val, key: 'test_' + key)),
+                                            _.map_keys(test_results, lambda val, key: 'test_' + key),
+                                            _.map_keys(val_results, lambda val, key: 'val_' + key)),
                                    batch_num)
 
   def on_batch_begin(self, num_batch, **kwargs):

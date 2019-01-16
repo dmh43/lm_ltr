@@ -9,7 +9,7 @@ import torch.nn as nn
 from fastai.basic_data import DataBunch
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
-from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_test_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
+from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
 from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, prepare_fs, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup
@@ -37,6 +37,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_pretrained_doc_encoder', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_word_embeds', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'dont_smooth', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
@@ -227,29 +228,48 @@ def main():
     query_token_embeds = query_token_embeds_init
     additive = None
     rel_score = None
-  test_query_lookup = read_cache('./robust_test_queries.json',
-                                 get_robust_test_queries)
-  test_query_name_document_title_rels = read_cache('./robust_rels.json',
+  eval_query_lookup = read_cache('./robust_eval_queries.json',
+                                 get_robust_eval_queries)
+  eval_query_name_document_title_rels = read_cache('./robust_rels.json',
                                                    get_robust_rels)
-  test_query_name_to_id = read_cache('./test_query_name_to_id.json',
-                                     lambda: create_id_lookup(test_query_lookup.keys()))
+  eval_query_name_to_id = read_cache('./eval_query_name_to_id.json',
+                                     lambda: create_id_lookup(eval_query_lookup.keys()))
+  test_query_names, val_query_names = [], []
+  test_query_name_document_title_rels = _.pick(eval_query_name_document_title_rels, test_query_names)
+  test_query_lookup = _.pick(eval_query_lookup, test_query_names)
+  test_query_name_to_id = _.pick(eval_query_name_to_id, test_query_names)
   test_queries, __ = read_cache('./parsed_test_robust_queries_106756.json',
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  test_data = read_cache('./parsed_robust_rels_106756.json',
+  test_data = read_cache('./parsed_test_robust_rels_106756.json',
                          lambda: process_rels(test_query_name_document_title_rels,
                                               document_title_to_id,
                                               test_query_name_to_id,
                                               test_queries))
+  val_query_name_document_title_rels = _.pick(eval_query_name_document_title_rels, val_query_names)
+  val_query_lookup = _.pick(eval_query_lookup, val_query_names)
+  val_query_name_to_id = _.pick(eval_query_name_to_id, val_query_names)
+  val_queries, __ = read_cache('./parsed_val_robust_queries_106756.json',
+                                lambda: prepare(val_query_lookup,
+                                                val_query_name_to_id,
+                                                token_lookup=query_token_lookup))
+  val_data = read_cache('./parsed_val_robust_rels_106756.json',
+                         lambda: process_rels(val_query_name_document_title_rels,
+                                              document_title_to_id,
+                                              val_query_name_to_id,
+                                              val_queries))
   if not rabbit.model_params.dont_include_normalized_score:
     train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
                                                lambda: get_normalized_score_lookup(train_data))
     test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.pkl',
                                                lambda: get_normalized_score_lookup(test_data))
+    val_normalized_score_lookup = read_cache('./val_normalized_score_lookup.pkl',
+                                             lambda: get_normalized_score_lookup(val_data))
   else:
     train_normalized_score_lookup = None
     test_normalized_score_lookup = None
+    val_normalized_score_lookup = None
   names = []
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
@@ -279,6 +299,17 @@ def main():
                                      use_doc_out=rabbit.model_params.use_doc_out,
                                      normalized_score_lookup=test_normalized_score_lookup,
                                      use_bow_model=use_bow_model)
+    val_dl = build_query_dataloader(documents,
+                                      val_data,
+                                      rabbit.train_params.batch_size,
+                                      rel_method=rabbit.train_params.rel_method,
+                                      num_doc_tokens=num_doc_tokens_to_consider,
+                                      cache=name('./pointwise_val_ranking_106756.json', names),
+                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                      use_doc_out=rabbit.model_params.use_doc_out,
+                                      normalized_score_lookup=test_normalized_score_lookup,
+                                      use_bow_model=use_bow_model)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -313,6 +344,17 @@ def main():
                                               use_doc_out=rabbit.model_params.use_doc_out,
                                               normalized_score_lookup=test_normalized_score_lookup,
                                               use_bow_model=use_bow_model)
+    val_dl = build_query_pairwise_dataloader(documents,
+                                               val_data,
+                                               rabbit.train_params.batch_size,
+                                               num_neg_samples=0,
+                                               num_doc_tokens=num_doc_tokens_to_consider,
+                                               cache=name('./pairwise_val_ranking_106756.json', names),
+                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                               use_doc_out=rabbit.model_params.use_doc_out,
+                                               normalized_score_lookup=test_normalized_score_lookup,
+                                               use_bow_model=use_bow_model)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -327,8 +369,9 @@ def main():
                                          num_to_rank=rabbit.run_params.num_to_rank,
                                          normalized_score_lookup=train_normalized_score_lookup,
                                          use_bow_model=use_bow_model)
-  test_ranking_candidates = read_cache('./test_ranking_candidates.json',
+  eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
                                        read_query_test_rankings)
+  test_ranking_candidates = _.pick(eval_ranking_candidates, test_query_names)
   lookup_by_title = lambda title: document_title_to_id.get(title) or 0
   test_ranking_candidates = _.map_values(test_ranking_candidates,
                                          lambda candidate_names: _.map_(candidate_names,
@@ -345,29 +388,27 @@ def main():
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup,
                                         use_bow_model=use_bow_model)
-  if use_pointwise_loss:
-    valid_dl = build_query_dataloader(documents,
-                                      test_data[:rabbit.train_params.batch_size],
-                                      rabbit.train_params.batch_size,
-                                      rel_method=rabbit.train_params.rel_method,
-                                      num_doc_tokens=num_doc_tokens_to_consider,
-                                      use_doc_out=rabbit.model_params.use_doc_out,
-                                      normalized_score_lookup=test_normalized_score_lookup,
-                                      use_bow_model=use_bow_model)
-  else:
-    valid_dl = build_query_pairwise_dataloader(documents,
-                                               test_data[:rabbit.train_params.batch_size],
-                                               rabbit.train_params.batch_size,
-                                               num_neg_samples=0,
-                                               num_doc_tokens=num_doc_tokens_to_consider,
-                                               use_doc_out=rabbit.model_params.use_doc_out,
-                                               normalized_score_lookup=test_normalized_score_lookup,
-                                               use_bow_model=use_bow_model)
+  val_ranking_candidates = _.pick(eval_ranking_candidates, val_query_names)
+  val_ranking_candidates = _.map_values(val_ranking_candidates,
+                                        lambda candidate_names: _.map_(candidate_names,
+                                                                       lookup_by_title))
+  val_ranking_candidates = _.map_keys(val_ranking_candidates,
+                                      lambda ranking, query_name: str(val_queries[val_query_name_to_id[query_name]])[1:-1])
+  val_ranking_dataset = RankingDataset(documents,
+                                       val_ranking_candidates,
+                                       val_dl.dataset.rankings,
+                                       num_doc_tokens=num_doc_tokens_to_consider,
+                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                       use_doc_out=rabbit.model_params.use_doc_out,
+                                       num_to_rank=rabbit.run_params.num_to_rank,
+                                       cheat=rabbit.run_params.cheat,
+                                       normalized_score_lookup=val_normalized_score_lookup,
+                                       use_bow_model=use_bow_model)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset
   model_data = DataBunch(train_dl,
-                         valid_dl,
+                         val_dl,
                          test_dl,
                          collate_fn=(lambda samples: collate_query_samples(samples, use_bow_model=use_bow_model)) if use_pointwise_loss else (lambda samples: collate_query_pairwise_samples(samples, use_bow_model=use_bow_model)),
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
@@ -392,6 +433,7 @@ def main():
   train_model(multi_objective_model,
               model_data,
               train_ranking_dataset,
+              val_ranking_dataset,
               test_ranking_dataset,
               rabbit.train_params,
               rabbit.model_params,

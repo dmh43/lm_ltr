@@ -9,7 +9,7 @@ import torch
 from lm_ltr.trec_doc_parse import parse_qrels
 from lm_ltr.metrics import metrics_at_k
 from lm_ltr.utils import append_at, name
-from lm_ltr.fetchers import read_query_test_rankings, read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents_with_titles
+from lm_ltr.fetchers import read_query_test_rankings, read_cache, get_robust_eval_queries, get_robust_rels, get_robust_documents_with_titles
 from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
 from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, encode_glove_fs
@@ -18,7 +18,7 @@ def main():
   rankings_to_eval = read_query_test_rankings()
   qrels = parse_qrels()
   query_ids = list(set(qrels.keys()).intersection(set(rankings_to_eval.keys())))
-  query_lookup = get_robust_test_queries()
+  query_lookup = get_robust_eval_queries()
   queries = [query_lookup[query_id] for query_id in query_ids]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
   document_lookup = read_cache(name('./doc_lookup.json', ['with_titles']), get_robust_documents_with_titles)

@@ -10,7 +10,7 @@ import numpy as np
 from progressbar import progressbar
 import torch
 
-from lm_ltr.fetchers import read_cache, get_robust_test_queries, get_robust_rels, get_robust_documents
+from lm_ltr.fetchers import read_cache, get_robust_eval_queries, get_robust_rels, get_robust_documents
 from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
 

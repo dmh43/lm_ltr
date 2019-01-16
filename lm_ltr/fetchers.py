@@ -235,7 +235,7 @@ def get_robust_documents_with_titles():
   doc_paths = ['./fbis', './la', './ft']
   return _.merge({}, *[parse_xml_docs_and_titles(doc_path) for doc_path in doc_paths])
 
-def get_robust_test_queries():
+def get_robust_eval_queries():
   return parse_test_set('./data/robust04/04.testset')
 
 def get_robust_train_queries():
