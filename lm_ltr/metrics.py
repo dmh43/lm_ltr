@@ -104,7 +104,11 @@ class RankingMetricRecorder(MetricRecorder):
                                                      'test_precision',
                                                      'test_recall',
                                                      'test_ndcg',
-                                                     'test_map'])
+                                                     'test_map',
+                                                     'val_precision',
+                                                     'val_recall',
+                                                     'val_ndcg',
+                                                     'val_map'])
     self.experiment_context.__enter__()
 
   def on_train_end(self, num_batch, **kwargs):
