@@ -22,8 +22,15 @@ def rank_bm25(bm25, q, average_idf):
                range(bm25.corpus_size),
                k=10)
 
-def _encode_glove(glove, idf, tokens):
-  weights = torch.tensor([idf[token] for token in tokens if token in glove]).float().cuda()
+def _encode_glove(glove, idf, tokens, default=1.0):
+  w = []
+  for token in tokens:
+    if token in glove:
+      if token in idf:
+        w.append(idf[token])
+      else:
+        w.append(default)
+  weights = torch.tensor(w).float().cuda()
   tok_vecs = torch.stack([glove[token] for token in tokens if token in glove]).cuda()
   weighted_tokens = weights.unsqueeze(1) * tok_vecs
   vec = torch.sum(weighted_tokens, 0)
@@ -39,7 +46,8 @@ def encode_glove_fs(glove, idf, doc_fs):
   return torch.sum(words * freqs.unsqueeze(1) * weights.unsqueeze(1), 0)
 
 def rank_glove(glove, idf, encoded_docs, query, k=10):
-  topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs * _encode_glove(glove, idf, query), 1),
+  avg = sum(idf.values()) / len(idf)
+  topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs * _encode_glove(glove, idf, query, default=avg), 1),
                                       k=k)
   sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
   return topk_idxs[sort_idxs].tolist()
