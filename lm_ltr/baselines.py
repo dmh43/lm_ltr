@@ -23,7 +23,7 @@ def rank_bm25(bm25, q, average_idf):
                k=10)
 
 def _encode_glove(glove, idf, tokens):
-  weights = torch.tensor([idf[token] if token in idf else 0.0 for token in tokens]).float().cuda()
+  weights = torch.tensor([idf[token] for token in tokens if token in glove]).float().cuda()
   tok_vecs = torch.stack([glove[token] for token in tokens if token in glove]).cuda()
   weighted_tokens = weights.unsqueeze(1) * tok_vecs
   vec = torch.sum(weighted_tokens, 0)
