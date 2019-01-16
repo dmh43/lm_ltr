@@ -234,7 +234,11 @@ def main():
                                                    get_robust_rels)
   eval_query_name_to_id = read_cache('./eval_query_name_to_id.json',
                                      lambda: create_id_lookup(eval_query_lookup.keys()))
-  test_query_names, val_query_names = [], []
+  test_query_names = []
+  val_query_names = []
+  for query_name in eval_query_lookup:
+    if len(test_query_names) < 200: test_query_names.append(query_name)
+    else: val_query_names.append(query_name)
   test_query_name_document_title_rels = _.pick(eval_query_name_document_title_rels, test_query_names)
   test_query_lookup = _.pick(eval_query_lookup, test_query_names)
   test_query_name_to_id = _.pick(eval_query_name_to_id, test_query_names)
