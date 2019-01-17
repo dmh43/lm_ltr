@@ -5,6 +5,7 @@ import json
 from collections import Counter, defaultdict
 from operator import itemgetter
 from heapq import nlargest
+from collections.abc import MutableMapping
 
 from gensim.summarization.bm25 import BM25
 from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
@@ -70,14 +71,47 @@ def _calc_score_under_lm(lm, doc_lm):
     score += np.exp(lm[term]) * log_prob
   return score
 
+class LM(MutableMapping):
+  def __init__(self, fs, corpus_fs, prior, corpus_size):
+    self.fs = fs
+    self.prior = prior
+    self.corpus_size = corpus_size
+    self.corpus_fs = corpus_fs
+    self.doc_len = sum(fs.values())
+    self.store = {}
+
+  def __getitem__(self, key):
+    if key in self.store:
+      return self.store[key]
+    else:
+      return np.log(self.corpus_fs[key] * self.prior / self.corpus_size / (self.doc_len + self.prior))
+
+  def __setitem__(self, key, val):
+    self.store[key] = val
+
+  def __delitem__(self, key):
+    del self.store[key]
+
+  def __repr__(self):
+    return repr(self.store)
+
+  def update(self, *args, **kwargs):
+    for k, v in dict(*args, **kwargs).items():
+      self.store[k] = v
+
+  def __iter__(self):
+    for key in self.corpus_fs:
+      yield self[key]
+
+  def __len__(self):
+    return len(self.corpus_fs)
+
 def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
   corpus_size = sum(corpus_fs.values())
   docs_lms = []
   for doc_fs in docs_fs:
     doc_len = sum(doc_fs.values())
-    doc_lm = defaultdict(lambda: -np.inf,
-                         {term: np.log(f * prior / corpus_size / (doc_len + prior))
-                          for term, f in corpus_fs.items()})
+    doc_lm = LM(doc_fs, corpus_fs, prior, corpus_size)
     for term in doc_fs:
       doc_lm[term] = np.log((doc_fs[term] + corpus_fs[term] * prior / corpus_size) / (doc_len + prior))
     docs_lms.append(doc_lm)
