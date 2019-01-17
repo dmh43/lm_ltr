@@ -7,7 +7,7 @@ from .preprocessing import pad, _collate_bow_doc
 from .utils import at_least_one_dim
 
 def smooth_scores(scores, doc_scores, smooth):
-  normalized_doc_scores = doc_scores / doc_scores.sum()
+  normalized_doc_scores = torch.softmax(doc_scores, 0)
   return scores * (1 - smooth) + normalized_doc_scores * smooth
 
 class PointwiseRanker:
