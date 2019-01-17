@@ -32,6 +32,7 @@ class QueryDataset(Dataset):
                query_tok_to_doc_tok=None,
                use_doc_out=False,
                normalized_score_lookup=None,
+               dont_include_normalized_score=False,
                use_bow_model=False):
     self.documents = documents
     self.use_bow_model = use_bow_model
@@ -45,6 +46,7 @@ class QueryDataset(Dataset):
     self.use_doc_out = use_doc_out
     self.normalized_score_lookup = normalized_score_lookup
     self.use_bow_model = use_bow_model
+    self.dont_include_normalized_score = dont_include_normalized_score
 
   def _get_document(self, elem_idx):
     if self.use_doc_out:
@@ -60,10 +62,10 @@ class QueryDataset(Dataset):
   def __getitem__(self, idx):
     query = remap_if_exists(self.data[idx]['query'], self.query_tok_to_doc_tok)
     doc_id = self.data[idx]['doc_id']
-    if self.normalized_score_lookup is not None:
-      doc_score = self.normalized_score_lookup[tuple(query)][doc_id]
-    else:
+    if self.dont_include_normalized_score:
       doc_score = 0.0
+    else:
+      doc_score = self.normalized_score_lookup[tuple(query)][doc_id]
     return ((query, self._get_document(doc_id), doc_score),
             self.rel_method(self.data[idx]))
 
@@ -84,10 +86,12 @@ class RankingDataset(Dataset):
                num_to_rank=1000,
                cheat=False,
                normalized_score_lookup=None,
+               dont_include_normalized_score=False,
                use_bow_model=False):
     self.use_bow_model = use_bow_model
     self.rankings = rankings
     self.documents = documents
+    self.dont_include_normalized_score = dont_include_normalized_score
     if not self.use_bow_model:
       self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
     else:
@@ -120,13 +124,13 @@ class RankingDataset(Dataset):
       ranking_with_neg = ranking[:self.num_to_rank]
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
                                               torch.tensor(ranking_with_neg, dtype=torch.long))
-    if self.normalized_score_lookup is not None:
+    if self.dont_include_normalized_score:
+      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
+    else:
       smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
       doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
                                  if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                  for doc_id in doc_ids.tolist()])
-    else:
-      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
@@ -148,13 +152,13 @@ class RankingDataset(Dataset):
           ranking.append(doc_id)
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
-    if self.normalized_score_lookup is not None:
+    if self.dont_include_normalized_score:
+      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
+    else:
       smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
       doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
                                  if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                  for doc_id in doc_ids.tolist()])
-    else:
-      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
@@ -236,6 +240,7 @@ class QueryPairwiseDataset(QueryDataset):
                use_variable_loss=False,
                normalized_score_lookup=None,
                num_to_drop_in_ranking=0,
+               dont_include_normalized_score=False,
                use_bow_model=False):
     if num_to_drop_in_ranking > 0:
       assert bin_rankings == 1, 'bin_rankings != 1 is not supported'
@@ -248,6 +253,7 @@ class QueryPairwiseDataset(QueryDataset):
                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                      use_doc_out=use_doc_out,
                      normalized_score_lookup=normalized_score_lookup,
+                     dont_include_normalized_score=dont_include_normalized_score,
                      use_bow_model=use_bow_model)
     self.use_variable_loss = use_variable_loss
     self.bin_rankings = bin_rankings
@@ -300,12 +306,12 @@ class QueryPairwiseDataset(QueryDataset):
       order_int = 1
     else:
       doc_2 = self._get_document(elem['doc_id_2'])
-    if self.normalized_score_lookup is not None:
-      doc_1_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_1']]
-      doc_2_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_2']]
-    else:
+    if self.dont_include_normalized_score:
       doc_1_score = 0.0
       doc_2_score = 0.0
+    else:
+      doc_1_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_1']]
+      doc_2_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_2']]
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), order_int)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
@@ -352,6 +358,7 @@ def build_query_dataloader(documents,
                            use_sequential_sampler=False,
                            use_doc_out=False,
                            normalized_score_lookup=None,
+                           dont_include_normalized_score=False,
                            use_bow_model=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
@@ -362,6 +369,7 @@ def build_query_dataloader(documents,
                          query_tok_to_doc_tok=query_tok_to_doc_tok,
                          use_doc_out=use_doc_out,
                          normalized_score_lookup=normalized_score_lookup,
+                         dont_include_normalized_score=dont_include_normalized_score,
                          use_bow_model=use_bow_model)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
@@ -384,6 +392,7 @@ def build_query_pairwise_dataloader(documents,
                                     use_variable_loss=False,
                                     normalized_score_lookup=None,
                                     num_to_drop_in_ranking=0,
+                                    dont_include_normalized_score=False,
                                     use_bow_model=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
@@ -398,6 +407,7 @@ def build_query_pairwise_dataloader(documents,
                                  use_variable_loss=use_variable_loss,
                                  normalized_score_lookup=normalized_score_lookup,
                                  num_to_drop_in_ranking=num_to_drop_in_ranking,
+                                 dont_include_normalized_score=dont_include_normalized_score,
                                  use_bow_model=use_bow_model)
   sampler = SequentialSampler if use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,

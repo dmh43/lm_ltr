@@ -263,17 +263,12 @@ def main():
                                               document_title_to_id,
                                               val_query_name_to_id,
                                               val_queries))
-  if not rabbit.model_params.dont_include_normalized_score:
-    train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
-                                               lambda: get_normalized_score_lookup(train_data))
-    test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.pkl',
-                                               lambda: get_normalized_score_lookup(test_data))
-    val_normalized_score_lookup = read_cache('./val_normalized_score_lookup.pkl',
-                                             lambda: get_normalized_score_lookup(val_data))
-  else:
-    train_normalized_score_lookup = None
-    test_normalized_score_lookup = None
-    val_normalized_score_lookup = None
+  train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
+                                             lambda: get_normalized_score_lookup(train_data))
+  test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.pkl',
+                                            lambda: get_normalized_score_lookup(test_data))
+  val_normalized_score_lookup = read_cache('./val_normalized_score_lookup.pkl',
+                                           lambda: get_normalized_score_lookup(val_data))
   names = []
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
@@ -291,6 +286,7 @@ def main():
                                       use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                       use_doc_out=rabbit.model_params.use_doc_out,
                                       normalized_score_lookup=train_normalized_score_lookup,
+                                      dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                       use_bow_model=use_bow_model)
     test_dl = build_query_dataloader(documents,
                                      test_data,
@@ -302,18 +298,20 @@ def main():
                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                      use_doc_out=rabbit.model_params.use_doc_out,
                                      normalized_score_lookup=test_normalized_score_lookup,
+                                     dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                      use_bow_model=use_bow_model)
     val_dl = build_query_dataloader(documents,
-                                      val_data,
-                                      rabbit.train_params.batch_size,
-                                      rel_method=rabbit.train_params.rel_method,
-                                      num_doc_tokens=num_doc_tokens_to_consider,
-                                      cache=name('./pointwise_val_ranking_106756.json', names),
-                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                      use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
-                                      use_doc_out=rabbit.model_params.use_doc_out,
-                                      normalized_score_lookup=test_normalized_score_lookup,
-                                      use_bow_model=use_bow_model)
+                                    val_data,
+                                    rabbit.train_params.batch_size,
+                                    rel_method=rabbit.train_params.rel_method,
+                                    num_doc_tokens=num_doc_tokens_to_consider,
+                                    cache=name('./pointwise_val_ranking_106756.json', names),
+                                    query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                    use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                    use_doc_out=rabbit.model_params.use_doc_out,
+                                    normalized_score_lookup=test_normalized_score_lookup,
+                                    dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
+                                    use_bow_model=use_bow_model)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -335,6 +333,7 @@ def main():
                                                use_variable_loss=rabbit.train_params.use_variable_loss,
                                                normalized_score_lookup=train_normalized_score_lookup,
                                                num_to_drop_in_ranking=rabbit.train_params.num_to_drop_in_ranking,
+                                               dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                                use_bow_model=use_bow_model)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
@@ -347,18 +346,20 @@ def main():
                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                               use_doc_out=rabbit.model_params.use_doc_out,
                                               normalized_score_lookup=test_normalized_score_lookup,
+                                              dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                               use_bow_model=use_bow_model)
     val_dl = build_query_pairwise_dataloader(documents,
-                                               val_data,
-                                               rabbit.train_params.batch_size,
-                                               num_neg_samples=0,
-                                               num_doc_tokens=num_doc_tokens_to_consider,
-                                               cache=name('./pairwise_val_ranking_106756.json', names),
-                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
-                                               use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
-                                               use_doc_out=rabbit.model_params.use_doc_out,
-                                               normalized_score_lookup=test_normalized_score_lookup,
-                                               use_bow_model=use_bow_model)
+                                             val_data,
+                                             rabbit.train_params.batch_size,
+                                             num_neg_samples=0,
+                                             num_doc_tokens=num_doc_tokens_to_consider,
+                                             cache=name('./pairwise_val_ranking_106756.json', names),
+                                             query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                             use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
+                                             use_doc_out=rabbit.model_params.use_doc_out,
+                                             normalized_score_lookup=test_normalized_score_lookup,
+                                             dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
+                                             use_bow_model=use_bow_model)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -372,6 +373,7 @@ def main():
                                          use_doc_out=rabbit.model_params.use_doc_out,
                                          num_to_rank=rabbit.run_params.num_to_rank,
                                          normalized_score_lookup=train_normalized_score_lookup,
+                                         dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                          use_bow_model=use_bow_model)
   eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
                                        read_query_test_rankings)
@@ -391,6 +393,7 @@ def main():
                                         num_to_rank=rabbit.run_params.num_to_rank,
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup,
+                                        dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                         use_bow_model=use_bow_model)
   val_ranking_candidates = _.pick(eval_ranking_candidates, val_query_names)
   val_ranking_candidates = _.map_values(val_ranking_candidates,
@@ -407,6 +410,7 @@ def main():
                                        num_to_rank=rabbit.run_params.num_to_rank,
                                        cheat=rabbit.run_params.cheat,
                                        normalized_score_lookup=val_normalized_score_lookup,
+                                       dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                        use_bow_model=use_bow_model)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
