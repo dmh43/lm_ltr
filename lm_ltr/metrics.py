@@ -31,7 +31,10 @@ class RankingMetricRecorder(MetricRecorder):
                dont_smooth=False):
     super().__init__(model)
     self.device = device
-    self.ranker = PointwiseRanker(device, self.model, doc_chunk_size)
+    self.ranker = PointwiseRanker(device,
+                                  self.model,
+                                  doc_chunk_size,
+                                  use_doc_scores_for_smoothing=not dont_smooth)
     self.train_ranking_dataset = train_ranking_dataset
     self.valid_ranking_dataset = valid_ranking_dataset
     self.test_ranking_dataset = test_ranking_dataset
