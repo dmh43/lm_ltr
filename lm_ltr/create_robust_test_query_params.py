@@ -4,7 +4,7 @@ import re
 from lm_ltr.fetchers import get_robust_eval_queries
 
 def clean_string(query):
-  cleaned = re.sub('[^a-zA-Z0-9]', '', query)
+  cleaned = re.sub('[^a-zA-Z0-9 ]', '', query)
   return re.sub('-', ' ', cleaned).strip()
 
 def main():
