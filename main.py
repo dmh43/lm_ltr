@@ -245,8 +245,7 @@ def main():
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
-                                       read_query_test_rankings)
+  eval_ranking_candidates = read_query_test_rankings()
   test_candidates_data = read_query_result(test_query_name_to_id,
                                            document_title_to_id,
                                            dict(zip(range(len(test_queries)),
@@ -257,19 +256,17 @@ def main():
                                                    document_title_to_id,
                                                    test_query_names,
                                                    eval_ranking_candidates)
-  test_data = read_cache('./parsed_test_robust_rels_106756.json',
-                         lambda: process_rels(test_query_name_document_title_rels,
-                                              document_title_to_id,
-                                              test_query_name_to_id,
-                                              test_queries))
+  test_data = process_rels(test_query_name_document_title_rels,
+                           document_title_to_id,
+                           test_query_name_to_id,
+                           test_queries)
   val_query_name_document_title_rels = _.pick(eval_query_name_document_title_rels, val_query_names)
   val_query_lookup = _.pick(eval_query_lookup, val_query_names)
   val_query_name_to_id = read_cache('./val_query_name_to_id.json',
                                     lambda: create_id_lookup(val_query_lookup.keys()))
-  val_queries, __ = read_cache('./parsed_val_robust_queries_106756.json',
-                                lambda: prepare(val_query_lookup,
-                                                val_query_name_to_id,
-                                                token_lookup=query_token_lookup))
+  val_queries, __ = prepare(val_query_lookup,
+                            val_query_name_to_id,
+                            token_lookup=query_token_lookup)
   val_candidates_data = read_query_result(val_query_name_to_id,
                                           document_title_to_id,
                                           dict(zip(range(len(val_queries)),
@@ -280,11 +277,10 @@ def main():
                                                   document_title_to_id,
                                                   val_query_names,
                                                   eval_ranking_candidates)
-  val_data = read_cache('./parsed_val_robust_rels_106756.json',
-                         lambda: process_rels(val_query_name_document_title_rels,
-                                              document_title_to_id,
-                                              val_query_name_to_id,
-                                              val_queries))
+  val_data = process_rels(val_query_name_document_title_rels,
+                          document_title_to_id,
+                          val_query_name_to_id,
+                          val_queries)
   train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
                                              lambda: get_normalized_score_lookup(train_data))
   test_normalized_score_lookup = get_normalized_score_lookup(test_candidates_data)
