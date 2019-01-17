@@ -17,7 +17,7 @@ from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, enc
 def main():
   rankings_to_eval = read_query_test_rankings()
   qrels = parse_qrels()
-  query_ids = list(set(qrels.keys()).intersection(set(rankings_to_eval.keys())))
+  query_ids = list(qrels.keys())
   query_lookup = get_robust_eval_queries()
   queries = [query_lookup[query_id] for query_id in query_ids]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
