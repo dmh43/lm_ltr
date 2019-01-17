@@ -116,15 +116,16 @@ def _get_top_n_terms(lm, n=30):
   return _.map_(nlargest(n, _.to_pairs(lm), itemgetter(1)),
                 itemgetter(0))
 
-def _calc_score_under_lm(lm, doc_lm):
+def _calc_score_under_lm(lm, doc_lm, top_n_terms):
   score = 0
-  for term in _get_top_n_terms(lm):
+  for term in top_n_terms:
     score += np.exp(lm[term]) * doc_lm[term]
   return score
 
 def rank_rm3(docs_lms, qml_ranking, q, k=10):
   rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
-  return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id]),
+  top_n_terms = _get_top_n_terms(rel_lm)
+  return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
                range(len(docs_lms)),
                k=k)
 
