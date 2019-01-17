@@ -373,7 +373,6 @@ def main():
                                          use_doc_out=rabbit.model_params.use_doc_out,
                                          num_to_rank=rabbit.run_params.num_to_rank,
                                          normalized_score_lookup=train_normalized_score_lookup,
-                                         dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                          use_bow_model=use_bow_model)
   eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
                                        read_query_test_rankings)
@@ -393,7 +392,6 @@ def main():
                                         num_to_rank=rabbit.run_params.num_to_rank,
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup,
-                                        dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                         use_bow_model=use_bow_model)
   val_ranking_candidates = _.pick(eval_ranking_candidates, val_query_names)
   val_ranking_candidates = _.map_values(val_ranking_candidates,
@@ -410,7 +408,6 @@ def main():
                                        num_to_rank=rabbit.run_params.num_to_rank,
                                        cheat=rabbit.run_params.cheat,
                                        normalized_score_lookup=val_normalized_score_lookup,
-                                       dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                        use_bow_model=use_bow_model)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl

@@ -86,12 +86,10 @@ class RankingDataset(Dataset):
                num_to_rank=1000,
                cheat=False,
                normalized_score_lookup=None,
-               dont_include_normalized_score=False,
                use_bow_model=False):
     self.use_bow_model = use_bow_model
     self.rankings = rankings
     self.documents = documents
-    self.dont_include_normalized_score = dont_include_normalized_score
     if not self.use_bow_model:
       self.short_docs = [torch.tensor(doc[:num_doc_tokens]) for doc in documents]
     else:
@@ -124,13 +122,10 @@ class RankingDataset(Dataset):
       ranking_with_neg = ranking[:self.num_to_rank]
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[idx] for idx in ranking_with_neg],
                                               torch.tensor(ranking_with_neg, dtype=torch.long))
-    if self.dont_include_normalized_score:
-      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
-    else:
-      smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
-      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
-                                 if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
-                                 for doc_id in doc_ids.tolist()])
+    smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
+    doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
+                               if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
+                               for doc_id in doc_ids.tolist()])
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,
@@ -152,13 +147,10 @@ class RankingDataset(Dataset):
           ranking.append(doc_id)
     documents, doc_ids = _shuffle_doc_doc_ids([self.short_docs[doc_id] for doc_id in ranking],
                                               torch.tensor(ranking, dtype=torch.long))
-    if self.dont_include_normalized_score:
-      doc_scores = torch.zeros(len(documents), dtype=torch.float32)
-    else:
-      smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
-      doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
-                                 if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
-                                 for doc_id in doc_ids.tolist()])
+    smallest_score = min(self.normalized_score_lookup[tuple(query)].values())
+    doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
+                               if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
+                               for doc_id in doc_ids.tolist()])
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': documents if not self.use_doc_out else doc_ids,
             'doc_ids': doc_ids,

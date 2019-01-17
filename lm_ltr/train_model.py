@@ -50,7 +50,8 @@ def train_model(model,
                                      test_ranking_dataset,
                                      experiment,
                                      doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1,
-                                     dont_smooth=model_params.dont_smooth)]
+                                     dont_smooth=model_params.dont_smooth,
+                                     dont_include_normalized_score=model_params.dont_include_normalized_score)]
   callback_fns = []
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))

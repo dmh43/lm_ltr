@@ -28,13 +28,15 @@ class RankingMetricRecorder(MetricRecorder):
                test_ranking_dataset,
                experiment,
                doc_chunk_size=-1,
-               dont_smooth=False):
+               dont_smooth=False,
+               dont_include_normalized_score=False):
     super().__init__(model)
     self.device = device
     self.ranker = PointwiseRanker(device,
                                   self.model,
                                   doc_chunk_size,
-                                  use_doc_scores_for_smoothing=not dont_smooth)
+                                  use_doc_scores_for_smoothing=not dont_smooth,
+                                  dont_include_normalized_score=dont_include_normalized_score)
     self.train_ranking_dataset = train_ranking_dataset
     self.valid_ranking_dataset = valid_ranking_dataset
     self.test_ranking_dataset = test_ranking_dataset
@@ -78,7 +80,7 @@ class RankingMetricRecorder(MetricRecorder):
   def _check(self, batch_num=0):
     if self.dont_smooth:
       smooth = 0.0
-      val_results = self.metrics_at_k(self.train_ranking_dataset, smooth)
+      val_results = self.metrics_at_k(self.valid_ranking_dataset, smooth)
     else:
       smooth, val_results = self._find_best_smooth()
     train_results = self.metrics_at_k(self.train_ranking_dataset, smooth)

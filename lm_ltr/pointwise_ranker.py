@@ -11,11 +11,17 @@ def smooth_scores(scores, doc_scores, smooth):
   return scores * (1 - smooth) + normalized_doc_scores * smooth
 
 class PointwiseRanker:
-  def __init__(self, device, pointwise_scorer, doc_chunk_size=-1, use_doc_scores_for_smoothing=False):
+  def __init__(self,
+               device,
+               pointwise_scorer,
+               doc_chunk_size=-1,
+               use_doc_scores_for_smoothing=False,
+               dont_include_normalized_score=False):
     self.device = device
     self.pointwise_scorer = pointwise_scorer
     self.doc_chunk_size = doc_chunk_size
     self.use_doc_scores_for_smoothing = use_doc_scores_for_smoothing
+    self.dont_include_normalized_score = dont_include_normalized_score
 
   def _scores_for_chunk(self, query, documents, doc_scores) -> None:
     if isinstance(documents, torch.Tensor) and len(documents.shape) == 1:
@@ -54,10 +60,12 @@ class PointwiseRanker:
                                           self.doc_chunk_size)):
           all_scores.append(self._scores_for_chunk(query,
                                                    documents[from_idx : to_idx],
-                                                   doc_scores[from_idx : to_idx]))
+                                                   torch.zeros_like(doc_scores[from_idx : to_idx]) if self.dont_include_normalized_score else doc_scores[from_idx : to_idx]))
         scores = torch.cat(all_scores, 0)
       else:
-        scores = self._scores_for_chunk(query, documents, doc_scores)
+        scores = self._scores_for_chunk(query,
+                                        documents,
+                                        torch.zeros_like(doc_scores) if self.dont_include_normalized_score else doc_scores)
       if self.use_doc_scores_for_smoothing:
         assert smooth is not None, 'must specify smoothing amount'
         scores = smooth_scores(scores, doc_scores, smooth)
