@@ -2,6 +2,8 @@ import pickle
 import json
 import random
 import time
+from heapq import nlargest
+from operator import itemgetter
 
 import pydash as _
 import torch
@@ -34,19 +36,20 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'document_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
-         {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_pretrained_doc_encoder', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'dont_freeze_word_embeds', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'dont_include_normalized_score', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'dont_limit_num_uniq_tokens', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_smooth', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
+         {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': lambda string: [int(size) for size in string.split(',')], 'default': [128, 64, 16]},
-         {'name': 'dont_include_normalized_score', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
+         {'name': 'keep_top_uniq_terms', 'for': 'model_params', 'type': lambda num: int(num) if num is not None else None, 'default': None},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
-         {'name': 'dont_limit_num_uniq_tokens', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
@@ -133,6 +136,11 @@ def main():
                                                                    document_title_to_id,
                                                                    num_tokens=num_doc_tokens_to_consider,
                                                                    token_set=doc_token_set))
+    if rabbit.model_params.keep_top_uniq_terms is not None:
+      documents = [dict(nlargest(rabbit.model_params.keep_top_uniq_terms,
+                                 _.to_pairs(doc),
+                                 itemgetter(1)))
+                   for doc in documents]
   else:
     use_bow_model = False
     documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
