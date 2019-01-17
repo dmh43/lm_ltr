@@ -249,7 +249,8 @@ def main():
                                        read_query_test_rankings)
   test_candidates_data = read_query_result(test_query_name_to_id,
                                            document_title_to_id,
-                                           test_queries,
+                                           dict(zip(range(len(test_queries)),
+                                                    test_queries)),
                                            path='./indri/query_result_test')
   test_ranking_candidates = process_raw_candidates(test_query_name_to_id,
                                                    test_queries,
@@ -271,7 +272,8 @@ def main():
                                                 token_lookup=query_token_lookup))
   val_candidates_data = read_query_result(val_query_name_to_id,
                                           document_title_to_id,
-                                          val_queries,
+                                          dict(zip(range(len(val_queries)),
+                                                    val_queries)),
                                           path='./indri/query_result_test')
   val_ranking_candidates = process_raw_candidates(val_query_name_to_id,
                                                   val_queries,
@@ -285,10 +287,8 @@ def main():
                                               val_queries))
   train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
                                              lambda: get_normalized_score_lookup(train_data))
-  test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.pkl',
-                                            lambda: get_normalized_score_lookup(test_candidates_data))
-  val_normalized_score_lookup = read_cache('./val_normalized_score_lookup.pkl',
-                                           lambda: get_normalized_score_lookup(val_candidates_data))
+  test_normalized_score_lookup = get_normalized_score_lookup(test_candidates_data)
+  val_normalized_score_lookup = get_normalized_score_lookup(val_candidates_data)
   names = []
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
@@ -432,9 +432,7 @@ def main():
     del train_query_lookup
   del query_token_lookup
   del document_token_lookup
-  del test_query_lookup
   del train_queries
-  del test_queries
   try:
     del glove_lookup
   except UnboundLocalError:
