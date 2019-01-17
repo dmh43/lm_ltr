@@ -240,3 +240,16 @@ def process_rels(query_name_document_title_rels, document_title_to_id, query_nam
                   'score': 1.0,
                   'doc_id': document_title_to_id[title]} for title in doc_titles if title in document_title_to_id])
   return data
+
+def process_raw_candidates(query_name_to_id,
+                           queries,
+                           document_title_to_id,
+                           query_names,
+                           raw_ranking_candidates):
+  ranking_candidates = _.pick(raw_ranking_candidates, query_names)
+  lookup_by_title = lambda title: document_title_to_id.get(title) or 0
+  test_ranking_candidates = _.map_values(ranking_candidates,
+                                         lambda candidate_names: _.map_(candidate_names,
+                                                                        lookup_by_title))
+  return _.map_keys(test_ranking_candidates,
+                    lambda ranking, query_name: str(queries[query_name_to_id[query_name]])[1:-1])

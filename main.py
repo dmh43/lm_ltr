@@ -12,7 +12,7 @@ from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_to
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
-from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, prepare_fs, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup
+from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, prepare_fs, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup, process_raw_candidates
 from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
@@ -245,6 +245,18 @@ def main():
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
+  eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
+                                       read_query_test_rankings)
+  eval_candidates_data = read_query_result(test_query_name_to_id,
+                                           document_title_to_id,
+                                           test_queries,
+                                           path='./indri/query_result_test')
+  test_candidates_data = _.pick(eval_candidates_data, test_query_names)
+  test_ranking_candidates = process_raw_candidates(test_query_name_to_id,
+                                                   test_queries,
+                                                   document_title_to_id,
+                                                   test_query_names,
+                                                   eval_ranking_candidates)
   test_data = read_cache('./parsed_test_robust_rels_106756.json',
                          lambda: process_rels(test_query_name_document_title_rels,
                                               document_title_to_id,
@@ -258,6 +270,12 @@ def main():
                                 lambda: prepare(val_query_lookup,
                                                 val_query_name_to_id,
                                                 token_lookup=query_token_lookup))
+  val_candidates_data = _.pick(eval_candidates_data, val_query_names)
+  val_ranking_candidates = process_raw_candidates(val_query_name_to_id,
+                                                  val_queries,
+                                                  document_title_to_id,
+                                                  val_query_names,
+                                                  eval_ranking_candidates)
   val_data = read_cache('./parsed_val_robust_rels_106756.json',
                          lambda: process_rels(val_query_name_document_title_rels,
                                               document_title_to_id,
@@ -266,9 +284,9 @@ def main():
   train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
                                              lambda: get_normalized_score_lookup(train_data))
   test_normalized_score_lookup = read_cache('./test_normalized_score_lookup.pkl',
-                                            lambda: get_normalized_score_lookup(test_data))
+                                            lambda: get_normalized_score_lookup(test_candidates_data))
   val_normalized_score_lookup = read_cache('./val_normalized_score_lookup.pkl',
-                                           lambda: get_normalized_score_lookup(val_data))
+                                           lambda: get_normalized_score_lookup(val_candidates_data))
   names = []
   if rabbit.train_params.train_dataset_size:
     names.append(f'first_{rabbit.train_params.train_dataset_size}')
@@ -309,7 +327,7 @@ def main():
                                     query_tok_to_doc_tok=query_tok_to_doc_tok,
                                     use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                     use_doc_out=rabbit.model_params.use_doc_out,
-                                    normalized_score_lookup=test_normalized_score_lookup,
+                                    normalized_score_lookup=val_normalized_score_lookup,
                                     dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                     use_bow_model=use_bow_model)
     model = PointwiseScorer(query_token_embeds,
@@ -357,7 +375,7 @@ def main():
                                              query_tok_to_doc_tok=query_tok_to_doc_tok,
                                              use_sequential_sampler=rabbit.train_params.use_sequential_sampler,
                                              use_doc_out=rabbit.model_params.use_doc_out,
-                                             normalized_score_lookup=test_normalized_score_lookup,
+                                             normalized_score_lookup=val_normalized_score_lookup,
                                              dont_include_normalized_score=rabbit.model_params.dont_include_normalized_score,
                                              use_bow_model=use_bow_model)
     model = PairwiseScorer(query_token_embeds,
@@ -374,15 +392,6 @@ def main():
                                          num_to_rank=rabbit.run_params.num_to_rank,
                                          normalized_score_lookup=train_normalized_score_lookup,
                                          use_bow_model=use_bow_model)
-  eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
-                                       read_query_test_rankings)
-  test_ranking_candidates = _.pick(eval_ranking_candidates, test_query_names)
-  lookup_by_title = lambda title: document_title_to_id.get(title) or 0
-  test_ranking_candidates = _.map_values(test_ranking_candidates,
-                                         lambda candidate_names: _.map_(candidate_names,
-                                                                        lookup_by_title))
-  test_ranking_candidates = _.map_keys(test_ranking_candidates,
-                                       lambda ranking, query_name: str(test_queries[test_query_name_to_id[query_name]])[1:-1])
   test_ranking_dataset = RankingDataset(documents,
                                         test_ranking_candidates,
                                         test_dl.dataset.rankings,
@@ -393,12 +402,6 @@ def main():
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup,
                                         use_bow_model=use_bow_model)
-  val_ranking_candidates = _.pick(eval_ranking_candidates, val_query_names)
-  val_ranking_candidates = _.map_values(val_ranking_candidates,
-                                        lambda candidate_names: _.map_(candidate_names,
-                                                                       lookup_by_title))
-  val_ranking_candidates = _.map_keys(val_ranking_candidates,
-                                      lambda ranking, query_name: str(val_queries[val_query_name_to_id[query_name]])[1:-1])
   val_ranking_dataset = RankingDataset(documents,
                                        val_ranking_candidates,
                                        val_dl.dataset.rankings,
