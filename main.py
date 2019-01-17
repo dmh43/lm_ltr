@@ -247,11 +247,10 @@ def main():
                                                 token_lookup=query_token_lookup))
   eval_ranking_candidates = read_cache('./eval_ranking_candidates.json',
                                        read_query_test_rankings)
-  eval_candidates_data = read_query_result(test_query_name_to_id,
+  test_candidates_data = read_query_result(test_query_name_to_id,
                                            document_title_to_id,
                                            test_queries,
                                            path='./indri/query_result_test')
-  test_candidates_data = _.pick(eval_candidates_data, test_query_names)
   test_ranking_candidates = process_raw_candidates(test_query_name_to_id,
                                                    test_queries,
                                                    document_title_to_id,
@@ -270,7 +269,10 @@ def main():
                                 lambda: prepare(val_query_lookup,
                                                 val_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  val_candidates_data = _.pick(eval_candidates_data, val_query_names)
+  val_candidates_data = read_query_result(val_query_name_to_id,
+                                          document_title_to_id,
+                                          val_queries,
+                                          path='./indri/query_result_test')
   val_ranking_candidates = process_raw_candidates(val_query_name_to_id,
                                                   val_queries,
                                                   document_title_to_id,
