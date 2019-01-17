@@ -24,7 +24,7 @@ class RankingMetricRecorder(MetricRecorder):
                device,
                model,
                train_ranking_dataset,
-               valid_ranking_dataset,
+               val_ranking_dataset,
                test_ranking_dataset,
                experiment,
                doc_chunk_size=-1,
@@ -38,7 +38,7 @@ class RankingMetricRecorder(MetricRecorder):
                                   use_doc_scores_for_smoothing=not dont_smooth,
                                   dont_include_normalized_score=dont_include_normalized_score)
     self.train_ranking_dataset = train_ranking_dataset
-    self.valid_ranking_dataset = valid_ranking_dataset
+    self.val_ranking_dataset = val_ranking_dataset
     self.test_ranking_dataset = test_ranking_dataset
     self.experiment_context = None
     self.experiment = experiment
@@ -69,7 +69,7 @@ class RankingMetricRecorder(MetricRecorder):
     best_metric_val = None
     val_best_metrics = None
     for smooth in np.arange(0, 1, inc):
-      val_metrics = self.metrics_at_k(self.valid_ranking_dataset, smooth)
+      val_metrics = self.metrics_at_k(self.val_ranking_dataset, smooth)
       smooth_metric_val = val_metrics[metric]
       if (best_smooth is None) or (smooth_metric_val > best_metric_val):
         best_metric_val = smooth_metric_val
@@ -80,7 +80,7 @@ class RankingMetricRecorder(MetricRecorder):
   def _check(self, batch_num=0):
     if self.dont_smooth:
       smooth = 0.0
-      val_results = self.metrics_at_k(self.valid_ranking_dataset, smooth)
+      val_results = self.metrics_at_k(self.val_ranking_dataset, smooth)
     else:
       smooth, val_results = self._find_best_smooth()
     train_results = self.metrics_at_k(self.train_ranking_dataset, smooth)
