@@ -53,23 +53,6 @@ def rank_glove(glove, idf, encoded_docs, query, k=10):
   sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
   return topk_idxs[sort_idxs].tolist()
 
-def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
-  query_lm = defaultdict(lambda: -np.inf,
-                         {q_term: np.log(cnt / len(q)) for q_term, cnt in Counter(q).items()})
-  rel_lm = defaultdict(lambda: -np.inf)
-  for doc_id in qml_ranking:
-    q_prob_in_doc = np.sum([docs_lms[doc_id][q_term] for q_term in q])
-    for key, val in docs_lms[doc_id].items():
-      rel_lm[key] = np.logaddexp(rel_lm[key], val + q_prob_in_doc)
-  return defaultdict(lambda: -np.inf, {term: np.logaddexp(rel_lm[term] + np.log(smooth),
-                                                          query_lm[term] + np.log(1 - smooth))
-                                             for term in rel_lm})
-
-def _calc_score_under_lm(lm, doc_lm):
-  score = 0
-  for term, log_prob in doc_lm.items():
-    score += np.exp(lm[term]) * log_prob
-  return score
 
 class LM(MutableMapping):
   def __init__(self, fs, corpus_fs, prior, corpus_size):
@@ -105,6 +88,7 @@ class LM(MutableMapping):
   def __len__(self):
     return len(self.corpus_fs)
 
+
 def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
   corpus_size = sum(corpus_fs.values())
   docs_lms = []
@@ -116,15 +100,37 @@ def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
     docs_lms.append(doc_lm)
   return docs_lms
 
-def top_k(score_fn, doc_ids, k=10):
-  score_pairs = [(score_fn(doc_id), doc_id) for doc_id in doc_ids]
-  topk = nlargest(k,
-                  score_pairs,
-                  key=itemgetter(0))
-  return [doc_id for score, doc_id in sorted(topk, key=itemgetter(0))]
+def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
+  query_lm = defaultdict(lambda: -np.inf,
+                         {q_term: np.log(cnt / len(q)) for q_term, cnt in Counter(q).items()})
+  rel_lm = defaultdict(lambda: -np.inf)
+  for doc_id in qml_ranking:
+    q_prob_in_doc = np.sum([docs_lms[doc_id][q_term] for q_term in q])
+    for term in docs_lms[doc_id]:
+      rel_lm[term] = np.logaddexp(rel_lm[term], docs_lms[doc_id][term] + q_prob_in_doc)
+  return defaultdict(lambda: -np.inf, {term: np.logaddexp(rel_lm[term] + np.log(smooth),
+                                                          query_lm[term] + np.log(1 - smooth))
+                                             for term in rel_lm})
+
+def _get_top_n_terms(lm, n=30):
+  return _.map_(nlargest(n, _.to_pairs(lm), itemgetter(1)),
+                itemgetter(0))
+
+def _calc_score_under_lm(lm, doc_lm):
+  score = 0
+  for term in _get_top_n_terms(lm):
+    score += np.exp(lm[term]) * doc_lm[term]
+  return score
 
 def rank_rm3(docs_lms, qml_ranking, q, k=10):
   rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
   return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id]),
                range(len(docs_lms)),
                k=k)
+
+def top_k(score_fn, doc_ids, k=10):
+  score_pairs = [(score_fn(doc_id), doc_id) for doc_id in doc_ids]
+  topk = nlargest(k,
+                  score_pairs,
+                  key=itemgetter(0))
+  return [doc_id for score, doc_id in sorted(topk, key=itemgetter(0))]
