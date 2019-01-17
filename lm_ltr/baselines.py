@@ -100,8 +100,7 @@ class LM(MutableMapping):
       self.store[k] = v
 
   def __iter__(self):
-    for key in self.corpus_fs:
-      yield self[key]
+    iter(self.corpus_fs)
 
   def __len__(self):
     return len(self.corpus_fs)
