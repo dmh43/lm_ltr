@@ -20,10 +20,9 @@ from lm_ltr.embedding_loaders import get_glove_lookup
 
 def rank_bm25(bm25, q, average_idf, doc_ids=None):
   doc_ids = range(bm25.corpus_size) if doc_ids is None else doc_ids
-  idxs = top_k(lambda doc_id: bm25.get_score(q, doc_id, average_idf),
+  return top_k(lambda doc_id: bm25.get_score(q, doc_id, average_idf),
                doc_ids,
                k=10)
-  return [doc_ids[idx] for idx in idxs]
 
 def _encode_glove(glove, idf, tokens, default=1.0):
   w = []
@@ -132,10 +131,9 @@ def rank_rm3(docs_lms, qml_ranking, q, k=10, doc_ids=None):
   doc_ids = range(len(docs_lms)) if doc_ids is None else doc_ids
   rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
   top_n_terms = _get_top_n_terms(rel_lm)
-  idxs = top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
+  return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
                doc_ids,
                k=k)
-  return [doc_ids[idx] for idx in idxs]
 
 def top_k(score_fn, doc_ids, k=10):
   score_pairs = [(score_fn(doc_id), doc_id) for doc_id in doc_ids]
