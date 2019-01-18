@@ -85,9 +85,11 @@ class RankingMetricRecorder(MetricRecorder):
       smooth, val_results = self._find_best_smooth()
     train_results = self.metrics_at_k(self.train_ranking_dataset, smooth)
     test_results = self.metrics_at_k(self.test_ranking_dataset, smooth)
+    test_results_no_smooth = self.metrics_at_k(self.test_ranking_dataset, 0.0)
     self.experiment.record_metrics(_.assign({},
                                             _.map_keys(train_results, lambda val, key: 'train_' + key),
                                             _.map_keys(test_results, lambda val, key: 'test_' + key),
+                                            _.map_keys(test_results_no_smooth, lambda val, key: 'test_no_smooth_' + key),
                                             _.map_keys(val_results, lambda val, key: 'val_' + key)),
                                    batch_num)
 
@@ -110,6 +112,10 @@ class RankingMetricRecorder(MetricRecorder):
                                                      'test_recall',
                                                      'test_ndcg',
                                                      'test_map',
+                                                     'test_no_smooth_precision',
+                                                     'test_no_smooth_recall',
+                                                     'test_no_smooth_ndcg',
+                                                     'test_no_smooth_map',
                                                      'val_precision',
                                                      'val_recall',
                                                      'val_ndcg',

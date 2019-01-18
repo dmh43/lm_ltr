@@ -67,7 +67,10 @@ class LM(MutableMapping):
     if key in self.store:
       return self.store[key]
     else:
-      return np.log(self.corpus_fs[key] * self.prior / self.corpus_size / (self.doc_len + self.prior))
+      if key in self.corpus_fs:
+        return np.log(self.corpus_fs[key] * self.prior / self.corpus_size / (self.doc_len + self.prior))
+      else:
+        return -np.inf
 
   def __setitem__(self, key, val):
     self.store[key] = val
