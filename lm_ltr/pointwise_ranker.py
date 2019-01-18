@@ -39,7 +39,7 @@ class PointwiseRanker:
         scores = self.pointwise_scorer(torch.unsqueeze(query, 0).repeat(len(documents), 1),
                                        padded_doc,
                                        lens,
-                                       doc_scores if not self.use_doc_scores_for_smoothing else torch.zeros_like(doc_scores))
+                                       doc_scores)
       finally:
         self.pointwise_scorer.train()
     return at_least_one_dim(scores)
