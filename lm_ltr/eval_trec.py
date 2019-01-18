@@ -46,9 +46,10 @@ def main():
   encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1).unsqueeze(1)
   for q, qml_ranking in progressbar(zip(tokenized_queries, ordered_rankings_to_eval),
                                     max_value=len(tokenized_queries)):
-    bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf))
-    glove_rankings.append(rank_glove(glove, bm25.idf, encoded_docs, q))
-    rm3_rankings.append(rank_rm3(docs_lms, qml_ranking, q))
+    doc_ids = qml_ranking if '--rerank' in sys.argv else None
+    bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf, doc_ids=doc_ids))
+    glove_rankings.append(rank_glove(glove, bm25.idf, encoded_docs, q, doc_ids=doc_ids))
+    rm3_rankings.append(rank_rm3(docs_lms, qml_ranking, q, doc_ids=doc_ids))
   print('indri:', metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
   print('bm25:', metrics_at_k(bm25_rankings, ordered_qrels, k))
   print('glove:', metrics_at_k(glove_rankings, ordered_qrels, k))
