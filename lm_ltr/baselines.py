@@ -18,10 +18,12 @@ from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
 
 
-def rank_bm25(bm25, q, average_idf):
-  return top_k(lambda doc_id: bm25.get_score(q, doc_id, average_idf),
-               range(bm25.corpus_size),
+def rank_bm25(bm25, q, average_idf, doc_ids=None):
+  doc_ids = range(bm25.corpus_size) if doc_ids is None else doc_ids
+  idxs = top_k(lambda doc_id: bm25.get_score(q, doc_id, average_idf),
+               doc_ids,
                k=10)
+  return [doc_ids[idx] for idx in idxs]
 
 def _encode_glove(glove, idf, tokens, default=1.0):
   w = []
@@ -46,12 +48,13 @@ def encode_glove_fs(glove, idf, doc_fs):
                         for token, cnt in doc_fs.items() if token in glove and cnt > 0], dtype=torch.float).cuda()
   return torch.sum(words * freqs.unsqueeze(1) * weights.unsqueeze(1), 0)
 
-def rank_glove(glove, idf, encoded_docs, query, k=10):
+def rank_glove(glove, idf, encoded_docs, query, k=10, doc_ids=None):
+  doc_ids = torch.arange(encoded_docs.shape[0], device=encoded_docs.device) if doc_ids is None else doc_ids
   avg = sum(idf.values()) / len(idf)
-  topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs * _encode_glove(glove, idf, query, default=avg), 1),
+  topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs[doc_ids] * _encode_glove(glove, idf, query, default=avg), 1),
                                       k=k)
   sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
-  return topk_idxs[sort_idxs].tolist()
+  return doc_ids[topk_idxs[sort_idxs]].tolist()
 
 
 class LM(MutableMapping):
@@ -125,12 +128,14 @@ def _calc_score_under_lm(lm, doc_lm, top_n_terms):
     score += np.exp(lm[term]) * doc_lm[term]
   return score
 
-def rank_rm3(docs_lms, qml_ranking, q, k=10):
+def rank_rm3(docs_lms, qml_ranking, q, k=10, doc_ids=None):
+  doc_ids = range(len(docs_lms)) if doc_ids is None else doc_ids
   rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
   top_n_terms = _get_top_n_terms(rel_lm)
-  return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
-               range(len(docs_lms)),
+  idxs = top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
+               doc_ids,
                k=k)
+  return [doc_ids[idx] for idx in idxs]
 
 def top_k(score_fn, doc_ids, k=10):
   score_pairs = [(score_fn(doc_id), doc_id) for doc_id in doc_ids]
