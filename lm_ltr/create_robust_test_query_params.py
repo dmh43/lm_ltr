@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 
@@ -22,7 +23,10 @@ def main():
       fh.write('<query>\n')
       fh.write('<number>' + query_name + '</number>\n')
       fh.write('<text>\n')
-      fh.write('#combine( ' + cleaned_query + ' )\n')
+      if '--no-combine' in sys.argv:
+        fh.write(cleaned_query + '\n')
+      else:
+        fh.write('#combine( ' + cleaned_query + ' )\n')
       fh.write('</text>\n')
       fh.write('</query>\n')
     fh.write('</parameters>\n')
