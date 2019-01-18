@@ -53,7 +53,7 @@ def rank_glove(glove, idf, encoded_docs, query, k=10, doc_ids=None):
   topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs[doc_ids] * _encode_glove(glove, idf, query, default=avg), 1),
                                       k=k)
   sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
-  return doc_ids[topk_idxs[sort_idxs]].tolist()
+  return torch.tensor(doc_ids).cuda()[topk_idxs[sort_idxs]].tolist()
 
 
 class LM(MutableMapping):
