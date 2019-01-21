@@ -16,7 +16,7 @@ from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, enc
 
 def basic_eval():
   path = './indri/query_result_test'
-  path = path + '/' + sys.argv[2] if len(sys.argv) >= 3 else path
+  path = path + '/' + sys.argv[3] if len(sys.argv) >= 4 else path
   rankings_to_eval = read_query_test_rankings(path=path)
   qrels = parse_qrels()
   query_ids = list(qrels.keys())
