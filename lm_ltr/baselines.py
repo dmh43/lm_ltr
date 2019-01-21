@@ -51,7 +51,7 @@ def rank_glove(glove, idf, encoded_docs, query, k=10, doc_ids=None):
   doc_ids = torch.arange(encoded_docs.shape[0], device=encoded_docs.device) if doc_ids is None else doc_ids
   avg = sum(idf.values()) / len(idf)
   topk_scores, topk_idxs = torch.topk(torch.sum(encoded_docs[doc_ids] * _encode_glove(glove, idf, query, default=avg), 1),
-                                      k=k)
+                                      k=min(k, len(doc_ids)))
   sorted_scores, sort_idxs = torch.sort(topk_scores, descending=True)
   return torch.tensor(doc_ids).cuda()[topk_idxs[sort_idxs]].tolist()
 
@@ -105,7 +105,7 @@ def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
     docs_lms.append(doc_lm)
   return docs_lms
 
-def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
+def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.2):
   query_lm = defaultdict(lambda: -np.inf,
                          {q_term: np.log(cnt / len(q)) for q_term, cnt in Counter(q).items()})
   rel_lm = defaultdict(lambda: -np.inf)
