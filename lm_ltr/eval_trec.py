@@ -15,7 +15,9 @@ from lm_ltr.embedding_loaders import get_glove_lookup
 from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, encode_glove_fs
 
 def basic_eval():
-  rankings_to_eval = read_query_test_rankings()
+  path = './indri/query_result_test'
+  path = path + '/' + sys.argv[2] if len(sys.argv) >= 3 else path
+  rankings_to_eval = read_query_test_rankings(path=path)
   qrels = parse_qrels()
   query_ids = list(qrels.keys())
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
