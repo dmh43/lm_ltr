@@ -14,7 +14,20 @@ from lm_ltr.preprocessing import create_id_lookup, handle_caps
 from lm_ltr.embedding_loaders import get_glove_lookup
 from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, encode_glove_fs
 
-def main():
+def basic_eval():
+  rankings_to_eval = read_query_test_rankings()
+  qrels = parse_qrels()
+  query_ids = list(qrels.keys())
+  k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
+  document_title_to_id = read_cache('./document_title_to_id.json',
+                                    lambda: print('failed'))
+  ordered_rankings_to_eval = [[document_title_to_id[title] for title in rankings_to_eval[query]]
+                              for query in query_ids]
+  ordered_qrels = [[document_title_to_id[title] for title in qrels[query]]
+                   for query in query_ids]
+  print('indri:', metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
+
+def baselines_eval():
   rankings_to_eval = read_query_test_rankings()
   qrels = parse_qrels()
   query_ids = list(qrels.keys())
@@ -54,6 +67,12 @@ def main():
   print('bm25:', metrics_at_k(bm25_rankings, ordered_qrels, k))
   print('glove:', metrics_at_k(glove_rankings, ordered_qrels, k))
   print('rm3:', metrics_at_k(rm3_rankings, ordered_qrels, k))
+
+def main():
+  if '--basic' in sys.argv:
+    basic_eval()
+  else:
+    baselines_eval()
 
 if __name__ == "__main__":
   import ipdb
