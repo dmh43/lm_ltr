@@ -88,10 +88,10 @@ class LM(MutableMapping):
       self.store[k] = v
 
   def __iter__(self):
-    return iter(self.corpus_fs)
+    return iter(self.store)
 
   def __len__(self):
-    return len(self.corpus_fs)
+    return len(self.store)
 
 
 def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
@@ -105,7 +105,7 @@ def calc_docs_lms(corpus_fs, docs_fs, prior=2000):
     docs_lms.append(doc_lm)
   return docs_lms
 
-def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.2):
+def _get_rel_lm(docs_lms, qml_ranking, q, smooth=0.5):
   query_lm = defaultdict(lambda: -np.inf,
                          {q_term: np.log(cnt / len(q)) for q_term, cnt in Counter(q).items()})
   rel_lm = defaultdict(lambda: -np.inf)
