@@ -6,7 +6,7 @@ def parse_qrels(qrels_path='./data/robust04/qrels.robust2004.txt'):
   query_doc_id_rels = {}
   with open(qrels_path, 'r') as fh:
     for line in fh:
-      query_num, __, doc_id, rel = line.strip().split(' ')
+      query_num, __, doc_id, rel = line.strip().split()
       if int(rel) == 1:
         if any([name in doc_id for name in ['FBIS', 'FT', 'LA']]):
           append_at(query_doc_id_rels, query_num, doc_id)
