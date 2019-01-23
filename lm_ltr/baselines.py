@@ -127,9 +127,9 @@ def _calc_score_under_lm(lm, doc_lm, top_n_terms):
     score += np.exp(lm[term]) * doc_lm[term]
   return score
 
-def rank_rm3(docs_lms, qml_ranking, q, k=10, doc_ids=None):
+def rank_rm3(docs_lms, qml_ranking, q, k=10, doc_ids=None, smooth=0.5):
   doc_ids = range(len(docs_lms)) if doc_ids is None else doc_ids
-  rel_lm = _get_rel_lm(docs_lms, qml_ranking, q)
+  rel_lm = _get_rel_lm(docs_lms, qml_ranking, q, smooth=smooth)
   top_n_terms = _get_top_n_terms(rel_lm)
   return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
                doc_ids,
