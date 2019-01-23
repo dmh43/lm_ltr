@@ -123,10 +123,9 @@ def _get_top_n_terms(lm, n=30):
                 itemgetter(0))
 
 def _calc_score_under_lm(lm, doc_lm, top_n_terms):
-  score = 0
-  for term in top_n_terms:
-    score += np.exp(lm[term]) * doc_lm[term]
-  return score
+  exp = np.exp(np.array([lm[term] for term in top_n_terms]))
+  probs = np.array([doc_lm[term] for term in top_n_terms])
+  return np.sum(exp * probs)
 
 def rank_rm3(docs_lms, qml_ranking, q, k=10, doc_ids=None, smooth=0.5):
   doc_ids = range(len(docs_lms)) if doc_ids is None else doc_ids
