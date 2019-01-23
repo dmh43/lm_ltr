@@ -5,11 +5,13 @@ import re
 
 import pydash as _
 import numpy as np
+from toolz import pipe
 
 import torch
 import torch.nn.functional as F
 from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
 from torch.nn.utils.rnn import pad_sequence
+from gensim.parsing.preprocessing import strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric, remove_stopwords, strip_short
 
 from .utils import append_at
 
@@ -253,3 +255,7 @@ def process_raw_candidates(query_name_to_id,
                                                                         lookup_by_title))
   return _.map_keys(test_ranking_candidates,
                     lambda ranking, query_name: str(queries[query_name_to_id[query_name]])[1:-1])
+
+def clean_documents(documents):
+  filters = [strip_punctuation, strip_numeric, lambda s: s.lower(), remove_stopwords]
+  return [pipe(doc, *filters) for doc in documents]
