@@ -43,6 +43,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'dont_smooth', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
          {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'dont_use_bow', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
@@ -125,11 +126,12 @@ def main():
                                     lambda: create_id_lookup(document_lookup.keys()))
   with open('./caches/106756_most_common_doc.json', 'r') as fh:
     doc_token_set = set(json.load(fh))
-  if not any([rabbit.model_params[attr] for attr in ['use_doc_out',
-                                                     'use_cnn',
-                                                     'use_lstm',
-                                                     'use_pretrained_doc_encoder']]):
-    use_bow_model = True
+  use_bow_model = not any([rabbit.model_params[attr] for attr in ['use_doc_out',
+                                                                  'use_cnn',
+                                                                  'use_lstm',
+                                                                  'use_pretrained_doc_encoder']])
+  use_bow_model = use_bow_model and not rabbit.model_params.dont_use_bow
+  if use_bow_model:
     documents, document_token_lookup = read_cache(name(f'./docs_fs_tokens_limit_uniq_toks_106756.pkl',
                                                        _names),
                                                 lambda: prepare_fs(document_lookup,
@@ -142,7 +144,6 @@ def main():
                                  itemgetter(1)))
                    for doc in documents]
   else:
-    use_bow_model = False
     documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
                                                      _names),
                                                 lambda: prepare(document_lookup,
