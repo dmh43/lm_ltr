@@ -64,15 +64,16 @@ class LM(MutableMapping):
     self.corpus_fs = corpus_fs
     self.doc_len = sum(fs.values())
     self.store = {}
+    self.default = np.log(self.prior / self.corpus_size / (self.doc_len + self.prior))
 
   def __getitem__(self, key):
     if key in self.store:
       return self.store[key]
     else:
       if key in self.corpus_fs:
-        return np.log(self.corpus_fs[key] * self.prior / self.corpus_size / (self.doc_len + self.prior))
+        return np.log(self.corpus_fs[key]) + self.default
       else:
-        return np.log(self.prior / self.corpus_size / (self.doc_len + self.prior))
+        return self.default
 
   def __setitem__(self, key, val):
     self.store[key] = val
