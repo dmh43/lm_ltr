@@ -372,11 +372,11 @@ def main():
                                          normalized_score_lookup=train_normalized_score_lookup,
                                          use_bow_model=use_bow_model)
   test_ranking_dataset = RankingDataset(documents,
-                                        test_dl.dataset.rankings,
+                                        test_ranking_candidates,
                                         rabbit.train_params,
                                         rabbit.model_params,
                                         rabbit.run_params,
-                                        relevant=test_ranking_candidates,
+                                        relevant=test_dl.dataset.rankings,
                                         query_tok_to_doc_tok=query_tok_to_doc_tok,
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup,
