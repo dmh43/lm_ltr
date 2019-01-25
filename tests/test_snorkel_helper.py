@@ -1,7 +1,7 @@
 import pydash as _
 import numpy as np
 
-import lm_ltr.rank_agg as r
+import lm_ltr.snorkel_helper as r
 
 def test_get_pairwise_bins():
   pos, neg = r.get_pairwise_bins([1, 2, 3, 4])
