@@ -28,21 +28,20 @@ class QueryDataset(Dataset):
                data,
                train_params,
                model_params,
-               num_doc_tokens=100,
                rankings=None,
                query_tok_to_doc_tok=None,
                use_bow_model=False,
                normalized_score_lookup=None):
     self.documents = documents
     self.use_bow_model = use_bow_model
+    self.num_doc_tokens = train_params.num_doc_tokens_to_consider
     if not self.use_bow_model:
-      self.padded_docs = pad([torch.tensor(doc[:num_doc_tokens]) for doc in documents])
+      self.padded_docs = pad([torch.tensor(doc[:self.num_doc_tokens]) for doc in documents])
     self.data = data
     self.rel_method = train_params.rel_method
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.normalized_score_lookup = normalized_score_lookup
-    self.num_doc_tokens = train_params.num_doc_tokens_to_consider
     self.use_doc_out = model_params.use_doc_out
     self.dont_include_normalized_score = model_params.dont_include_normalized_score
 
@@ -232,6 +231,8 @@ class QueryPairwiseDataset(QueryDataset):
       rankings = _drop_next_n_from_ranking(self.num_to_drop_in_ranking, rankings)
     super().__init__(documents,
                      data,
+                     train_params,
+                     model_params,
                      rankings=rankings,
                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                      normalized_score_lookup=normalized_score_lookup,
