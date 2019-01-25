@@ -9,12 +9,14 @@ import pickle
 import json
 import shelve
 from dbm import error as DbmFileError
+from collections import defaultdict
 
 import pydash as _
 
 from .trec_doc_parse import parse_test_set, parse_qrels
 from .utils import append_at
 from .shelve_array import ShelveArray
+from .snorkel_helper import get_pairwise_bins
 
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
@@ -148,9 +150,9 @@ def get_supervised_raw_data(document_title_id_mapping, queries):
   print('skipped', ctr, 'supervised queries')
   return result
 
-def get_weak_raw_data(id_query_mapping, queries):
+def get_weak_raw_data(id_query_mapping, queries, path='./indri/query_result'):
   results = []
-  with open('./indri/query_result') as fh:
+  with open(path) as fh:
     while True:
       line = fh.readline()
       if line:
@@ -193,6 +195,33 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
                         'rank': int(doc_rank) - 1})
       else:
         return results
+
+def get_query_id_to_pairwise_bins(query_name_to_id, document_title_to_id, path, limit=None):
+  rankings_by_query = defaultdict(list)
+  with open(path) as fh:
+    while True:
+      if limit is not None and len(rankings_by_query) >= limit: break
+      line = fh.readline()
+      if line:
+        query_name, __, doc_title, __, __, ___ = line.strip().split(' ')
+        if query_name not in query_name_to_id: continue
+        if doc_title not in document_title_to_id: continue
+        query_id = query_name_to_id[query_name]
+        rankings_by_query[query_id].append(document_title_to_id[doc_title])
+      else:
+        return _.map_values(dict(rankings_by_query), get_pairwise_bins)
+
+def get_ranker_query_id_to_pairwise_bins(query_name_to_id,
+                                         document_title_to_id,
+                                         limit=None,
+                                         rankers=('qml', 'bm25', 'tfidf', 'rm3'),
+                                         path='./indri/query_result'):
+  ranker_name_to_suffix = {'qml': '', 'bm25': '_okapi', 'tfidf': '_tfidf', 'rm3': '_fb'}
+  return {ranker: get_query_id_to_pairwise_bins(query_name_to_id,
+                                                document_title_to_id,
+                                                path + ranker_name_to_suffix[ranker],
+                                                limit=limit)
+          for ranker in rankers}
 
 def write_to_file(path, rows):
   if '.pkl' in path:
