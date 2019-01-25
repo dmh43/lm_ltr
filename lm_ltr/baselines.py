@@ -30,8 +30,6 @@ def _encode_glove(glove, idf, tokens, default=1.0):
     if token in glove:
       if token in idf:
         w.append(idf[token])
-      else:
-        w.append(default)
   weights = torch.tensor(w).float().cuda()
   tok_vecs = torch.stack([glove[token] for token in tokens if token in glove]).cuda()
   weighted_tokens = weights.unsqueeze(1) * tok_vecs
@@ -134,6 +132,10 @@ def rank_rm3(docs_lms, qml_ranking, q, k=10, doc_ids=None, smooth=0.5):
   return top_k(lambda doc_id: _calc_score_under_lm(rel_lm, docs_lms[doc_id], top_n_terms),
                doc_ids,
                k=k)
+
+def rank_lsi(lsi, tfidf, q_numericalized, doc_ids=None):
+  doc_ids = range(lsi.docs_processed) if doc_ids is None else doc_ids
+  tfidf[q_numericalized]
 
 def top_k(score_fn, doc_ids, k=10):
   score_pairs = [(score_fn(doc_id), doc_id) for doc_id in doc_ids]

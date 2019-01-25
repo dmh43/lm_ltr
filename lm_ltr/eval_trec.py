@@ -1,18 +1,20 @@
 import pydash as _
 
 import sys
-from gensim.summarization.bm25 import BM25
+import gensim.summarization.bm25 as gensim_bm25
+from gensim.models import TfidfModel, LsiModel
 from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
 from progressbar import progressbar
 import torch
+import json
 
 from lm_ltr.trec_doc_parse import parse_qrels
 from lm_ltr.metrics import metrics_at_k
 from lm_ltr.utils import append_at, name
 from lm_ltr.fetchers import read_query_test_rankings, read_cache, get_robust_eval_queries, get_robust_rels, get_robust_documents_with_titles
-from lm_ltr.preprocessing import create_id_lookup, handle_caps
+from lm_ltr.preprocessing import create_id_lookup, handle_caps, clean_documents, tokens_to_indexes
 from lm_ltr.embedding_loaders import get_glove_lookup
-from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, encode_glove_fs
+from lm_ltr.baselines import calc_docs_lms, rank_rm3, rank_glove, rank_bm25, rank_lsi, encode_glove_fs
 
 def basic_eval():
   path = './indri/query_result_test'
@@ -48,27 +50,30 @@ def baselines_eval():
   documents = [document_lookup[document_id_to_title[doc_id]] for doc_id in doc_ids]
   tokenizer = Tokenizer(rules=[handle_caps, fix_html, spec_add_spaces, rm_useless_spaces])
   tokenized_documents = read_cache('tok_docs.json',
-                                   lambda: tokenizer.process_all(documents))
-  tokenized_queries = tokenizer.process_all(queries)
-  bm25 = BM25(tokenized_documents)
-  average_idf = sum(float(val) for val in bm25.idf.values()) / len(bm25.idf)
-  bm25_rankings = []
+                                   lambda: tokenizer.process_all(clean_documents(documents)))
+  tokenized_queries = tokenizer.process_all(clean_documents(queries))
+  bm25 = gensim_bm25.BM25(tokenized_documents)
+  # with open('./caches/106756_most_common_doc.json', 'r') as fh:
+  #   doc_token_set = set(json.load(fh))
+  # corpus, token_lookup = tokens_to_indexes(tokenized_documents,
+  #                                          None,
+  #                                          token_set=doc_token_set)
+  # corpus = [[[token_lookup[term], f] for term, f in doc_fs.items()] for doc_fs in bm25.f]
+  # tfidf = TfidfModel(corpus)
+  # lsi = LsiModel(tfidf, id2word=_.invert(token_lookup), num_topics=300)
   glove_rankings = []
-  rm3_rankings = []
+  # lsi_rankings = []
   glove = get_glove_lookup(embedding_dim=300, use_large_embed=True)
-  docs_lms = calc_docs_lms(bm25.df, bm25.f)
   encoded_docs = torch.stack([encode_glove_fs(glove, bm25.idf, doc_fs) for doc_fs in bm25.f])
   encoded_docs = encoded_docs / torch.norm(encoded_docs, dim=1).unsqueeze(1)
   for q, qml_ranking in progressbar(zip(tokenized_queries, ordered_rankings_to_eval),
                                     max_value=len(tokenized_queries)):
     doc_ids = qml_ranking[:k] if '--rerank' in sys.argv else None
-    bm25_rankings.append(rank_bm25(bm25, q, average_idf=average_idf, doc_ids=doc_ids))
     glove_rankings.append(rank_glove(glove, bm25.idf, encoded_docs, q, doc_ids=doc_ids))
-    rm3_rankings.append(rank_rm3(docs_lms, qml_ranking[:10], q, doc_ids=doc_ids))
+    # lsi_rankings.append(rank_lsi(lsi, tfidf, [token_lookup[term] if term in token_lookup else 0 for term in q], doc_ids=doc_ids))
   print('indri:', metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
-  print('bm25:', metrics_at_k(bm25_rankings, ordered_qrels, k))
   print('glove:', metrics_at_k(glove_rankings, ordered_qrels, k))
-  print('rm3:', metrics_at_k(rm3_rankings, ordered_qrels, k))
+  # print('lsi:', metrics_at_k(lsi_rankings, ordered_qrels, k))
 
 def main():
   if '--basic' in sys.argv:
