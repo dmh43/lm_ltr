@@ -16,6 +16,7 @@ class MultiObjective(nn.Module):
     self.use_bce_loss = train_params.use_bce_loss
     self.use_label_smoothing = train_params.use_label_smoothing
     self.use_l1_loss = train_params.use_l1_loss
+    self.use_noise_aware_loss = train_params.use_noise_aware_loss
     self.truncation = train_params.truncation
     self.rel_score_penalty = train_params.rel_score_penalty
     self.rel_score_obj_scale = train_params.rel_score_obj_scale
@@ -29,6 +30,8 @@ class MultiObjective(nn.Module):
       self.loss_fn = partial(truncated_hinge_loss,
                              margin=self.margin,
                              truncation=self.truncation)
+    elif self.use_noise_aware_loss:
+      self.loss_fn = nn.BCEWithLogitsLoss()
     elif self.use_variable_loss:
       self.loss_fn = hinge_loss
     elif self.use_bce_loss:

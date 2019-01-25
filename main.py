@@ -85,6 +85,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'use_lstm', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_label_smoothing', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_max_pooling', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_noise_aware_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_pointwise_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
