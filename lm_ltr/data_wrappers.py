@@ -226,7 +226,7 @@ class QueryPairwiseDataset(QueryDataset):
                query_tok_to_doc_tok=None,
                normalized_score_lookup=None,
                use_bow_model=False):
-    self.num_to_drop_in_ranking = train_params.self.num_to_drop_in_ranking
+    self.num_to_drop_in_ranking = train_params.num_to_drop_in_ranking
     if self.num_to_drop_in_ranking > 0:
       assert train_params.bin_rankings == 1, 'bin_rankings != 1 is not supported'
       rankings = _drop_next_n_from_ranking(self.num_to_drop_in_ranking, rankings)
