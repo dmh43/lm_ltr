@@ -213,7 +213,8 @@ def get_query_str_to_pairwise_bins(query_name_to_id, document_title_to_id, queri
           if query_id not in queries: continue
         rankings_by_query[str(queries[query_id])[1:-1]].append(document_title_to_id[doc_title])
       else:
-        return _.map_values(dict(rankings_by_query), get_pairwise_bins)
+        break
+    return _.map_values(dict(rankings_by_query), get_pairwise_bins)
 
 def get_ranker_query_str_to_pairwise_bins(query_name_to_id,
                                           document_title_to_id,
@@ -245,7 +246,8 @@ def get_query_str_to_rankings(query_name_to_id, document_title_to_id, queries, p
           if query_id not in queries: continue
         rankings_by_query[str(queries[query_id])[1:-1]].append(document_title_to_id[doc_title])
       else:
-        return dict(rankings_by_query)
+        break
+    return dict(rankings_by_query)
 
 def get_ranker_query_str_to_rankings(query_name_to_id,
                                      document_title_to_id,
