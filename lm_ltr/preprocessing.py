@@ -108,22 +108,27 @@ def _collate_bow_doc(bow_doc):
   cnts = torch.tensor([pad_to_len(doc_term_cnts, max_len, pad_with=0) for doc_term_cnts in cnts])
   return terms, cnts
 
-def collate_query_pairwise_samples(samples, use_bow_model=False):
-  x, rel = list(zip(*samples))
+def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=None):
+  use_noise_aware_loss = calc_marginals is not None
+  x, target_info = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   doc_1, lens_1 = list(zip(*x[1]))
   doc_2, lens_2 = list(zip(*x[2]))
   doc_1_score = x[3]
   doc_2_score = x[4]
-  return ((torch.tensor(query),
-           torch.stack(doc_1) if not use_bow_model else _collate_bow_doc(doc_1),
-           torch.stack(doc_2) if not use_bow_model else _collate_bow_doc(doc_2),
-           torch.stack(lens_1),
-           torch.stack(lens_2),
-           torch.tensor(doc_1_score),
-           torch.tensor(doc_2_score)),
-          torch.tensor(rel, dtype=torch.float32))
+  args = (torch.tensor(query),
+          torch.stack(doc_1) if not use_bow_model else _collate_bow_doc(doc_1),
+          torch.stack(doc_2) if not use_bow_model else _collate_bow_doc(doc_2),
+          torch.stack(lens_1),
+          torch.stack(lens_2),
+          torch.tensor(doc_1_score),
+          torch.tensor(doc_2_score))
+  if use_noise_aware_loss:
+    target = calc_marginals(target_info)
+  else:
+    target = torch.tensor(target_info, dtype=torch.float32)
+  return (args, target)
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):
   result = []

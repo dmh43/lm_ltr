@@ -22,7 +22,7 @@ def test__get_nth_pair():
   for i in range(df._get_num_pairs(rankings)):
     pair = df._get_nth_pair(rankings, cumu_ranking_lengths, i)
     assert isinstance(pair['query'], list)
-    assert isinstance(pair['order_int'], int)
+    assert isinstance(pair['target_info'], int)
     assert isinstance(pair['doc_id_1'], int)
     assert isinstance(pair['doc_id_2'], int)
 

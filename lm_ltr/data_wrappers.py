@@ -172,12 +172,12 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False):
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'order_int': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
+            'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
   else:
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'order_int': 1 if doc_1_idx < doc_2_idx else -1}
+            'target_info': 1 if doc_1_idx < doc_2_idx else -1}
 
 def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx, use_variable_loss=False):
   ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
@@ -190,12 +190,12 @@ def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx, use_
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'order_int': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
+            'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
   else:
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'order_int': 1 if doc_1_idx < doc_2_idx else -1}
+            'target_info': 1 if doc_1_idx < doc_2_idx else -1}
 
 def _get_num_pairs(rankings, num_neg_samples, bin_rankings=None):
   if bin_rankings:
@@ -238,6 +238,7 @@ class QueryPairwiseDataset(QueryDataset):
                      normalized_score_lookup=normalized_score_lookup,
                      use_bow_model=use_bow_model)
     self.use_variable_loss = train_params.use_variable_loss
+    self.use_noise_aware_loss = train_params.use_noise_aware_loss
     self.bin_rankings = train_params.bin_rankings
     self.num_documents = len(documents)
     self.num_neg_samples = train_params.num_neg_samples
@@ -280,12 +281,16 @@ class QueryPairwiseDataset(QueryDataset):
                            self.cumu_ranking_lengths,
                            remapped_idx,
                            self.use_variable_loss)
-    order_int = elem['order_int']
+    if self.use_noise_aware_loss:
+      target_info = ((elem['doc_id_1'], elem['doc_id_2']),
+                     elem['query'])
+    else:
+      target_info = elem['target_info']
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     doc_1 = self._get_document(elem['doc_id_1'])
     if use_neg_sample:
       doc_2 = self._get_document(choice(range(self.num_documents)))
-      order_int = 1
+      target_info = 1
     else:
       doc_2 = self._get_document(elem['doc_id_2'])
     if self.dont_include_normalized_score:
@@ -294,7 +299,7 @@ class QueryPairwiseDataset(QueryDataset):
     else:
       doc_1_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_1']]
       doc_2_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_2']]
-    return ((query, doc_1, doc_2, doc_1_score, doc_2_score), order_int)
+    return ((query, doc_1, doc_2, doc_1_score, doc_2_score), target_info)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
   query_embeds = query_word_embeds(queries)
