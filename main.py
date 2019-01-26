@@ -61,6 +61,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'num_neg_samples', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'num_pos_tokens_rel_score', 'for': 'train_params', 'type': int, 'default': 20},
          {'name': 'num_to_rank', 'for': 'run_params', 'type': int, 'default': 1000},
+         {'name': 'num_train_queries', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
          {'name': 'only_use_last_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'optimizer', 'for': 'train_params', 'type': str, 'default': 'adam'},
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
@@ -68,7 +69,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'rel_method', 'for': 'train_params', 'type': eval, 'default': score},
          {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'rel_score_penalty', 'for': 'train_params', 'type': float, 'default': 5e-4},
-         {'name': 'train_dataset_size', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
+         {'name': 'num_snorkel_train_queries', 'for': 'train_params', 'type': int, 'default': 10000},
          {'name': 'truncation', 'for': 'train_params', 'type': float, 'default': -1.0},
          {'name': 'use_batch_norm', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_bce_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
@@ -167,17 +168,11 @@ def main():
                             for query_token, idx in query_token_lookup.items()}
   else:
     query_tok_to_doc_tok = None
-  if rabbit.train_params.use_pointwise_loss:
-    if rabbit.train_params.train_dataset_size:
-      train_data = read_cache(f'./robust_train_query_results_tokens_first_{rabbit.train_params.train_dataset_size}_106756.json',
-                              lambda: read_query_result(train_query_name_to_id,
-                                                        document_title_to_id,
-                                                        train_queries)[:rabbit.train_params.train_dataset_size])
-    else:
-      train_data = read_cache(f'./robust_train_query_results_tokens_106756.json',
-                              lambda: read_query_result(train_query_name_to_id,
-                                                        document_title_to_id,
-                                                        train_queries))
+  if rabbit.train_params.use_pointwise_loss or not rabbit.run_params.just_caches:
+    train_data = read_cache(f'./robust_train_query_results_tokens_106756.json',
+                            lambda: read_query_result(train_query_name_to_id,
+                                                      document_title_to_id,
+                                                      train_queries))
   else:
     train_data = []
   q_embed_len = rabbit.model_params.query_token_embed_len
@@ -295,9 +290,6 @@ def main():
                                              lambda: get_normalized_score_lookup(train_data))
   test_normalized_score_lookup = get_normalized_score_lookup(test_candidates_data)
   val_normalized_score_lookup = get_normalized_score_lookup(val_candidates_data)
-  names = []
-  if rabbit.train_params.train_dataset_size:
-    names.append(f'first_{rabbit.train_params.train_dataset_size}')
   if use_pointwise_loss:
     normalized_train_data = read_cache('./normalized_train_query_data_106756.json',
                                        lambda: normalize_scores_query_wise(train_data))
@@ -307,7 +299,7 @@ def main():
                                       normalized_train_data,
                                       rabbit.train_params,
                                       rabbit.model_params,
-                                      cache=name('./pointwise_train_ranking_106756.json', names),
+                                      cache='train_ranking_106756.json',
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       normalized_score_lookup=train_normalized_score_lookup,
@@ -317,7 +309,7 @@ def main():
                                      test_data,
                                      rabbit.train_params,
                                      rabbit.model_params,
-                                     cache=name('./pointwise_test_ranking_106756.json', names),
+                                     cache='test_ranking_106756.json',
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      normalized_score_lookup=test_normalized_score_lookup,
                                      use_bow_model=use_bow_model,
@@ -326,7 +318,7 @@ def main():
                                     val_data,
                                     rabbit.train_params,
                                     rabbit.model_params,
-                                    cache=name('./pointwise_val_ranking_106756.json', names),
+                                    cache='val_ranking_106756.json',
                                     query_tok_to_doc_tok=query_tok_to_doc_tok,
                                     normalized_score_lookup=val_normalized_score_lookup,
                                     use_bow_model=use_bow_model,
@@ -340,10 +332,10 @@ def main():
     collate_fn = lambda samples: collate_query_pairwise_samples(samples,
                                                                 use_bow_model=use_bow_model)
     train_dl = build_query_pairwise_dataloader(documents,
-                                               train_data[:rabbit.train_params.train_dataset_size],
+                                               train_data,
                                                rabbit.train_params,
                                                rabbit.model_params,
-                                               cache=name('./pairwise_train_ranking_106756.json', names),
+                                               cache='train_ranking_106756.json',
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                normalized_score_lookup=train_normalized_score_lookup,
@@ -353,7 +345,7 @@ def main():
                                               test_data,
                                               rabbit.train_params,
                                               rabbit.model_params,
-                                              cache=name('./pairwise_test_ranking_106756.json', names),
+                                              cache='test_ranking_106756.json',
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               normalized_score_lookup=test_normalized_score_lookup,
                                               use_bow_model=use_bow_model,
@@ -362,7 +354,7 @@ def main():
                                              val_data,
                                              rabbit.train_params,
                                              rabbit.model_params,
-                                             cache=name('./pairwise_val_ranking_106756.json', names),
+                                             cache='val_ranking_106756.json',
                                              query_tok_to_doc_tok=query_tok_to_doc_tok,
                                              normalized_score_lookup=val_normalized_score_lookup,
                                              use_bow_model=use_bow_model,

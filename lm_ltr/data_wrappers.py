@@ -40,6 +40,7 @@ class QueryDataset(Dataset):
     self.data = data
     self.rel_method = train_params.rel_method
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
+    self.rankings = self.rankings[:train_params.num_train_queries]
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.normalized_score_lookup = normalized_score_lookup
     self.use_doc_out = model_params.use_doc_out
