@@ -127,8 +127,7 @@ def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=
           torch.tensor(doc_2_score))
   if use_noise_aware_loss:
     target = calc_marginals(target_info)
-  else:
-    target = torch.tensor(target_info, dtype=torch.float32)
+  target = torch.tensor(target_info, dtype=torch.float32)
   return (args, target)
 
 def get_negative_samples(num_query_tokens, num_negative_samples, max_len=4):

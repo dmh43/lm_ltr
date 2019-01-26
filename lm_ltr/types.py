@@ -1,4 +1,4 @@
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Union
 
 PairwiseBin = Set[Tuple[int, int]]
 PairwiseBins = Tuple[PairwiseBin, PairwiseBin]
@@ -7,4 +7,4 @@ QueryPairwiseBinsByRanker = Dict[str, QueryPairwiseBins]
 
 DocIdPair = Tuple[int, int]
 Query = List[int]
-TargetInfo = Tuple[DocIdPair, Query]
+TargetInfo = Union[Tuple[DocIdPair, Query], int]

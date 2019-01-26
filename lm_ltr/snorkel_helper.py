@@ -81,5 +81,26 @@ class Snorkeller:
     self.is_trained = True
 
   def calc_marginals(self, target_info: List[TargetInfo]):
-    L = get_L_from_pairs(self.query_pairwise_bins_by_ranker, target_info)
-    return self.snorkel_gm.marginals(L)
+    non_rand_target_info = []
+    deltas = []
+    delta_idxs = []
+    for idx, info in enumerate(target_info):
+      if isinstance(info, int):
+        deltas.append(deltas[-1] + 1 if len(deltas) != 0 else 0)
+        delta_idxs.append(idx)
+      else:
+        non_rand_target_info.append(info)
+    offset = len(non_rand_target_info)
+    order = []
+    for idx in range(len(target_info)):
+      if len(delta_idxs) != 0 and idx == delta_idxs[0]:
+        order.append(offset + deltas[0])
+        deltas = deltas[1:]
+        delta_idxs = delta_idxs[1:]
+      else:
+        order.append(idx)
+    order = np.array(order)
+    L = get_L_from_pairs(self.query_pairwise_bins_by_ranker, non_rand_target_info)
+    marginals = self.snorkel_gm.marginals(L)
+    all_marginals = np.concatenate([marginals, np.ones(len(deltas), dtype=marginals.dtype)])
+    return all_marginals[order]
