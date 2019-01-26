@@ -39,7 +39,6 @@ def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) 
     rankings_bins = [get_pairwise_bins(ranking) for ranking in ranked_lists]
     for pair in combinations(all_items, 2):
       for lf_idx, pairwise_bins in enumerate(rankings_bins):
-        print(lf_idx)
         output = get_ranker_output(pairwise_bins, pair)
         if output != 0:
           data.append(output)
