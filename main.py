@@ -11,7 +11,7 @@ import torch.nn as nn
 from fastai.basic_data import DataBunch
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
-from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles
+from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles, get_ranker_query_str_to_pairwise_bins, get_ranker_query_str_to_rankings
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
 from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, prepare_fs, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup, process_raw_candidates
@@ -22,6 +22,7 @@ from lm_ltr.utils import dont_update, do_update, name
 from lm_ltr.multi_objective import MultiObjective
 from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
+from lm_ltr.snorkel_helper import Snorkeller
 
 from rabbit_ml.rabbit_ml import Rabbit
 from rabbit_ml.rabbit_ml.experiment import Experiment
@@ -329,8 +330,23 @@ def main():
                             rabbit.model_params,
                             rabbit.train_params)
   else:
+    if rabbit.train_params.use_noise_aware_loss:
+      query_pairwise_bins_by_ranker = get_ranker_query_str_to_rankings(train_query_name_to_id,
+                                                                       document_title_to_id,
+                                                                       train_queries,
+                                                                       limit=rabbit.train_params.num_snorkel_train_queries)
+      ranker_query_str_to_pairwise_bins = get_ranker_query_str_to_pairwise_bins(train_query_name_to_id,
+                                                                                document_title_to_id,
+                                                                                train_queries,
+                                                                                limit=rabbit.train_params.num_snorkel_train_queries)
+      snorkeller = Snorkeller(ranker_query_str_to_pairwise_bins)
+      snorkeller.train(query_pairwise_bins_by_ranker)
+      calc_marginals = snorkeller.calc_marginals
+    else:
+      calc_marginals = None
     collate_fn = lambda samples: collate_query_pairwise_samples(samples,
-                                                                use_bow_model=use_bow_model)
+                                                                use_bow_model=use_bow_model,
+                                                                calc_marginals=calc_marginals)
     train_dl = build_query_pairwise_dataloader(documents,
                                                train_data,
                                                rabbit.train_params,

@@ -17,6 +17,7 @@ from .trec_doc_parse import parse_test_set, parse_qrels
 from .utils import append_at
 from .shelve_array import ShelveArray
 from .snorkel_helper import get_pairwise_bins
+from .types import TargetInfo, QueryPairwiseBinsByRanker
 
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
@@ -219,13 +220,45 @@ def get_ranker_query_str_to_pairwise_bins(query_name_to_id,
                                           queries,
                                           limit=None,
                                           rankers=('qml', 'bm25', 'tfidf', 'rm3'),
-                                          path='./indri/query_result'):
+                                          path='./indri/query_result') -> QueryPairwiseBinsByRanker:
   ranker_name_to_suffix = {'qml': '', 'bm25': '_okapi', 'tfidf': '_tfidf', 'rm3': '_fb'}
   return {ranker: get_query_str_to_pairwise_bins(query_name_to_id,
                                                  document_title_to_id,
                                                  queries,
                                                  path + ranker_name_to_suffix[ranker],
                                                  limit=limit)
+          for ranker in rankers}
+
+def get_query_str_to_rankings(query_name_to_id, document_title_to_id, queries, path, limit=None):
+  rankings_by_query = defaultdict(list)
+  with open(path) as fh:
+    while True:
+      if limit is not None and len(rankings_by_query) >= limit: break
+      line = fh.readline()
+      if line:
+        query_name, __, doc_title, __, __, ___ = line.strip().split(' ')
+        if query_name not in query_name_to_id: continue
+        if doc_title not in document_title_to_id: continue
+        query_id = query_name_to_id[query_name]
+        if query_id not in queries:
+          query_id = str(query_id)
+          if query_id not in queries: continue
+        rankings_by_query[str(queries[query_id])[1:-1]].append(document_title_to_id[doc_title])
+      else:
+        return dict(rankings_by_query)
+
+def get_ranker_query_str_to_rankings(query_name_to_id,
+                                     document_title_to_id,
+                                     queries,
+                                     limit=None,
+                                     rankers=('qml', 'bm25', 'tfidf', 'rm3'),
+                                     path='./indri/query_result') -> QueryPairwiseBinsByRanker:
+  ranker_name_to_suffix = {'qml': '', 'bm25': '_okapi', 'tfidf': '_tfidf', 'rm3': '_fb'}
+  return {ranker: get_query_str_to_rankings(query_name_to_id,
+                                            document_title_to_id,
+                                            queries,
+                                            path + ranker_name_to_suffix[ranker],
+                                            limit=limit)
           for ranker in rankers}
 
 def write_to_file(path, rows):

@@ -1,14 +1,19 @@
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Iterable
 from functools import reduce
 from itertools import combinations
 
 from scipy.sparse import csr_matrix
 import numpy as np
+from snorkel.learning import GenerativeModel
+import pydash as _
 
-def get_all_items(ranked_lists: List[List[int]]):
-  return list(reduce(lambda acc, ranking: acc.union(ranking), ranked_lists, set()))
+from .types import TargetInfo, QueryPairwiseBinsByRanker, PairwiseBins
 
-def get_pairwise_bins(ranking):
+def get_all_items(ranked_lists: Iterable[List[int]]):
+  all_items: Set = reduce(lambda acc, ranking: acc.union(ranking), ranked_lists, set())
+  return list(all_items)
+
+def get_pairwise_bins(ranking) -> PairwiseBins:
   pos, neg = set(), set()
   for a, b in combinations(ranking, 2):
     pos.add((a, b))
@@ -44,9 +49,8 @@ def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) 
       pair_idx += 1
   return csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
 
-def get_L_from_pairs(query_pairwise_bins_by_ranker: Dict[str, Dict[str, Tuple[Set[Tuple[int, int]],
-                                                                              Set[Tuple[int, int]]]]],
-                     target_infos: List[Tuple[Tuple[int, int], List[int]]]) -> csr_matrix:
+def get_L_from_pairs(query_pairwise_bins_by_ranker: QueryPairwiseBinsByRanker,
+                     target_infos: List[TargetInfo]) -> csr_matrix:
   num_lfs = len(query_pairwise_bins_by_ranker)
   num_rows = 0
   pair_idx = 0
@@ -65,3 +69,18 @@ def get_L_from_pairs(query_pairwise_bins_by_ranker: Dict[str, Dict[str, Tuple[Se
         num_rows = max(num_rows, pair_idx + 1)
     pair_idx += 1
   return csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
+
+class Snorkeller:
+  def __init__(self, query_pairwise_bins_by_ranker: QueryPairwiseBinsByRanker):
+    self.query_pairwise_bins_by_ranker = query_pairwise_bins_by_ranker
+    self.snorkel_gm = GenerativeModel()
+    self.is_trained = False
+
+  def train(self, train_ranked_lists_by_ranker: Dict[str, List[List[int]]]):
+    L_train = get_L_from_rankings(train_ranked_lists_by_ranker)
+    self.snorkel_gm.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
+    self.is_trained = True
+
+  def calc_marginals(self, target_info: List[TargetInfo]):
+    L = get_L_from_pairs(self.query_pairwise_bins_by_ranker, target_info)
+    return self.snorkel_gm.marginals(L)

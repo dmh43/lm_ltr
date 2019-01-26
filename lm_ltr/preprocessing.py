@@ -2,6 +2,7 @@ from collections import defaultdict, Counter
 import ast
 import random
 import re
+from typing import List
 
 import pydash as _
 import numpy as np
@@ -52,7 +53,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None, drop
 
 def handle_caps(t:str) -> str:
   "Replace words in all caps in `t`."
-  res = []
+  res: List[str] = []
   for s in re.findall(r'\w+|\W+', t):
     res += ([f' ', s.lower()] if (s.isupper() and (len(s)>2)) else [s.lower()])
   return ''.join(res)
