@@ -45,3 +45,26 @@ def test_L_from_rankings_vals_abstain():
                  [0, 0, 0]]
   assert sum(any(row == row_option for row in L.tolist())
              for row_option in row_options) == 3
+
+def test_L_from_pairs_vals():
+  target_infos = [((2, 1), [98, 208, 0])]
+  query_pairwise_bins_by_ranker = {'tfidf' : {'98, 208, 0': ({(1, 2)}, {(2, 1)})},
+                                   'bm25'  : {'98, 208, 0': ({(2, 1)}, {(1, 2)})}}
+  L = r.get_L_from_pairs(query_pairwise_bins_by_ranker, target_infos).toarray()
+  assert L.shape[0] == 1
+  assert L.shape[1] == 2
+  assert np.array_equal(L, np.array([[1, -1]])) or np.array_equal(L, np.array([[-1, 1]]))
+
+def test_L_from_pairs_more_vals():
+  target_infos = [((2, 1), [98, 208, 0]),
+                  ((10, 3), [98, 208, 0]),
+                  ((5, 7), [0, 0, 0])]
+  query_pairwise_bins_by_ranker = {'tfidf' : {'98, 208, 0' : ({(1, 2), (10, 3)}, {(2, 1), (3, 10)}),
+                                              '0, 0, 0'    : ({(5, 7)}, {(7, 5)})},
+                                   'bm25'  : {'98, 208, 0' : ({(2, 1), (10, 3)}, {(1, 2), (3, 10)}),
+                                              '0, 0, 0'    : ({(5, 10)}, {(10, 5)})}}
+  L = r.get_L_from_pairs(query_pairwise_bins_by_ranker, target_infos).toarray()
+  assert False
+  assert L.shape[0] == 3
+  assert L.shape[1] == 2
+  assert  np.array_equal(L, np.array([[-1, 1], [1, 1], [1, 0]]))

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Set, Tuple
 from functools import reduce
 from itertools import combinations
 
@@ -42,4 +42,26 @@ def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) 
           col_ind.append(lf_idx)
           num_rows = max(num_rows, pair_idx + 1)
       pair_idx += 1
+  return csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
+
+def get_L_from_pairs(query_pairwise_bins_by_ranker: Dict[str, Dict[str, Tuple[Set[Tuple[int, int]],
+                                                                              Set[Tuple[int, int]]]]],
+                     target_infos: List[Tuple[Tuple[int, int], List[int]]]) -> csr_matrix:
+  num_lfs = len(query_pairwise_bins_by_ranker)
+  num_rows = 0
+  pair_idx = 0
+  data = []
+  row_ind = []
+  col_ind = []
+  for target_info in target_infos:
+    for lf_idx, ranker_pairwise_bins_by_query in enumerate(query_pairwise_bins_by_ranker.values()):
+      ranker_pairwise_bins = ranker_pairwise_bins_by_query[str(target_info[1])[1:-1]]
+      pair = target_info[0]
+      output = get_ranker_output(ranker_pairwise_bins, pair)
+      if output != 0:
+        data.append(output)
+        row_ind.append(pair_idx)
+        col_ind.append(lf_idx)
+        num_rows = max(num_rows, pair_idx + 1)
+    pair_idx += 1
   return csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
