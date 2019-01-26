@@ -337,7 +337,8 @@ def build_query_dataloader(documents,
                            limit=None,
                            query_tok_to_doc_tok=None,
                            normalized_score_lookup=None,
-                           use_bow_model=False) -> DataLoader:
+                           use_bow_model=False,
+                           collate_fn=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
@@ -350,8 +351,7 @@ def build_query_dataloader(documents,
   sampler = SequentialSampler if train_params.use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),
-                    collate_fn=lambda samples: collate_query_samples(samples,
-                                                                     use_bow_model=use_bow_model))
+                    collate_fn=collate_fn)
 
 def build_query_pairwise_dataloader(documents,
                                     data,
@@ -361,7 +361,8 @@ def build_query_pairwise_dataloader(documents,
                                     limit=None,
                                     query_tok_to_doc_tok=None,
                                     normalized_score_lookup=None,
-                                    use_bow_model=False) -> DataLoader:
+                                    use_bow_model=False,
+                                    collate_fn=None) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -374,5 +375,4 @@ def build_query_pairwise_dataloader(documents,
   sampler = SequentialSampler if train_params.use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),
-                    collate_fn=lambda samples: collate_query_pairwise_samples(samples,
-                                                                              use_bow_model=use_bow_model))
+                    collate_fn=collate_fn)

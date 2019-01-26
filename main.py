@@ -301,6 +301,8 @@ def main():
   if use_pointwise_loss:
     normalized_train_data = read_cache('./normalized_train_query_data_106756.json',
                                        lambda: normalize_scores_query_wise(train_data))
+    collate_fn = lambda samples: collate_query_samples(samples,
+                                                       use_bow_model=use_bow_model)
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data,
                                       rabbit.train_params,
@@ -309,7 +311,8 @@ def main():
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       normalized_score_lookup=train_normalized_score_lookup,
-                                      use_bow_model=use_bow_model)
+                                      use_bow_model=use_bow_model,
+                                      collate_fn=collate_fn)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params,
@@ -317,7 +320,8 @@ def main():
                                      cache=name('./pointwise_test_ranking_106756.json', names),
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      normalized_score_lookup=test_normalized_score_lookup,
-                                     use_bow_model=use_bow_model)
+                                     use_bow_model=use_bow_model,
+                                     collate_fn=collate_fn)
     val_dl = build_query_dataloader(documents,
                                     val_data,
                                     rabbit.train_params,
@@ -325,13 +329,16 @@ def main():
                                     cache=name('./pointwise_val_ranking_106756.json', names),
                                     query_tok_to_doc_tok=query_tok_to_doc_tok,
                                     normalized_score_lookup=val_normalized_score_lookup,
-                                    use_bow_model=use_bow_model)
+                                    use_bow_model=use_bow_model,
+                                    collate_fn=collate_fn)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
                             rabbit.model_params,
                             rabbit.train_params)
   else:
+    collate_fn = lambda samples: collate_query_pairwise_samples(samples,
+                                                                use_bow_model=use_bow_model)
     train_dl = build_query_pairwise_dataloader(documents,
                                                train_data[:rabbit.train_params.train_dataset_size],
                                                rabbit.train_params,
@@ -340,7 +347,8 @@ def main():
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                normalized_score_lookup=train_normalized_score_lookup,
-                                               use_bow_model=use_bow_model)
+                                               use_bow_model=use_bow_model,
+                                               collate_fn=collate_fn)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params,
@@ -348,7 +356,8 @@ def main():
                                               cache=name('./pairwise_test_ranking_106756.json', names),
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               normalized_score_lookup=test_normalized_score_lookup,
-                                              use_bow_model=use_bow_model)
+                                              use_bow_model=use_bow_model,
+                                              collate_fn=collate_fn)
     val_dl = build_query_pairwise_dataloader(documents,
                                              val_data,
                                              rabbit.train_params,
@@ -356,7 +365,8 @@ def main():
                                              cache=name('./pairwise_val_ranking_106756.json', names),
                                              query_tok_to_doc_tok=query_tok_to_doc_tok,
                                              normalized_score_lookup=val_normalized_score_lookup,
-                                             use_bow_model=use_bow_model)
+                                             use_bow_model=use_bow_model,
+                                             collate_fn=collate_fn)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -397,7 +407,7 @@ def main():
   model_data = DataBunch(train_dl,
                          val_dl,
                          test_dl,
-                         collate_fn=(lambda samples: collate_query_samples(samples, use_bow_model=use_bow_model)) if use_pointwise_loss else (lambda samples: collate_query_pairwise_samples(samples, use_bow_model=use_bow_model)),
+                         collate_fn=collate_fn,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
