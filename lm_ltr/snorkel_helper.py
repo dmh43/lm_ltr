@@ -102,5 +102,5 @@ class Snorkeller:
     order = np.array(order)
     L = get_L_from_pairs(self.query_pairwise_bins_by_ranker, non_rand_target_info)
     marginals = self.snorkel_gm.marginals(L)
-    all_marginals = np.concatenate([marginals, np.ones(len(deltas), dtype=marginals.dtype)])
+    all_marginals = np.concatenate([marginals, np.ones(len(target_info) - len(marginals), dtype=marginals.dtype)])
     return all_marginals[order]
