@@ -336,11 +336,12 @@ def main():
                                                                       document_title_to_id,
                                                                       train_queries,
                                                                       limit=rabbit.train_params.num_snorkel_train_queries)
-      query_names = reduce(lambda acc, query_to_ranking: acc.union(set(query_to_ranking.keys())),
+      query_names = reduce(lambda acc, query_to_ranking: acc.intersection(set(query_to_ranking.keys())) if len(acc) != 0 else set(query_to_ranking.keys()),
                            ranker_query_str_to_rankings.values(),
                            set())
       all_ranked_lists_by_ranker = _.map_values(ranker_query_str_to_rankings,
-                                                lambda query_to_ranking: _.pick(query_to_ranking, query_names))
+                                                lambda query_to_ranking: [query_to_ranking[query]
+                                                                          for query in query_names])
       ranker_query_str_to_pairwise_bins = get_ranker_query_str_to_pairwise_bins(train_query_name_to_id,
                                                                                 document_title_to_id,
                                                                                 train_queries,
