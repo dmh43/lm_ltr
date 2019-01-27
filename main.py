@@ -337,7 +337,8 @@ def main():
                                                                       limit=rabbit.train_params.num_snorkel_train_queries)
       ranker_query_str_to_pairwise_bins = get_ranker_query_str_to_pairwise_bins(train_query_name_to_id,
                                                                                 document_title_to_id,
-                                                                                train_queries)
+                                                                                train_queries,
+                                                                                limit=rabbit.train_params.num_train_queries)
       snorkeller = Snorkeller(ranker_query_str_to_pairwise_bins)
       snorkeller.train(ranker_query_str_to_rankings)
       calc_marginals = snorkeller.calc_marginals
