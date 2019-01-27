@@ -331,16 +331,15 @@ def main():
                             rabbit.train_params)
   else:
     if rabbit.train_params.use_noise_aware_loss:
-      query_pairwise_bins_by_ranker = get_ranker_query_str_to_rankings(train_query_name_to_id,
-                                                                       document_title_to_id,
-                                                                       train_queries,
-                                                                       limit=rabbit.train_params.num_snorkel_train_queries)
+      ranker_query_str_to_rankings = get_ranker_query_str_to_rankings(train_query_name_to_id,
+                                                                      document_title_to_id,
+                                                                      train_queries,
+                                                                      limit=rabbit.train_params.num_snorkel_train_queries)
       ranker_query_str_to_pairwise_bins = get_ranker_query_str_to_pairwise_bins(train_query_name_to_id,
                                                                                 document_title_to_id,
-                                                                                train_queries,
-                                                                                limit=rabbit.train_params.num_snorkel_train_queries)
+                                                                                train_queries)
       snorkeller = Snorkeller(ranker_query_str_to_pairwise_bins)
-      snorkeller.train(query_pairwise_bins_by_ranker)
+      snorkeller.train(ranker_query_str_to_rankings)
       calc_marginals = snorkeller.calc_marginals
     else:
       calc_marginals = None
