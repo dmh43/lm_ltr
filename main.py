@@ -333,12 +333,10 @@ def main():
     if rabbit.train_params.use_noise_aware_loss:
       ranker_query_str_to_rankings = get_ranker_query_str_to_rankings(train_query_name_to_id,
                                                                       document_title_to_id,
-                                                                      train_queries,
-                                                                      limit=rabbit.train_params.num_snorkel_train_queries)
+                                                                      train_queries[:rabbit.train_params.num_snorkel_train_queries])
       ranker_query_str_to_pairwise_bins = get_ranker_query_str_to_pairwise_bins(train_query_name_to_id,
                                                                                 document_title_to_id,
-                                                                                train_queries,
-                                                                                limit=rabbit.train_params.num_train_queries)
+                                                                                train_queries[:rabbit.train_params.num_train_queries])
       snorkeller = Snorkeller(ranker_query_str_to_pairwise_bins)
       snorkeller.train(ranker_query_str_to_rankings)
       calc_marginals = snorkeller.calc_marginals
