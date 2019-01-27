@@ -198,10 +198,10 @@ def read_query_result(query_name_to_id, document_title_to_id, queries, path='./i
         return results
 
 def get_query_str_to_pairwise_bins(query_name_to_id, document_title_to_id, queries, path, limit=None):
-  rankings_by_query = defaultdict(list)
+  pairwise_bins_by_query = defaultdict(list)
   with open(path) as fh:
     while True:
-      if limit is not None and len(rankings_by_query) >= limit: break
+      if limit is not None and len(pairwise_bins_by_query) >= limit: break
       line = fh.readline()
       if line:
         query_name, __, doc_title, __, __, ___ = line.strip().split(' ')
@@ -211,10 +211,12 @@ def get_query_str_to_pairwise_bins(query_name_to_id, document_title_to_id, queri
         if query_id not in queries:
           query_id = str(query_id)
           if query_id not in queries: continue
-        rankings_by_query[str(queries[query_id])[1:-1]].append(document_title_to_id[doc_title])
+        pairwise_bins_by_query[str(queries[query_id])[1:-1]].append(document_title_to_id[doc_title])
       else:
         break
-    return _.map_values(dict(rankings_by_query), get_pairwise_bins)
+    result = _.map_values(dict(pairwise_bins_by_query), get_pairwise_bins)
+    return defaultdict(lambda: (set(), set()),
+                       result)
 
 def get_ranker_query_str_to_pairwise_bins(query_name_to_id,
                                           document_title_to_id,
