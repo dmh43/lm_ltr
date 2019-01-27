@@ -92,13 +92,15 @@ class Snorkeller:
         non_rand_target_info.append(info)
     offset = len(non_rand_target_info)
     order = []
+    marginal_ctr = 0
     for idx in range(len(target_info)):
       if len(delta_idxs) != 0 and idx == delta_idxs[0]:
         order.append(offset + deltas[0])
         deltas = deltas[1:]
         delta_idxs = delta_idxs[1:]
       else:
-        order.append(idx)
+        order.append(marginal_ctr)
+        marginal_ctr += 1
     order = np.array(order)
     L = get_L_from_pairs(self.query_pairwise_bins_by_ranker, non_rand_target_info)
     marginals = self.snorkel_gm.marginals(L)
