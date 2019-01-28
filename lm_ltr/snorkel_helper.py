@@ -26,7 +26,7 @@ def get_ranker_output(pairwise_bins, pair):
   elif pair in neg: return -1
   else: return 0
 
-def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) -> csr_matrix :
+def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) -> csr_matrix:
   rankings_per_query = zip(*all_ranked_lists_by_ranker.values())
   num_lfs = len(all_ranked_lists_by_ranker)
   num_rows = 0
@@ -46,7 +46,8 @@ def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) 
           col_ind.append(lf_idx)
           num_rows = max(num_rows, pair_idx + 1)
       pair_idx += 1
-  return csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
+  L = csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
+  return L[(L != 0).sum(1).squeeze().nonzero()[1]]
 
 def get_L_from_pairs(query_pairwise_bins_by_ranker: QueryPairwiseBinsByRanker,
                      target_infos: List[TargetInfo]) -> csr_matrix:
