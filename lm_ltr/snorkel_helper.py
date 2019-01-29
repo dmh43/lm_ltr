@@ -5,6 +5,7 @@ from itertools import combinations
 from scipy.sparse import csr_matrix
 import numpy as np
 from snorkel.learning import GenerativeModel
+from snorkel.learning.structure import DependencySelector
 import pydash as _
 
 from .types import TargetInfo, QueryPairwiseBinsByRanker, PairwiseBins
@@ -70,6 +71,7 @@ def get_L_from_pairs(query_pairwise_bins_by_ranker: QueryPairwiseBinsByRanker,
     pair_idx += 1
   return csr_matrix((data, (row_ind, col_ind)), shape=(num_rows, num_lfs))
 
+
 class Snorkeller:
   def __init__(self, query_pairwise_bins_by_ranker: QueryPairwiseBinsByRanker):
     self.query_pairwise_bins_by_ranker = query_pairwise_bins_by_ranker
@@ -78,7 +80,9 @@ class Snorkeller:
 
   def train(self, train_ranked_lists_by_ranker: Dict[str, List[List[int]]]):
     L_train = get_L_from_rankings(train_ranked_lists_by_ranker)
-    self.snorkel_gm.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
+    ds = DependencySelector()
+    deps = ds.select(L_train, threshold=0.1)
+    self.snorkel_gm.train(L_train, deps, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
     self.is_trained = True
 
   def calc_marginals(self, target_info: List[TargetInfo]):
