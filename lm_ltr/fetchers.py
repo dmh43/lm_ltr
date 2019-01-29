@@ -18,6 +18,7 @@ from .utils import append_at
 from .shelve_array import ShelveArray
 from .snorkel_helper import get_pairwise_bins
 from .types import TargetInfo, QueryPairwiseBinsByRanker
+from .globals import RANKER_NAME_TO_SUFFIX
 
 def get_rows():
   el_connection = pymysql.connect(host='localhost' ,
@@ -224,11 +225,10 @@ def get_ranker_query_str_to_pairwise_bins(query_name_to_id,
                                           limit=None,
                                           rankers=('qml', 'bm25', 'tfidf', 'rm3'),
                                           path='./indri/query_result') -> QueryPairwiseBinsByRanker:
-  ranker_name_to_suffix = {'qml': '', 'bm25': '_okapi', 'tfidf': '_tfidf', 'rm3': '_fb'}
   return {ranker: get_query_str_to_pairwise_bins(query_name_to_id,
                                                  document_title_to_id,
                                                  queries,
-                                                 path + ranker_name_to_suffix[ranker],
+                                                 path + RANKER_NAME_TO_SUFFIX[ranker],
                                                  limit=limit)
           for ranker in rankers}
 
@@ -257,11 +257,10 @@ def get_ranker_query_str_to_rankings(query_name_to_id,
                                      limit=None,
                                      rankers=('qml', 'bm25', 'tfidf', 'rm3'),
                                      path='./indri/query_result') -> QueryPairwiseBinsByRanker:
-  ranker_name_to_suffix = {'qml': '', 'bm25': '_okapi', 'tfidf': '_tfidf', 'rm3': '_fb'}
   return {ranker: get_query_str_to_rankings(query_name_to_id,
                                             document_title_to_id,
                                             queries,
-                                            path + ranker_name_to_suffix[ranker],
+                                            path + RANKER_NAME_TO_SUFFIX[ranker],
                                             limit=limit)
           for ranker in rankers}
 

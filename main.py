@@ -24,6 +24,7 @@ from lm_ltr.multi_objective import MultiObjective
 from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
 from lm_ltr.snorkel_helper import Snorkeller
+from lm_ltr.globals import RANKER_NAME_TO_SUFFIX
 
 from rabbit_ml.rabbit_ml import Rabbit
 from rabbit_ml.rabbit_ml.experiment import Experiment
@@ -68,6 +69,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'optimizer', 'for': 'train_params', 'type': str, 'default': 'adam'},
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'query_token_embedding_set', 'for': 'model_params', 'type': str, 'default': 'glove'},
+         {'name': 'ranking_set', 'for': 'train_params', 'type': str, 'default': 'qml'},
          {'name': 'rel_method', 'for': 'train_params', 'type': eval, 'default': score},
          {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'rel_score_penalty', 'for': 'train_params', 'type': float, 'default': 5e-4},
@@ -170,11 +172,13 @@ def main():
                             for query_token, idx in query_token_lookup.items()}
   else:
     query_tok_to_doc_tok = None
+  names = [RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set]]
   if rabbit.train_params.use_pointwise_loss or not rabbit.run_params.just_caches:
-    train_data = read_cache(f'./robust_train_query_results_tokens_106756.json',
+    train_data = read_cache(name('./robust_train_query_results_tokens_106756.json', names),
                             lambda: read_query_result(train_query_name_to_id,
                                                       document_title_to_id,
-                                                      train_queries))
+                                                      train_queries,
+                                                      path='./indri/query_result' + RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set]))
   else:
     train_data = []
   q_embed_len = rabbit.model_params.query_token_embed_len
@@ -252,12 +256,12 @@ def main():
                                 lambda: prepare(test_query_lookup,
                                                 test_query_name_to_id,
                                                 token_lookup=query_token_lookup))
-  eval_ranking_candidates = read_query_test_rankings()
+  eval_ranking_candidates = read_query_test_rankings('./indri/query_result_test' + RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set])
   test_candidates_data = read_query_result(test_query_name_to_id,
                                            document_title_to_id,
                                            dict(zip(range(len(test_queries)),
                                                     test_queries)),
-                                           path='./indri/query_result_test')
+                                           path='./indri/query_result_test' + RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set])
   test_ranking_candidates = process_raw_candidates(test_query_name_to_id,
                                                    test_queries,
                                                    document_title_to_id,
@@ -278,7 +282,7 @@ def main():
                                           document_title_to_id,
                                           dict(zip(range(len(val_queries)),
                                                     val_queries)),
-                                          path='./indri/query_result_test')
+                                          path='./indri/query_result_test' + RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set])
   val_ranking_candidates = process_raw_candidates(val_query_name_to_id,
                                                   val_queries,
                                                   document_title_to_id,
@@ -288,12 +292,12 @@ def main():
                           document_title_to_id,
                           val_query_name_to_id,
                           val_queries)
-  train_normalized_score_lookup = read_cache('./train_normalized_score_lookup.pkl',
+  train_normalized_score_lookup = read_cache(name('./train_normalized_score_lookup.pkl', names),
                                              lambda: get_normalized_score_lookup(train_data))
   test_normalized_score_lookup = get_normalized_score_lookup(test_candidates_data)
   val_normalized_score_lookup = get_normalized_score_lookup(val_candidates_data)
   if use_pointwise_loss:
-    normalized_train_data = read_cache('./normalized_train_query_data_106756.json',
+    normalized_train_data = read_cache(name('./normalized_train_query_data_106756.json', names),
                                        lambda: normalize_scores_query_wise(train_data))
     collate_fn = lambda samples: collate_query_samples(samples,
                                                        use_bow_model=use_bow_model)
@@ -301,7 +305,7 @@ def main():
                                       normalized_train_data,
                                       rabbit.train_params,
                                       rabbit.model_params,
-                                      cache='train_ranking_106756.json',
+                                      cache=name('train_ranking_106756.json', names),
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       normalized_score_lookup=train_normalized_score_lookup,
@@ -358,7 +362,7 @@ def main():
                                                train_data,
                                                rabbit.train_params,
                                                rabbit.model_params,
-                                               cache='train_ranking_106756.json',
+                                               cache=name('train_ranking_106756.json', names),
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                normalized_score_lookup=train_normalized_score_lookup,
