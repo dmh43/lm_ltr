@@ -81,7 +81,7 @@ class Snorkeller:
   def train(self, train_ranked_lists_by_ranker: Dict[str, List[List[int]]]):
     L_train = get_L_from_rankings(train_ranked_lists_by_ranker)
     ds = DependencySelector()
-    deps = ds.select(L_train, threshold=0.1)
+    deps = ds.select(L_train, threshold=0.0)
     self.snorkel_gm.train(L_train, deps, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
     self.is_trained = True
 
