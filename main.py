@@ -239,23 +239,19 @@ def main():
     query_token_embeds = query_token_embeds_init
     additive = None
     rel_score = None
-  eval_query_lookup = read_cache('./robust_eval_queries.json',
-                                 get_robust_eval_queries)
-  eval_query_name_document_title_rels = read_cache('./robust_rels.json',
-                                                   get_robust_rels)
+  eval_query_lookup = get_robust_eval_queries()
+  eval_query_name_document_title_rels = get_robust_rels()
   test_query_names = []
   val_query_names = []
   for query_name in eval_query_lookup:
-    if len(test_query_names) < 200: test_query_names.append(query_name)
+    if len(val_query_names) >= 50: test_query_names.append(query_name)
     else: val_query_names.append(query_name)
   test_query_name_document_title_rels = _.pick(eval_query_name_document_title_rels, test_query_names)
   test_query_lookup = _.pick(eval_query_lookup, test_query_names)
-  test_query_name_to_id = read_cache('./test_query_name_to_id.json',
-                                     lambda: create_id_lookup(test_query_lookup.keys()))
-  test_queries, __ = read_cache('./parsed_test_robust_queries_106756.json',
-                                lambda: prepare(test_query_lookup,
-                                                test_query_name_to_id,
-                                                token_lookup=query_token_lookup))
+  test_query_name_to_id = create_id_lookup(test_query_lookup.keys())
+  test_queries, __ = prepare(test_query_lookup,
+                             test_query_name_to_id,
+                             token_lookup=query_token_lookup)
   eval_ranking_candidates = read_query_test_rankings('./indri/query_result_test' + RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set])
   test_candidates_data = read_query_result(test_query_name_to_id,
                                            document_title_to_id,
@@ -273,8 +269,7 @@ def main():
                            test_queries)
   val_query_name_document_title_rels = _.pick(eval_query_name_document_title_rels, val_query_names)
   val_query_lookup = _.pick(eval_query_lookup, val_query_names)
-  val_query_name_to_id = read_cache('./val_query_name_to_id.json',
-                                    lambda: create_id_lookup(val_query_lookup.keys()))
+  val_query_name_to_id = create_id_lookup(val_query_lookup.keys())
   val_queries, __ = prepare(val_query_lookup,
                             val_query_name_to_id,
                             token_lookup=query_token_lookup)
@@ -315,7 +310,6 @@ def main():
                                      test_data,
                                      rabbit.train_params,
                                      rabbit.model_params,
-                                     cache='test_ranking_106756.json',
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      normalized_score_lookup=test_normalized_score_lookup,
                                      use_bow_model=use_bow_model,
@@ -324,7 +318,6 @@ def main():
                                     val_data,
                                     rabbit.train_params,
                                     rabbit.model_params,
-                                    cache='val_ranking_106756.json',
                                     query_tok_to_doc_tok=query_tok_to_doc_tok,
                                     normalized_score_lookup=val_normalized_score_lookup,
                                     use_bow_model=use_bow_model,
@@ -372,7 +365,6 @@ def main():
                                               test_data,
                                               rabbit.train_params,
                                               rabbit.model_params,
-                                              cache='test_ranking_106756.json',
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               normalized_score_lookup=test_normalized_score_lookup,
                                               use_bow_model=use_bow_model,
@@ -381,7 +373,6 @@ def main():
                                              val_data,
                                              rabbit.train_params,
                                              rabbit.model_params,
-                                             cache='val_ranking_106756.json',
                                              query_tok_to_doc_tok=query_tok_to_doc_tok,
                                              normalized_score_lookup=val_normalized_score_lookup,
                                              use_bow_model=use_bow_model,

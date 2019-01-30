@@ -21,14 +21,14 @@ def basic_eval():
   path = path + '_' + sys.argv[3] if len(sys.argv) >= 4 else path
   rankings_to_eval = read_query_test_rankings(path=path)
   qrels = parse_qrels()
-  query_ids = list(qrels.keys())
+  query_ids = list(qrels.keys())[50:]
   k = 10 if len(sys.argv) == 1 else int(sys.argv[1])
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: print('failed'))
   ordered_rankings_to_eval = [[document_title_to_id[title] for title in rankings_to_eval[query]]
                               for query in query_ids]
   ordered_qrels = [[document_title_to_id[title] for title in qrels[query]]
-                   for query in query_ids[:200]]
+                   for query in query_ids]
   print('indri:', metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
 
 def baselines_eval():
