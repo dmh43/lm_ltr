@@ -28,7 +28,7 @@ def basic_eval():
   ordered_rankings_to_eval = [[document_title_to_id[title] for title in rankings_to_eval[query]]
                               for query in query_ids]
   ordered_qrels = [[document_title_to_id[title] for title in qrels[query]]
-                   for query in query_ids]
+                   for query in query_ids[:200]]
   print('indri:', metrics_at_k(ordered_rankings_to_eval, ordered_qrels, k))
 
 def baselines_eval():
