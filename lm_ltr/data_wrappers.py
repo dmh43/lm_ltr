@@ -173,12 +173,14 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False):
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
+            'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids)),
+            'doc_ids': doc_ids}
   else:
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'target_info': 1 if doc_1_idx < doc_2_idx else -1}
+            'target_info': 1 if doc_1_idx < doc_2_idx else -1,
+            'doc_ids': doc_ids}
 
 def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx, use_variable_loss=False):
   ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
@@ -191,12 +193,14 @@ def _get_nth_pair_bin_rankings(rankings, cumu_num_pairs, bin_rankings, idx, use_
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids))}
+            'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids)),
+            'doc_ids': doc_ids}
   else:
     return {'query': query,
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
-            'target_info': 1 if doc_1_idx < doc_2_idx else -1}
+            'target_info': 1 if doc_1_idx < doc_2_idx else -1,
+            'doc_ids': doc_ids}
 
 def _get_num_pairs(rankings, num_neg_samples, bin_rankings=None):
   if bin_rankings:
@@ -290,7 +294,9 @@ class QueryPairwiseDataset(QueryDataset):
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     doc_1 = self._get_document(elem['doc_id_1'])
     if use_neg_sample:
-      doc_2 = self._get_document(choice(range(self.num_documents)))
+      rand_sample = choice(range(self.num_documents))
+      while rand_sample in elem['doc_ids']: rand_sample = choice(range(self.num_documents))
+      doc_2 = self._get_document(rand_sample)
       target_info = 1
     else:
       doc_2 = self._get_document(elem['doc_id_2'])
