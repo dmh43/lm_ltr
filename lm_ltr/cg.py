@@ -4,10 +4,12 @@ from dataclasses import dataclass
 import torch
 
 def get_preconditioner(get_diag: Callable, cond_offset: Optional[float]=0.01):
+  """Take the diagonal as an approximation to the matrix. Obviously a
+     pretty low quality preconditioner. Usually works better than not
+     preconditioning if the matrix is illconditioned and PSD
+  """
   diag = get_diag()
-  smallest_elem = torch.min(diag)
-  offset = cond_offset + smallest_elem if smallest_elem < 0 else cond_offset
-  return 1.0 / (diag + offset)
+  return 1.0 / (diag + cond_offset)
 
 @dataclass
 class CG:
@@ -28,7 +30,7 @@ class CG:
   def solve(self, vec: torch.Tensor):
     """See `An Introduction to the Conjugate Gradient Method Without the
        Agonizing Pain` by Jonathan Richard Shewchuk"""
-    result = torch.zeros(self.result_len, device=vec.device)
+    result = torch.zeros(self.result_len, device=vec.device, dtype=vec.dtype)
     r = vec - self.matmul(result)
     d = self._apply_preconditioner(r)
     delta_new = r.dot(d)
