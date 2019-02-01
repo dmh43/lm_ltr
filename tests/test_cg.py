@@ -15,7 +15,7 @@ def test_ident_scale():
 def test_cg_ill_conditioned():
   mat = torch.tensor([[1.0, 0.0], [1.0, 40.0]])
   matmul = lambda vec: mat.matmul(vec)
-  preconditioner = cg.get_preconditioner(lambda: torch.diag(mat))
+  preconditioner = cg.get_preconditioner(torch.diag(mat))
   solver_with_preconditioner = cg.CG(matmul, 2, max_iters=2, preconditioner=preconditioner)
   solver = cg.CG(matmul, 2, max_iters=2)
   no_precondition_err = solver.solve(torch.ones(2)) - mat.inverse().matmul(torch.ones(2))
@@ -26,7 +26,7 @@ def test_cg_ill_conditioned():
 def test_cg_ill_conditioned_many_iters():
   mat = torch.tensor([[1.0, 0.0], [1.0, 40.0]])
   matmul = lambda vec: mat.matmul(vec)
-  preconditioner = cg.get_preconditioner(lambda: torch.diag(mat))
+  preconditioner = cg.get_preconditioner(torch.diag(mat))
   solver = cg.CG(matmul, 2, max_iters=20, preconditioner=preconditioner)
   with_precondition_err = solver.solve(torch.ones(2)) - mat.inverse().matmul(torch.ones(2))
   assert all(abs(with_precondition_err) < 1e-5)
@@ -34,7 +34,7 @@ def test_cg_ill_conditioned_many_iters():
 def test_cg_ill_conditioned_psd():
   mat = torch.tensor([[1.0, 10.0], [10.0, 4000.0]])
   matmul = lambda vec: mat.matmul(vec)
-  preconditioner = cg.get_preconditioner(lambda: torch.diag(mat))
+  preconditioner = cg.get_preconditioner(torch.diag(mat))
   with_precondition_solver = cg.CG(matmul, 2, max_iters=200, preconditioner=preconditioner)
   solver = cg.CG(matmul, 2, max_iters=2)
   with_precondition_err = with_precondition_solver.solve(torch.ones(2)) - mat.inverse().matmul(torch.ones(2))
@@ -45,7 +45,7 @@ def test_cg_ill_conditioned_psd():
 def test_cg_ill_conditioned_sym():
   mat = torch.tensor([[-1.0, 10.0], [10.0, 4.0]])
   matmul = lambda vec: mat.matmul(vec)
-  preconditioner = cg.get_preconditioner(lambda: torch.diag(mat))
+  preconditioner = cg.get_preconditioner(torch.diag(mat))
   with_precondition_solver = cg.CG(matmul, 2, max_iters=2, preconditioner=preconditioner)
   solver = cg.CG(matmul, 2, max_iters=2)
   with_precondition_err = with_precondition_solver.solve(torch.ones(2)) - mat.inverse().matmul(torch.ones(2))

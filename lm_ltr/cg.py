@@ -3,12 +3,11 @@ from dataclasses import dataclass
 
 import torch
 
-def get_preconditioner(get_diag: Callable, cond_offset: Optional[float]=0.01):
+def get_preconditioner(diag: torch.Tensor, cond_offset: Optional[float]=0.01):
   """Take the diagonal as an approximation to the matrix. Obviously a
      pretty low quality preconditioner. Usually works better than not
      preconditioning if the matrix is illconditioned and PSD
   """
-  diag = get_diag()
   return 1.0 / (diag + cond_offset)
 
 @dataclass
