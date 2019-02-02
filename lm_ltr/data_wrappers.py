@@ -243,7 +243,6 @@ class QueryPairwiseDataset(QueryDataset):
                      normalized_score_lookup=normalized_score_lookup,
                      use_bow_model=use_bow_model)
     self.use_variable_loss = train_params.use_variable_loss
-    self.use_noise_aware_loss = train_params.use_noise_aware_loss
     self.bin_rankings = train_params.bin_rankings
     self.num_documents = len(documents)
     self.num_neg_samples = train_params.num_neg_samples
@@ -286,20 +285,20 @@ class QueryPairwiseDataset(QueryDataset):
                            self.cumu_ranking_lengths,
                            remapped_idx,
                            self.use_variable_loss)
-    if self.use_noise_aware_loss:
-      target_info = ((elem['doc_id_1'], elem['doc_id_2']),
-                     elem['query'])
-    else:
-      target_info = elem['target_info']
     query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     doc_1 = self._get_document(elem['doc_id_1'])
     if use_neg_sample:
-      rand_sample = choice(range(self.num_documents))
-      while rand_sample in elem['doc_ids']: rand_sample = choice(range(self.num_documents))
-      doc_2 = self._get_document(rand_sample)
-      target_info = 1
+      doc_id_2 = choice(range(self.num_documents))
+      while doc_id_2 in elem['doc_ids']: doc_id_2 = choice(range(self.num_documents))
+      doc_2 = self._get_document(doc_id_2)
+      target_info = ((elem['doc_id_1'], doc_id_2),
+                     elem['query'],
+                     1)
     else:
       doc_2 = self._get_document(elem['doc_id_2'])
+      target_info = ((elem['doc_id_1'], elem['doc_id_2']),
+                     elem['query'],
+                     elem['target_info'])
     if self.dont_include_normalized_score:
       doc_1_score = 0.0
       doc_2_score = 0.0

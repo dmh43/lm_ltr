@@ -8,7 +8,7 @@ from snorkel.learning import GenerativeModel
 from snorkel.learning.structure import DependencySelector
 import pydash as _
 
-from .types import TargetInfo, QueryPairwiseBinsByRanker, PairwiseBins, NonRandTargetInfo
+from .types import TargetInfo, QueryPairwiseBinsByRanker, PairwiseBins
 
 def get_all_items(ranked_lists: Iterable[List[int]]):
   all_items: Set = reduce(lambda acc, ranking: acc.union(ranking), ranked_lists, set())
@@ -51,7 +51,7 @@ def get_L_from_rankings(all_ranked_lists_by_ranker: Dict[str, List[List[int]]]) 
   return L[(L != 0).sum(1).squeeze().nonzero()[1]]
 
 def get_L_from_pairs(query_pairwise_bins_by_ranker: QueryPairwiseBinsByRanker,
-                     target_infos: List[NonRandTargetInfo]) -> csr_matrix:
+                     target_infos: List[TargetInfo]) -> csr_matrix:
   num_lfs = len(query_pairwise_bins_by_ranker)
   num_rows = 0
   pair_idx = 0
@@ -86,7 +86,7 @@ class Snorkeller:
     self.is_trained = True
 
   def calc_marginals(self, target_info: List[TargetInfo]):
-    non_rand_target_info: List[NonRandTargetInfo] = []
+    non_rand_target_info: List[TargetInfo] = []
     deltas: List[int] = []
     delta_idxs: List[int] = []
     for idx, info in enumerate(target_info):

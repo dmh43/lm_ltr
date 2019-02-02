@@ -2,7 +2,7 @@ import pickle
 import json
 import random
 import time
-from heapq import nlargest
+from heapq import nlargest, nsmallest
 from operator import itemgetter
 from functools import reduce
 
@@ -25,6 +25,7 @@ from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
 from lm_ltr.snorkel_helper import Snorkeller
 from lm_ltr.globals import RANKER_NAME_TO_SUFFIX
+from lm_ltr.influence import calc_influence, calc_test_hvps
 
 from rabbit_ml.rabbit_ml import Rabbit
 from rabbit_ml.rabbit_ml.arg_parsers import list_arg, optional_arg
@@ -36,6 +37,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'append_difference', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 512},
          {'name': 'bin_rankings', 'for': 'train_params', 'type': optional_arg(int), 'default': None},
+         {'name': 'calc_influence_for_top', 'for': 'run_params', 'type': optional_arg(int), 'default': None},
          {'name': 'cheat', 'for': 'run_params', 'type': bool, 'default': False},
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
@@ -426,7 +428,6 @@ def main():
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
-  multi_objective_model.load_state_dict(torch.load(rabbit.run_params.load_path))
   if rabbit.train_params.memorize_test:
     try: del train_data
     except: pass
@@ -441,14 +442,34 @@ def main():
   except UnboundLocalError:
     del q_glove_lookup
     del doc_glove_lookup
-  train_model(multi_objective_model,
-              model_data,
-              train_ranking_dataset,
-              val_ranking_dataset,
-              test_ranking_dataset,
-              rabbit.train_params,
-              rabbit.model_params,
-              experiment)
+  if rabbit.run_params.load_model:
+    multi_objective_model.load_state_dict(torch.load(rabbit.run_params.load_path))
+  else:
+    train_model(multi_objective_model,
+                model_data,
+                train_ranking_dataset,
+                val_ranking_dataset,
+                test_ranking_dataset,
+                rabbit.train_params,
+                rabbit.model_params,
+                experiment)
+  if rabbit.run_params.calc_influence_for_top is not None:
+    test_hvps = calc_test_hvps(multi_objective_model.loss,
+                               multi_objective_model,
+                               train_dl,
+                               test_dl.dataset)
+    influences = []
+    for i, train_sample in enumerate(train_dl.dataset):
+      influences.append((i, calc_influence(multi_objective_model.loss,
+                                           multi_objective_model,
+                                           collate_fn([train_sample]),
+                                           test_hvps)))
+    most_hurtful = nsmallest(rabbit.run_params.calc_influence_for_top,
+                             influences,
+                             key=itemgetter(1))
+    with open('./most_hurtful.json', 'w+') as fh:
+      json.dump([train_dl.dataset[idx] for idx, influence in most_hurtful], fh)
+  else: raise NotImplementedError('Have not implemented just loading a model and testing')
 
 if __name__ == "__main__":
   import ipdb
