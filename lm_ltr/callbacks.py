@@ -4,9 +4,9 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
-from fastai.basic_train import LearnerCallback
+from fastai.basic_train import Callback, LearnerCallback
 
-class MaxIter(LearnerCallback):
+class MaxIter(Callback):
   def __init__(self, max_iter, *args, **kwargs):
     self.max_iter = max_iter
     super().__init__(*args, **kwargs)
