@@ -14,20 +14,22 @@ def calc_test_hvps(criterion: Callable,
                    trained_model: nn.Module,
                    train_dataloader: DataLoader,
                    test_dataset: Dataset):
-  hvp = HVP(calc_loss=criterion,
+  hvp = HVP(calc_loss=lambda xs, target: criterion(trained_model(xs), target),
             parameters=[p for p in trained_model.parameters() if p.requires_grad],
             data=train_dataloader,
             num_batches=len(train_dataloader),
             damping=0.01)
   cg = CG(matmul=hvp,
-          result_len=len(hvp.parameters),
-          max_iters=len(hvp.parameters))
+          result_len=sum(p.numel() for p in hvp.parameters),
+          max_iters=sum(p.numel() for p in hvp.parameters))
   test_hvps = []
   for x_test, label in test_dataset:
-    x_test_batch = [torch.tensor(arg).unsqueeze(0) for arg in x_test]
-    label_batch = torch.tensor([label])
-    loss_at_x_test = criterion(trained_model(*x_test_batch), label_batch)
-    grad_at_z_test = autograd.grad(loss_at_x_test, trained_model.parameters())
+    if isinstance(x_test, tuple): x_test_batch = [torch.tensor(arg).unsqueeze(0) for arg in x_test]
+    else                        : x_test_batch = x_test.unsqueeze(0)
+    if isinstance(x_test_batch, tuple): loss_at_x_test = criterion(trained_model(*x_test_batch), label)
+    else:                               loss_at_x_test = criterion(trained_model(x_test_batch), label)
+    grads = autograd.grad(loss_at_x_test, trained_model.parameters())
+    grad_at_z_test = torch.cat([g.contiguous().view(-1) for g in grads])
     test_hvps.append(cg.solve(grad_at_z_test))
   return torch.stack(test_hvps)
 
@@ -39,5 +41,6 @@ def calc_influence(criterion: Callable,
   features, target = train_sample
   train_loss = criterion(trained_model(features), target)
   params = trained_model.parameters()
-  grad_at_train_sample = autograd.grad(train_loss, params)
+  grads = autograd.grad(train_loss, params)
+  grad_at_train_sample = torch.cat([g.contiguous().view(-1) for g in grads])
   return test_hvps.matmul(grad_at_train_sample)

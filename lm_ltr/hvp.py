@@ -1,20 +1,22 @@
-from typing import Callable, Optional, Iterable, Tuple
+from typing import Callable, Optional, Iterable, Tuple, List
 
 import torch
 
 class HVP:
   def __init__(self,
                calc_loss: Callable,
-               parameters: torch.Tensor,
+               parameters: List[torch.Tensor],
                data: Iterable[Tuple[torch.Tensor, torch.Tensor]],
                num_batches: int,
-               damping: float=0.0):
+               damping: float=0.0,
+               retain_graph: bool=True):
     self.calc_loss = calc_loss
     self.data = data
     self.parameters = parameters
     self.num_batches = num_batches
     self.damping = damping
     self.grad_vec: Optional[torch.Tensor] = None
+    self.retain_graph = retain_graph
 
   def _zero_grad(self):
     for p in self.parameters:
@@ -30,7 +32,7 @@ class HVP:
                                   for g in grad_dict]) / self.num_batches
       if grad_vec is not None:  grad_vec += grad_vec_chunk
       else:                     grad_vec  = grad_vec_chunk
-    self.grad_vec = grad_vec
+    if self.retain_graph: self.grad_vec = grad_vec
     return grad_vec
 
   def __call__(self, vec) -> torch.Tensor:
@@ -42,6 +44,6 @@ class HVP:
     grad_vec = self.grad_vec if self.grad_vec is not None else self._grad()
     grad_product = torch.sum(grad_vec * vec)
     self._zero_grad()
-    grad_grad = torch.autograd.grad(grad_product, self.parameters)
+    grad_grad = torch.autograd.grad(grad_product, self.parameters, retain_graph=self.retain_graph)
     hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in grad_grad])
     return hessian_vec_prod + self.damping * vec
