@@ -468,7 +468,7 @@ def main():
                              influences,
                              key=itemgetter(1))
     with open('./most_hurtful.json', 'w+') as fh:
-      json.dump([train_dl.dataset[idx] for idx, influence in most_hurtful], fh)
+      json.dump([train_dl.dataset[idx][1] for idx, influence in most_hurtful], fh)
   else: raise NotImplementedError('Have not implemented just loading a model and testing')
 
 if __name__ == "__main__":
