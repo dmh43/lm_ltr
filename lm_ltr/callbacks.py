@@ -11,7 +11,7 @@ class MaxIter(Callback):
     self.max_iter = max_iter
     super().__init__(*args, **kwargs)
 
-  def on_batch_end(self, num_batch):
+  def on_batch_end(self, num_batch, **kwargs):
     if self.max_iter is not None and num_batch >= self.max_iter: return True
 
 @dataclass
