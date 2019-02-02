@@ -27,14 +27,15 @@ from lm_ltr.snorkel_helper import Snorkeller
 from lm_ltr.globals import RANKER_NAME_TO_SUFFIX
 
 from rabbit_ml.rabbit_ml import Rabbit
+from rabbit_ml.rabbit_ml.arg_parsers import list_arg, optional_arg
 from rabbit_ml.rabbit_ml.experiment import Experiment
 
-args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: string.split(','), 'default': []},
+args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'default': []},
          {'name': 'add_rel_score', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'append_hadamard', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'append_difference', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 512},
-         {'name': 'bin_rankings', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
+         {'name': 'bin_rankings', 'for': 'train_params', 'type': optional_arg(int), 'default': None},
          {'name': 'cheat', 'for': 'run_params', 'type': bool, 'default': False},
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
@@ -50,13 +51,15 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
-         {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': lambda string: [int(size) for size in string.split(',')], 'default': [128, 64, 16]},
+         {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': list_arg(int), 'default': [128, 64, 16]},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
-         {'name': 'keep_top_uniq_terms', 'for': 'model_params', 'type': lambda num: int(num) if num is not None else None, 'default': None},
+         {'name': 'keep_top_uniq_terms', 'for': 'model_params', 'type': optional_arg(int), 'default': None},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
+         {'name': 'load_path', 'for': 'run_params', 'type': optional_arg(str), 'default': None},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
+         {'name': 'max_iter', 'for': 'train_params', 'type': optional_arg(int), 'default': None},
          {'name': 'memorize_test', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'nce_sample_mul_rel_score', 'for': 'train_params', 'type': int, 'default': 5},
          {'name': 'num_doc_tokens_to_consider', 'for': 'train_params', 'type': int, 'default': 100},
@@ -64,7 +67,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': lambda string: stri
          {'name': 'num_neg_samples', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'num_pos_tokens_rel_score', 'for': 'train_params', 'type': int, 'default': 20},
          {'name': 'num_to_rank', 'for': 'run_params', 'type': int, 'default': 1000},
-         {'name': 'num_train_queries', 'for': 'train_params', 'type': lambda size: int(size) if size is not None else None, 'default': None},
+         {'name': 'num_train_queries', 'for': 'train_params', 'type': optional_arg(int), 'default': None},
          {'name': 'only_use_last_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'optimizer', 'for': 'train_params', 'type': str, 'default': 'adam'},
          {'name': 'query_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
@@ -105,10 +108,12 @@ class MyRabbit(Rabbit):
 
 model_to_save = None
 experiment = None
+rabbit = None
 
 def main():
   global model_to_save
   global experiment
+  global rabbit
   rabbit = MyRabbit(args)
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
@@ -421,6 +426,7 @@ def main():
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
+  multi_objective_model.load_state_dict(torch.load(rabbit.run_params.load_path))
   if rabbit.train_params.memorize_test:
     try: del train_data
     except: pass
@@ -452,8 +458,10 @@ if __name__ == "__main__":
   try:
     main()
   except: # pylint: disable=bare-except
-    if model_to_save and input("save?") == 'y':
-      torch.save(model_to_save.state_dict(), './model_save_debug' + str(experiment.model_name))
+    if not rabbit.run_params.load_model:
+      if model_to_save and input("save?") == 'y':
+        torch.save(model_to_save.state_dict(),
+                   './model_save_debug' + str(experiment.model_name))
     extype, value, tb = sys.exc_info()
     traceback.print_exc()
     ipdb.post_mortem(tb)

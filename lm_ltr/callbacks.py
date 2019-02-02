@@ -6,6 +6,14 @@ import torch.nn as nn
 
 from fastai.basic_train import LearnerCallback
 
+class MaxIter(LearnerCallback):
+  def __init__(self, max_iter, *args, **kwargs):
+    self.max_iter = max_iter
+    super().__init__(*args, **kwargs)
+
+  def on_batch_end(self, num_batch):
+    if self.max_iter is not None and num_batch >= self.max_iter: return True
+
 @dataclass
 class ClampPositive(LearnerCallback):
   ps: List[nn.Parameter]

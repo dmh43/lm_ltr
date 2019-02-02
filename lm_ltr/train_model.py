@@ -17,6 +17,7 @@ from .metrics import RankingMetricRecorder, recall, precision, f1
 from .losses import hinge_loss
 from .recorders import PlottingRecorder, LossesRecorder
 from .inits import weight_init
+from .callbacks import MaxIter
 
 def _get_pointwise_scorer(model):
   if hasattr(model.module.model, 'pointwise_scorer'):
@@ -51,7 +52,8 @@ def train_model(model,
                                      experiment,
                                      doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1,
                                      dont_smooth=model_params.dont_smooth,
-                                     dont_include_normalized_score=model_params.dont_include_normalized_score)]
+                                     dont_include_normalized_score=model_params.dont_include_normalized_score),
+               MaxIter(train_params.max_iter)]
   callback_fns = []
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))
