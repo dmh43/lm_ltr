@@ -56,7 +56,7 @@ def trained_model(criterion, train_dataloader):
   return model
 
 def test_calc_influence(criterion, trained_model, train_dataloader, test_dataset):
-  collate_fn = lambda sample: [((sample[0][0].unsqueeze(0),), sample[0][1])]
+  collate_fn = lambda sample: ((sample[0][0].unsqueeze(0),), sample[0][1])
   test_hvps = i.calc_test_hvps(criterion,
                                trained_model,
                                train_dataloader,

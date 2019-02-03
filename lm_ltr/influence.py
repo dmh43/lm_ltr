@@ -25,7 +25,7 @@ def calc_test_hvps(criterion: Callable,
           max_iters=sum(p.numel() for p in hvp.parameters))
   test_hvps = []
   for sample in test_dataset:
-    x_test, label = collate_fn([sample])[0]
+    x_test, label = collate_fn([sample])
     loss_at_x_test = criterion(trained_model(*x_test), label)
     grads = autograd.grad(loss_at_x_test, trained_model.parameters())
     grad_at_z_test = torch.cat([g.contiguous().view(-1) for g in grads])
