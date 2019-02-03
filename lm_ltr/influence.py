@@ -19,7 +19,7 @@ def calc_test_hvps(criterion: Callable,
                    test_dataset: Dataset,
                    collate_fn: Callable[[Any], torch.Tensor]):
   device = train_dataloader.device
-  hvp = HVP(calc_loss=lambda xs, target: criterion(trained_model(xs), target),
+  hvp = HVP(calc_loss=lambda xs, target: criterion(trained_model(*xs), target),
             parameters=[p for p in trained_model.parameters() if p.requires_grad],
             data=train_dataloader,
             num_batches=len(train_dataloader),
@@ -42,7 +42,7 @@ def calc_influence(criterion: Callable,
                    train_sample: Tuple[torch.Tensor, torch.Tensor],
                    test_hvps: torch.Tensor):
   features, target = train_sample
-  train_loss = criterion(trained_model(features), target)
+  train_loss = criterion(trained_model(*features), target)
   params = trained_model.parameters()
   grads = autograd.grad(train_loss, params)
   grad_at_train_sample = torch.cat([g.contiguous().view(-1) for g in grads])

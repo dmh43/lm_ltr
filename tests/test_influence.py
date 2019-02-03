@@ -2,7 +2,8 @@
 import pytest
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Dataset
+from fastai import DeviceDataLoader
 from torch.utils.data.sampler import BatchSampler, RandomSampler
 import torch.optim as optim
 
@@ -20,8 +21,22 @@ class SimpleModel(nn.Module):
   def forward(self, x):
     return self.lin(x).squeeze()
 
+class TensorSetDataset(Dataset):
+  def __init__(self, *tensors):
+    assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+    self.tensors = tensors
+  def __getitem__(self, index):
+    return tuple(tensor[index] for tensor in self.tensors[:-1]), self.tensors[-1][index]
+  def __len__(self):
+    return self.tensors[0].size(0)
+
 @pytest.fixture(scope='module')
 def criterion(): return nn.BCEWithLogitsLoss()
+
+def collate_fn(samples):
+  xs, targets = list(zip(*samples))
+  xs = list(zip(*xs))
+  return tuple(torch.stack(x) for x in xs), torch.stack(targets)
 
 @pytest.fixture(scope='module')
 def train_dataloader():
@@ -30,16 +45,18 @@ def train_dataloader():
   targets = (torch.arange(num_samples) > num_samples / 2).float()
   targets[-100:] = 1 - targets[-100:]
   targets[:100] = 1 - targets[:100]
-  dataset = TensorDataset(xs, targets)
+  dataset = TensorSetDataset(xs, targets)
   batch_sampler = BatchSampler(RandomSampler(dataset), BATCH_SIZE, False)
-  return DataLoader(dataset, batch_sampler=batch_sampler)
+  return DeviceDataLoader(DataLoader(dataset, batch_sampler=batch_sampler, collate_fn=collate_fn),
+                          torch.device('cpu'),
+                          collate_fn=collate_fn)
 
 @pytest.fixture(scope='module')
 def test_dataset():
   num_samples = 100
   xs = torch.arange(0, NUM_TRAIN_SAMPLES, 100).repeat(NUM_FEATURES, 1).t().float()
   targets = (xs[:, 0] > NUM_TRAIN_SAMPLES / 2).float()
-  return TensorDataset(xs, targets)
+  return TensorSetDataset(xs, targets)
 
 @pytest.fixture(scope='module')
 def trained_model(criterion, train_dataloader):
@@ -48,7 +65,7 @@ def trained_model(criterion, train_dataloader):
   for epoch_num in range(20):
     for xs, targets in train_dataloader:
       optimizer.zero_grad()
-      loss = criterion(model(xs), targets)
+      loss = criterion(model(*xs), targets)
       loss.backward()
       optimizer.step()
   print('loss:', loss)
@@ -56,7 +73,6 @@ def trained_model(criterion, train_dataloader):
   return model
 
 def test_calc_influence(criterion, trained_model, train_dataloader, test_dataset):
-  collate_fn = lambda sample: ((sample[0][0].unsqueeze(0),), sample[0][1])
   test_hvps = i.calc_test_hvps(criterion,
                                trained_model,
                                train_dataloader,
@@ -68,11 +84,11 @@ def test_calc_influence(criterion, trained_model, train_dataloader, test_dataset
   influences = torch.tensor(influences)
   largest_vals, largest_idxs = torch.topk(influences, k=100)
   most_neg_vals, most_neg_idxs = torch.topk(-influences, k=100)
-  assert all((train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
-             for idx in largest_idxs)
-  assert all((train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)
-             for idx in largest_idxs)
-  assert all((train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
-             for idx in most_neg_idxs)
-  assert all((train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)
-             for idx in most_neg_idxs)
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
+                          for idx in largest_idxs]).view(-1))
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)
+                          for idx in largest_idxs]).view(-1))
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
+                          for idx in most_neg_idxs]).view(-1))
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)
+                          for idx in most_neg_idxs]).view(-1))
