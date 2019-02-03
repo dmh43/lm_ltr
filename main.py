@@ -10,6 +10,7 @@ import pydash as _
 import torch
 import torch.nn as nn
 from fastai.basic_data import DataBunch, DeviceDataLoader
+from fastai import to_device
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles, get_ranker_query_str_to_pairwise_bins, get_ranker_query_str_to_rankings
@@ -473,13 +474,9 @@ def main():
                                collate_fn)
     influences = []
     for i, train_sample in enumerate(train_dl.dataset):
-      collated_train_sample = collate_fn([train_sample])
-      device_x = (arg.to(device) for arg in collated_train_sample[0])
-      device_label = collated_train_sample[1].to(device)
-      device_train_sample = (device_x, device_label)
       influences.append((i, calc_influence(multi_objective_model.loss,
                                            multi_objective_model.to(model_data.device),
-                                           device_train_sample,
+                                           to_device(collate_fn([train_sample]), device),
                                            test_hvps)))
     most_hurtful = nsmallest(rabbit.run_params.calc_influence_for_top,
                              influences,
