@@ -314,7 +314,8 @@ def main():
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       normalized_score_lookup=train_normalized_score_lookup,
                                       use_bow_model=use_bow_model,
-                                      collate_fn=collate_fn)
+                                      collate_fn=collate_fn,
+                                      is_test=False)
     test_dl = build_query_dataloader(documents,
                                      test_data,
                                      rabbit.train_params,
@@ -322,7 +323,8 @@ def main():
                                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                                      normalized_score_lookup=test_normalized_score_lookup,
                                      use_bow_model=use_bow_model,
-                                     collate_fn=collate_fn)
+                                     collate_fn=collate_fn,
+                                     is_test=True)
     val_dl = build_query_dataloader(documents,
                                     val_data,
                                     rabbit.train_params,
@@ -330,7 +332,8 @@ def main():
                                     query_tok_to_doc_tok=query_tok_to_doc_tok,
                                     normalized_score_lookup=val_normalized_score_lookup,
                                     use_bow_model=use_bow_model,
-                                    collate_fn=collate_fn)
+                                    collate_fn=collate_fn,
+                                    is_test=True)
     model = PointwiseScorer(query_token_embeds,
                             document_token_embeds,
                             doc_encoder,
@@ -369,7 +372,8 @@ def main():
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                normalized_score_lookup=train_normalized_score_lookup,
                                                use_bow_model=use_bow_model,
-                                               collate_fn=collate_fn)
+                                               collate_fn=collate_fn,
+                                               is_test=False)
     test_dl = build_query_pairwise_dataloader(documents,
                                               test_data,
                                               rabbit.train_params,
@@ -377,7 +381,8 @@ def main():
                                               query_tok_to_doc_tok=query_tok_to_doc_tok,
                                               normalized_score_lookup=test_normalized_score_lookup,
                                               use_bow_model=use_bow_model,
-                                              collate_fn=collate_fn)
+                                              collate_fn=collate_fn,
+                                              is_test=True)
     val_dl = build_query_pairwise_dataloader(documents,
                                              val_data,
                                              rabbit.train_params,
@@ -385,7 +390,8 @@ def main():
                                              query_tok_to_doc_tok=query_tok_to_doc_tok,
                                              normalized_score_lookup=val_normalized_score_lookup,
                                              use_bow_model=use_bow_model,
-                                             collate_fn=collate_fn)
+                                             collate_fn=collate_fn,
+                                             is_test=True)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,

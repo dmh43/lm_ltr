@@ -31,7 +31,8 @@ class QueryDataset(Dataset):
                rankings=None,
                query_tok_to_doc_tok=None,
                use_bow_model=False,
-               normalized_score_lookup=None):
+               normalized_score_lookup=None,
+               is_test=False):
     self.documents = documents
     self.use_bow_model = use_bow_model
     self.num_doc_tokens = train_params.num_doc_tokens_to_consider
@@ -40,7 +41,8 @@ class QueryDataset(Dataset):
     self.data = data
     self.rel_method = train_params.rel_method
     self.rankings = rankings if rankings is not None else to_query_rankings_pairs(data)
-    self.rankings = self.rankings[:train_params.num_train_queries]
+    if not is_test:
+      self.rankings = self.rankings[:train_params.num_train_queries]
     self.query_tok_to_doc_tok = query_tok_to_doc_tok
     self.normalized_score_lookup = normalized_score_lookup
     self.use_doc_out = model_params.use_doc_out
@@ -229,7 +231,8 @@ class QueryPairwiseDataset(QueryDataset):
                rankings=None,
                query_tok_to_doc_tok=None,
                normalized_score_lookup=None,
-               use_bow_model=False):
+               use_bow_model=False,
+               is_test=False):
     self.num_to_drop_in_ranking = train_params.num_to_drop_in_ranking
     if self.num_to_drop_in_ranking > 0:
       assert train_params.bin_rankings == 1, 'bin_rankings != 1 is not supported'
@@ -241,7 +244,8 @@ class QueryPairwiseDataset(QueryDataset):
                      rankings=rankings,
                      query_tok_to_doc_tok=query_tok_to_doc_tok,
                      normalized_score_lookup=normalized_score_lookup,
-                     use_bow_model=use_bow_model)
+                     use_bow_model=use_bow_model,
+                     is_test=is_test)
     self.use_variable_loss = train_params.use_variable_loss
     self.bin_rankings = train_params.bin_rankings
     self.num_documents = len(documents)
@@ -349,7 +353,8 @@ def build_query_dataloader(documents,
                            query_tok_to_doc_tok=None,
                            normalized_score_lookup=None,
                            use_bow_model=False,
-                           collate_fn=None) -> DataLoader:
+                           collate_fn=None,
+                           is_test=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(normalized_data, limit=limit)) if cache is not None else None
   dataset = QueryDataset(documents,
                          normalized_data,
@@ -358,7 +363,8 @@ def build_query_dataloader(documents,
                          rankings=rankings,
                          query_tok_to_doc_tok=query_tok_to_doc_tok,
                          normalized_score_lookup=normalized_score_lookup,
-                         use_bow_model=use_bow_model)
+                         use_bow_model=use_bow_model,
+                         is_test=is_test)
   sampler = SequentialSampler if train_params.use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),
@@ -373,7 +379,8 @@ def build_query_pairwise_dataloader(documents,
                                     query_tok_to_doc_tok=None,
                                     normalized_score_lookup=None,
                                     use_bow_model=False,
-                                    collate_fn=None) -> DataLoader:
+                                    collate_fn=None,
+                                    is_test=False) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -382,7 +389,8 @@ def build_query_pairwise_dataloader(documents,
                                  rankings=rankings,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok,
                                  normalized_score_lookup=normalized_score_lookup,
-                                 use_bow_model=use_bow_model)
+                                 use_bow_model=use_bow_model,
+                                 is_test=is_test)
   sampler = SequentialSampler if train_params.use_sequential_sampler else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),
