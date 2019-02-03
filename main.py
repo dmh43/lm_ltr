@@ -117,7 +117,9 @@ def main():
   global experiment
   global rabbit
   rabbit = MyRabbit(args)
-  if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError
+  if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
+  if rabbit.run_params.load_model and rabbit.run_params.calc_influence_for_top is None:
+    raise NotImplementedError('loading a trained model and testing is not implemented yet')
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
@@ -457,7 +459,8 @@ def main():
     test_hvps = calc_test_hvps(multi_objective_model.loss,
                                multi_objective_model,
                                train_dl,
-                               test_dl.dataset)
+                               test_dl.dataset,
+                               collate_fn)
     influences = []
     for i, train_sample in enumerate(train_dl.dataset):
       influences.append((i, calc_influence(multi_objective_model.loss,
@@ -469,7 +472,6 @@ def main():
                              key=itemgetter(1))
     with open('./most_hurtful.json', 'w+') as fh:
       json.dump([train_dl.dataset[idx][1] for idx, influence in most_hurtful], fh)
-  else: raise NotImplementedError('Have not implemented just loading a model and testing')
 
 if __name__ == "__main__":
   import ipdb
