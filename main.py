@@ -474,9 +474,11 @@ def main():
                                collate_fn)
     influences = []
     for i, train_sample in enumerate(train_dl.dataset):
+      x, labels = to_device(collate_fn([train_sample]), device),
+      device_train_sample = (x, labels.squeeze())
       influences.append((i, calc_influence(multi_objective_model.loss,
                                            multi_objective_model.to(model_data.device),
-                                           to_device(collate_fn([train_sample]), device),
+                                           device_train_sample,
                                            test_hvps)))
     most_hurtful = nsmallest(rabbit.run_params.calc_influence_for_top,
                              influences,

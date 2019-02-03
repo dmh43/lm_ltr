@@ -30,7 +30,7 @@ def calc_test_hvps(criterion: Callable,
   test_hvps = []
   for sample in test_dataset:
     x_test, label = to_device(collate_fn([sample]), device)
-    loss_at_x_test = criterion(trained_model(*x_test), label)
+    loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())
     grads = autograd.grad(loss_at_x_test, trained_model.parameters())
     grad_at_z_test = torch.cat([g.contiguous().view(-1) for g in grads])
     test_hvps.append(cg.solve(grad_at_z_test))
