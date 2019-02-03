@@ -21,6 +21,7 @@ class HVP:
 
   def _grad(self) -> torch.Tensor:
     grad_vec = None
+    num_iters = 0
     for x_chunk, target in self.data:
       loss = self.calc_loss(x_chunk, target)
       grad_dict = torch.autograd.grad(loss, self.parameters, create_graph=True)
@@ -28,6 +29,7 @@ class HVP:
                                   for g in grad_dict]) / self.num_batches
       if grad_vec is not None:  grad_vec += grad_vec_chunk
       else:                     grad_vec  = grad_vec_chunk
+      num_iters += 1
     if self.retain_graph: self.grad_vec = grad_vec
     return grad_vec
 
