@@ -33,8 +33,7 @@ def calc_test_hvps(criterion: Callable,
     loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())
     grads = autograd.grad(loss_at_x_test, trained_model.parameters())
     grad_at_z_test = torch.cat([g.contiguous().view(-1) for g in grads])
-    with torch.no_grad():
-      test_hvps.append(cg.solve(grad_at_z_test))
+    test_hvps.append(cg.solve(grad_at_z_test))
   return torch.stack(test_hvps)
 
 
