@@ -48,6 +48,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'dont_limit_num_uniq_tokens', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_smooth', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dropout_keep_prob', 'for': 'train_params', 'type': float, 'default': 0.8},
+         {'name': 'drop_val_loss_calc', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_use_bow', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
@@ -434,6 +435,8 @@ def main():
                          test_dl,
                          collate_fn=collate_fn,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+  if rabbit.run_params.drop_val_loss_calc:
+    model_data.valid_dl = None
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
   if rabbit.train_params.memorize_test:
