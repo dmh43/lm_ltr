@@ -33,7 +33,8 @@ def calc_test_hvps(criterion: Callable,
     loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())
     grads = autograd.grad(loss_at_x_test, trained_model.parameters())
     grad_at_z_test = torch.cat([g.contiguous().view(-1) for g in grads])
-    test_hvps.append(cg.solve(grad_at_z_test))
+    with torch.no_grad():
+      test_hvps.append(cg.solve(grad_at_z_test))
   return torch.stack(test_hvps)
 
 
@@ -46,4 +47,6 @@ def calc_influence(criterion: Callable,
   params = trained_model.parameters()
   grads = autograd.grad(train_loss, params)
   grad_at_train_sample = torch.cat([g.contiguous().view(-1) for g in grads])
-  return test_hvps.matmul(grad_at_train_sample)
+  with torch.no_grad():
+    influence = test_hvps.matmul(grad_at_train_sample)
+  return influence
