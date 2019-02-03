@@ -1,20 +1,23 @@
-from typing import Callable, Tuple, Any
+from typing import Callable, Tuple, Any, Optional
 
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
 from torch.utils.data import DataLoader, Dataset
 
+from fastai.basic_data import DeviceDataLoader
+
 from .hvp import HVP
-from .cg import CG, get_preconditioner
+from .cg import CG
 
 def _calc_laplacian(): raise NotImplementedError()
 
 def calc_test_hvps(criterion: Callable,
                    trained_model: nn.Module,
-                   train_dataloader: DataLoader,
+                   train_dataloader: DeviceDataLoader,
                    test_dataset: Dataset,
                    collate_fn: Callable[[Any], torch.Tensor]):
+  device = train_dataloader.device
   hvp = HVP(calc_loss=lambda xs, target: criterion(trained_model(xs), target),
             parameters=[p for p in trained_model.parameters() if p.requires_grad],
             data=train_dataloader,
@@ -26,6 +29,8 @@ def calc_test_hvps(criterion: Callable,
   test_hvps = []
   for sample in test_dataset:
     x_test, label = collate_fn([sample])
+    x_test = (arg.to(device) for arg in x_test)
+    label = label.to(device)
     loss_at_x_test = criterion(trained_model(*x_test), label)
     grads = autograd.grad(loss_at_x_test, trained_model.parameters())
     grad_at_z_test = torch.cat([g.contiguous().view(-1) for g in grads])

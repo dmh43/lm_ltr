@@ -1,22 +1,18 @@
+from dataclasses import dataclass
 from typing import Callable, Optional, Iterable, Tuple, List
 
 import torch
 
+@dataclass
 class HVP:
-  def __init__(self,
-               calc_loss: Callable,
-               parameters: List[torch.Tensor],
-               data: Iterable[Tuple[torch.Tensor, torch.Tensor]],
-               num_batches: int,
-               damping: float=0.0,
-               retain_graph: bool=True):
-    self.calc_loss = calc_loss
-    self.data = data
-    self.parameters = parameters
-    self.num_batches = num_batches
-    self.damping = damping
-    self.grad_vec: Optional[torch.Tensor] = None
-    self.retain_graph = retain_graph
+  calc_loss: Callable
+  parameters: List[torch.Tensor]
+  data: Iterable[Tuple[torch.Tensor, torch.Tensor]]
+  num_batches: int
+  damping: float=0.0
+  retain_graph: bool=True
+  grad_vec: Optional[torch.Tensor] = None
+  device: Optional[torch.device] = None
 
   def _zero_grad(self):
     for p in self.parameters:
