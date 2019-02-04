@@ -16,17 +16,20 @@ class HVP:
   grad_vec: Optional[torch.Tensor] = None
   device: Optional[torch.device] = None
   cache_batch: bool = False
-  _batch: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
 
   def __post_init__(self, *args, **kwargs):
+    self._batch: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
     self._data_iter = iter(self.data)
+    self._grad_vec: Optional[torch.Tensor] = None
 
   def _zero_grad(self):
     for p in self.parameters:
       if p.grad is not None:
         p.grad.data.zero_()
 
-  def clear_batch(self): self._batch = None
+  def clear_batch(self):
+    self._batch = None
+    self._grad_vec = None
 
   def _get_batch(self):
     try:
@@ -37,9 +40,12 @@ class HVP:
     return self._batch
 
   def _batch_forward(self, hessian_vec_prod, x_chunk, target, vec):
-    loss = self.calc_loss(x_chunk, target)
-    grad_dict = torch.autograd.grad(loss, self.parameters, create_graph=True)
-    grad_vec = collect(grad_dict)
+    if self.cache_batch and self.grad_vec is not None:
+      grad_vec = self._grad_vec
+    else:
+      loss = self.calc_loss(x_chunk, target)
+      grad_dict = torch.autograd.grad(loss, self.parameters, create_graph=True)
+      grad_vec = collect(grad_dict)
     grad_product = grad_vec.dot(vec)
     grad_grad = torch.autograd.grad(grad_product, self.parameters, retain_graph=True)
     if self.cache_batch:
