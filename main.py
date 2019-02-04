@@ -466,6 +466,7 @@ def main():
                 rabbit.train_params,
                 rabbit.model_params,
                 experiment)
+  multi_objective_model.eval()
   device = model_data.device
   if rabbit.run_params.calc_influence_for_top is not None:
     test_hvps = calc_test_hvps(multi_objective_model.loss,

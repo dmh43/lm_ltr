@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 import torch
 
+from .utils import maybe
+
 def get_preconditioner(diag: torch.Tensor, cond_offset: Optional[float]=0.01):
   """Take the diagonal as an approximation to the matrix. Obviously a
      pretty low quality preconditioner. Usually works better than not
@@ -26,10 +28,10 @@ class CG:
   def _apply_preconditioner(self, vec: torch.Tensor):
     return self.preconditioner * vec if self.preconditioner is not None else vec
 
-  def solve(self, vec: torch.Tensor):
+  def solve(self, vec: torch.Tensor, init: Optional[torch.Tensor]=None):
     """See `An Introduction to the Conjugate Gradient Method Without the
        Agonizing Pain` by Jonathan Richard Shewchuk"""
-    result = torch.zeros(self.result_len, device=vec.device, dtype=vec.dtype)
+    result = maybe(init, torch.zeros(self.result_len, device=vec.device, dtype=vec.dtype))
     r = vec - self.matmul(result)
     d = self._apply_preconditioner(r)
     delta_new = r.dot(d)

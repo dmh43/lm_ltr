@@ -45,31 +45,32 @@ class PointwiseRanker:
     return at_least_one_dim(scores)
 
   def __call__(self, query, documents, doc_scores, smooth=None, k=None):
-    assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
-    k = k if k is not None else len(documents)
-    ranks = []
-    doc_scores = doc_scores.to(self.device)
-    for query in query.to(self.device):
-      if self.doc_chunk_size != -1:
-        all_scores = []
-        for from_idx, to_idx in zip(range(0,
-                                          len(documents),
-                                          self.doc_chunk_size),
-                                    range(self.doc_chunk_size,
-                                          len(documents) + self.doc_chunk_size,
-                                          self.doc_chunk_size)):
-          all_scores.append(self._scores_for_chunk(query,
-                                                   documents[from_idx : to_idx],
-                                                   torch.zeros_like(doc_scores[from_idx : to_idx]) if self.dont_include_normalized_score else doc_scores[from_idx : to_idx]))
-        scores = torch.cat(all_scores, 0)
-      else:
-        scores = self._scores_for_chunk(query,
-                                        documents,
-                                        torch.zeros_like(doc_scores) if self.dont_include_normalized_score else doc_scores)
-      if self.use_doc_scores_for_smoothing:
-        assert smooth is not None, 'must specify smoothing amount'
-        scores = smooth_scores(scores, doc_scores, smooth)
-      topk_scores, topk_idxs = torch.topk(scores, k)
-      sorted_scores, sort_idx = torch.sort(topk_scores, descending=True)
-      ranks.append(topk_idxs[sort_idx])
-    return torch.stack(ranks)
+    with torch.no_grad():
+      assert len(query.shape) == 2, "PointwiseRanker expects a single batch of queries"
+      k = k if k is not None else len(documents)
+      ranks = []
+      doc_scores = doc_scores.to(self.device)
+      for query in query.to(self.device):
+        if self.doc_chunk_size != -1:
+          all_scores = []
+          for from_idx, to_idx in zip(range(0,
+                                            len(documents),
+                                            self.doc_chunk_size),
+                                      range(self.doc_chunk_size,
+                                            len(documents) + self.doc_chunk_size,
+                                            self.doc_chunk_size)):
+            all_scores.append(self._scores_for_chunk(query,
+                                                     documents[from_idx : to_idx],
+                                                     torch.zeros_like(doc_scores[from_idx : to_idx]) if self.dont_include_normalized_score else doc_scores[from_idx : to_idx]))
+          scores = torch.cat(all_scores, 0)
+        else:
+          scores = self._scores_for_chunk(query,
+                                          documents,
+                                          torch.zeros_like(doc_scores) if self.dont_include_normalized_score else doc_scores)
+        if self.use_doc_scores_for_smoothing:
+          assert smooth is not None, 'must specify smoothing amount'
+          scores = smooth_scores(scores, doc_scores, smooth)
+        topk_scores, topk_idxs = torch.topk(scores, k)
+        sorted_scores, sort_idx = torch.sort(topk_scores, descending=True)
+        ranks.append(topk_idxs[sort_idx])
+      return torch.stack(ranks)
