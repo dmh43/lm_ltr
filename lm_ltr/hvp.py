@@ -57,7 +57,7 @@ class HVP:
     hessian_vec_prod.requires_grad = False
     self._zero_grad()
     if self.cache_batch:
-      x_chunk, target = maybe(self._batch, self._get_batch())
+      x_chunk, target = self._batch if self._batch is not None else self._get_batch()
       self._batch_forward(hessian_vec_prod, x_chunk, target, vec)
     else:
       for x_chunk, target in self.data:
