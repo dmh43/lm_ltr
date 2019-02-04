@@ -68,3 +68,5 @@ def to_list(coll):
     return coll.tolist()
   else:
     return list(coll)
+
+def maybe(val, default): return val if val is not None else default

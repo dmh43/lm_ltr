@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .custom_embed import CustomEmbedding
+
 class QueryEncoder(nn.Module):
   def __init__(self, query_token_embeds, use_max_pooling=False):
     super().__init__()
     self.query_token_embeds = query_token_embeds
-    self.weights = nn.Embedding(len(query_token_embeds.weight), 1)
+    self.weights = CustomEmbedding(len(query_token_embeds.weight), 1)
     torch.nn.init.xavier_normal_(self.weights.weight.data)
     self.use_max_pooling = use_max_pooling
     self.max_pool = nn.AdaptiveMaxPool1d(1)

@@ -77,7 +77,8 @@ def test_calc_influence(criterion, trained_model, train_dataloader, test_dataset
                                trained_model,
                                train_dataloader,
                                test_dataset,
-                               collate_fn)
+                               collate_fn,
+                               {'max_cg_iters': None})
   influences = []
   for train_sample in train_dataloader.dataset:
     influences.append(i.calc_influence(criterion, trained_model, train_sample, test_hvps).sum())

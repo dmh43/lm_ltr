@@ -6,6 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_packed_sequence, pack_sequence, pack_padded_sequence
 
+from .custom_embed import CustomEmbedding
+
 
 def repackage_hidden(h):
   if isinstance(h, torch.Tensor):
@@ -44,7 +46,7 @@ class DocumentEncoder(nn.Module):
       self.use_lm = True
       self.pretrained_enc = doc_encoder
     else:
-      self.weights = nn.Embedding(len(document_token_embeds.weight), 1)
+      self.weights = CustomEmbedding(len(document_token_embeds.weight), 1)
       torch.nn.init.xavier_normal_(self.weights.weight.data)
       if self.use_cnn:
         assert not self.use_bow_model

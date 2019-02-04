@@ -62,6 +62,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'load_path', 'for': 'run_params', 'type': optional_arg(str), 'default': None},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
+         {'name': 'max_cg_iters', 'for': 'run_params', 'type': optional_arg(int), 'default': None},
          {'name': 'margin', 'for': 'train_params', 'type': float, 'default': 1.0},
          {'name': 'max_iter', 'for': 'train_params', 'type': optional_arg(int), 'default': None},
          {'name': 'memorize_test', 'for': 'train_params', 'type': 'flag', 'default': False},
@@ -471,7 +472,8 @@ def main():
                                multi_objective_model.to(device),
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
                                test_dl.dataset,
-                               collate_fn)
+                               collate_fn,
+                               rabbit.run_params)
     influences = []
     for i, train_sample in enumerate(train_dl.dataset):
       x, labels = to_device(collate_fn([train_sample]), device)
