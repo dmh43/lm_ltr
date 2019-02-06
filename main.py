@@ -39,7 +39,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'append_difference', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'batch_size', 'for': 'train_params', 'type': int, 'default': 512},
          {'name': 'bin_rankings', 'for': 'train_params', 'type': optional_arg(int), 'default': None},
-         {'name': 'calc_influence', 'for': 'run_params', 'type': optional_arg(int), 'default': None},
+         {'name': 'calc_influence', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'cheat', 'for': 'run_params', 'type': bool, 'default': False},
          {'name': 'comments', 'for': 'run_params', 'type': str, 'default': ''},
          {'name': 'document_token_embed_len', 'for': 'model_params', 'type': int, 'default': 100},
@@ -123,7 +123,7 @@ def main():
   global rabbit
   rabbit = MyRabbit(args)
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
-  if rabbit.run_params.load_model and rabbit.run_params.calc_influence is None:
+  if rabbit.run_params.load_model and not rabbit.run_params.calc_influence:
     raise NotImplementedError('loading a trained model and testing is not implemented yet')
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
@@ -483,7 +483,7 @@ def main():
                 experiment)
   multi_objective_model.eval()
   device = model_data.device
-  if rabbit.run_params.calc_influence is not None:
+  if rabbit.run_params.calc_influence:
     test_hvps = calc_test_hvps(multi_objective_model.loss,
                                multi_objective_model.to(device),
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
