@@ -365,7 +365,8 @@ def main():
       calc_marginals = None
     collate_fn = lambda samples: collate_query_pairwise_samples(samples,
                                                                 use_bow_model=use_bow_model,
-                                                                calc_marginals=calc_marginals)
+                                                                calc_marginals=calc_marginals,
+                                                                use_dense=rabbit.model_params.use_dense)
     if rabbit.run_params.load_influences:
       try:
         with open('./most_hurtful.json') as fh:
