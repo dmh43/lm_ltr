@@ -229,6 +229,7 @@ class QueryPairwiseDataset(QueryDataset):
                train_params,
                model_params,
                rankings=None,
+               pairs_to_flip=None,
                query_tok_to_doc_tok=None,
                normalized_score_lookup=None,
                use_bow_model=False,
@@ -249,7 +250,7 @@ class QueryPairwiseDataset(QueryDataset):
     self.use_variable_loss = train_params.use_variable_loss
     self.bin_rankings = train_params.bin_rankings
     self.num_documents = len(documents)
-    self.num_neg_samples = train_params.num_neg_samples
+    self.num_neg_samples = train_params.num_neg_samples if not is_test else 0
     self.rankings_for_train = self.rankings
     if self.bin_rankings:
       num_pairs_per_ranking = _.map_(self.rankings_for_train,
@@ -265,12 +266,19 @@ class QueryPairwiseDataset(QueryDataset):
                                                          self.bin_rankings)
     else:
       self._num_pos_pairs = _get_num_pairs(self.rankings_for_train, 0)
+    self.pairs_to_flip = pairs_to_flip
 
   def __len__(self):
     self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train,
                                                         self.num_neg_samples,
                                                         self.bin_rankings)
     return self._num_pairs
+
+  def _check_flip(self, elem):
+    if self.pairs_to_flip is None:
+      return False
+    else:
+      return (elem['doc_id_1'], elem['doc_id_2']) in self.pairs_to_flip[tuple(elem['query'])]
 
   def __getitem__(self, idx):
     remapped_idx = idx % self._num_pos_pairs
@@ -302,7 +310,7 @@ class QueryPairwiseDataset(QueryDataset):
       doc_2 = self._get_document(elem['doc_id_2'])
       target_info = ((elem['doc_id_1'], elem['doc_id_2']),
                      elem['query'],
-                     elem['target_info'])
+                     elem['target_info'] if self._check_flip(elem) else 1 - elem['target_info'])
     if self.dont_include_normalized_score:
       doc_1_score = 0.0
       doc_2_score = 0.0
@@ -365,7 +373,7 @@ def build_query_dataloader(documents,
                          normalized_score_lookup=normalized_score_lookup,
                          use_bow_model=use_bow_model,
                          is_test=is_test)
-  sampler = SequentialSampler if train_params.use_sequential_sampler else TrueRandomSampler
+  sampler = SequentialSampler if train_params.use_sequential_sampler or is_test else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),
                     collate_fn=collate_fn)
@@ -374,6 +382,7 @@ def build_query_pairwise_dataloader(documents,
                                     data,
                                     train_params,
                                     model_params,
+                                    pairs_to_flip=None,
                                     cache=None,
                                     limit=None,
                                     query_tok_to_doc_tok=None,
@@ -387,11 +396,12 @@ def build_query_pairwise_dataloader(documents,
                                  train_params,
                                  model_params,
                                  rankings=rankings,
+                                 pairs_to_flip=pairs_to_flip,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok,
                                  normalized_score_lookup=normalized_score_lookup,
                                  use_bow_model=use_bow_model,
                                  is_test=is_test)
-  sampler = SequentialSampler if train_params.use_sequential_sampler else TrueRandomSampler
+  sampler = SequentialSampler if train_params.use_sequential_sampler or is_test else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),
                     collate_fn=collate_fn)

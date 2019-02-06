@@ -5,6 +5,7 @@ import time
 from heapq import nlargest, nsmallest
 from operator import itemgetter
 from functools import reduce
+from collections import defaultdict
 
 import pydash as _
 import torch
@@ -366,10 +367,23 @@ def main():
     collate_fn = lambda samples: collate_query_pairwise_samples(samples,
                                                                 use_bow_model=use_bow_model,
                                                                 calc_marginals=calc_marginals)
+    if rabbit.run_params.load_influences:
+      try:
+        with open('./most_hurtful.json') as fh:
+          pairs_to_flip = defaultdict(set)
+          for pair, influence in json.load(fh):
+            if influence < 0:
+              query = tuple(pair[1])
+              pairs_to_flip[query].add(tuple(pair[0]))
+      except FileNotFoundError:
+        pairs_to_flip = None
+    else:
+      pairs_to_flip = None
     train_dl = build_query_pairwise_dataloader(documents,
                                                train_data,
                                                rabbit.train_params,
                                                rabbit.model_params,
+                                               pairs_to_flip=pairs_to_flip,
                                                cache=name('train_ranking_106756.json', names),
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
@@ -472,11 +486,11 @@ def main():
     test_hvps = calc_test_hvps(multi_objective_model.loss,
                                multi_objective_model.to(device),
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
-                               test_dl.dataset,
-                               collate_fn,
+                               val_dl,
                                rabbit.run_params)
     influences = []
-    for i, train_sample in enumerate(train_dl.dataset):
+    for i in range(train_dl.dataset._num_pos_pairs):
+      train_sample = train_dl.dataset[i]
       x, labels = to_device(collate_fn([train_sample]), device)
       device_train_sample = (x, labels.squeeze())
       influences.append((i, calc_influence(multi_objective_model.loss,
@@ -487,7 +501,7 @@ def main():
                              influences,
                              key=itemgetter(1))
     with open('./most_hurtful.json', 'w+') as fh:
-      json.dump([train_dl.dataset[idx][1] for idx, influence in most_hurtful], fh)
+      json.dump([[train_dl.dataset[idx][1], influence.item()] for idx, influence in most_hurtful], fh)
 
 if __name__ == "__main__":
   import ipdb
