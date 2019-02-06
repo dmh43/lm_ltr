@@ -372,8 +372,8 @@ def main():
       try:
         with open('./most_hurtful.json') as fh:
           pairs_to_flip = defaultdict(set)
-          for pair, influence in json.load(fh):
-            if influence < 0:
+          for pair, num_neg_influences in json.load(fh):
+            if num_neg_influences > 100:
               query = tuple(pair[1])
               pairs_to_flip[query].add(tuple(pair[0]))
       except FileNotFoundError:
@@ -499,7 +499,7 @@ def main():
                                                    device_train_sample,
                                                    test_hvps)))
     with open('./most_hurtful.json', 'w+') as fh:
-      json.dump([[train_dl.dataset[idx][1], influence.item()] for idx, influence in influences], fh)
+      json.dump([[train_dl.dataset[idx][1], num_neg_influences.item()] for idx, num_neg_influences in influences], fh)
 
 if __name__ == "__main__":
   import ipdb
