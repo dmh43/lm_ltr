@@ -122,16 +122,16 @@ def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=
   doc_2, lens_2 = list(zip(*x[2]))
   doc_1_score = x[3]
   doc_2_score = x[4]
-  if use_bow_model:
-    coll_doc_2 = _collate_bow_doc(doc_1),
-  elif use_dense:
-    coll_doc_2 = _collate_dense_doc(doc_1),
+  if use_dense:
+    coll_doc_1 = _collate_dense_doc(doc_1),
+  elif use_bow_model:
+    coll_doc_1 = _collate_bow_doc(doc_1),
   else:
     coll_doc_1 = torch.stack(doc_1)
-  if use_bow_model:
-    coll_doc_2 = _collate_bow_doc(doc_2),
-  elif use_dense:
+  if use_dense:
     coll_doc_2 = _collate_dense_doc(doc_2),
+  elif use_bow_model:
+    coll_doc_2 = _collate_bow_doc(doc_2),
   else:
     coll_doc_2 = torch.stack(doc_2)
   args = (torch.tensor(query),
