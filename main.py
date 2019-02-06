@@ -27,7 +27,7 @@ from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
 from lm_ltr.snorkel_helper import Snorkeller
 from lm_ltr.globals import RANKER_NAME_TO_SUFFIX
-from lm_ltr.influence import calc_influence, calc_test_hvps
+from lm_ltr.influence import get_num_neg_influences, calc_test_hvps
 
 from rabbit_ml.rabbit_ml import Rabbit
 from rabbit_ml.rabbit_ml.arg_parsers import list_arg, optional_arg
@@ -494,10 +494,10 @@ def main():
       train_sample = train_dl.dataset[i]
       x, labels = to_device(collate_fn([train_sample]), device)
       device_train_sample = (x, labels.squeeze())
-      influences.append((i, calc_influence(multi_objective_model.loss,
-                                           multi_objective_model.to(model_data.device),
-                                           device_train_sample,
-                                           test_hvps)))
+      influences.append((i, get_num_neg_influences(multi_objective_model.loss,
+                                                   multi_objective_model.to(model_data.device),
+                                                   device_train_sample,
+                                                   test_hvps)))
     most_hurtful = nsmallest(rabbit.run_params.calc_influence_for_top,
                              influences,
                              key=itemgetter(1))
