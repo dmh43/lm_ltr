@@ -52,11 +52,15 @@ def train_dataloader():
                           collate_fn=collate_fn)
 
 @pytest.fixture(scope='module')
-def test_dataset():
+def test_dataloader():
   num_samples = 100
   xs = torch.arange(0, NUM_TRAIN_SAMPLES, 100).repeat(NUM_FEATURES, 1).t().float()
   targets = (xs[:, 0] > NUM_TRAIN_SAMPLES / 2).float()
-  return TensorSetDataset(xs, targets)
+  dataset = TensorSetDataset(xs, targets)
+  batch_sampler = BatchSampler(RandomSampler(dataset), 10, False)
+  return DeviceDataLoader(DataLoader(dataset, batch_sampler=batch_sampler, collate_fn=collate_fn),
+                          torch.device('cpu'),
+                          collate_fn=collate_fn)
 
 @pytest.fixture(scope='module')
 def trained_model(criterion, train_dataloader):
@@ -72,12 +76,11 @@ def trained_model(criterion, train_dataloader):
   model.eval()
   return model
 
-def test_calc_influence(criterion, trained_model, train_dataloader, test_dataset):
+def test_calc_influence(criterion, trained_model, train_dataloader, test_dataloader):
   test_hvps = i.calc_test_hvps(criterion,
                                trained_model,
                                train_dataloader,
-                               test_dataset,
-                               collate_fn,
+                               test_dataloader,
                                {'max_cg_iters': None})
   influences = []
   for train_sample in train_dataloader.dataset:
@@ -85,6 +88,27 @@ def test_calc_influence(criterion, trained_model, train_dataloader, test_dataset
   influences = torch.tensor(influences)
   largest_vals, largest_idxs = torch.topk(influences, k=100)
   most_neg_vals, most_neg_idxs = torch.topk(-influences, k=100)
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
+                          for idx in largest_idxs]).view(-1))
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)
+                          for idx in largest_idxs]).view(-1))
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
+                          for idx in most_neg_idxs]).view(-1))
+  assert all(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)
+                          for idx in most_neg_idxs]).view(-1))
+
+def test_num_neg(criterion, trained_model, train_dataloader, test_dataloader):
+  test_hvps = i.calc_test_hvps(criterion,
+                               trained_model,
+                               train_dataloader,
+                               test_dataloader,
+                               {'max_cg_iters': None})
+  num_neg = []
+  for train_sample in train_dataloader.dataset:
+    num_neg.append(i.calc_influence(criterion, trained_model, train_sample, test_hvps).sum())
+  num_neg = torch.tensor(num_neg)
+  largest_vals, largest_idxs = torch.topk(num_neg, k=100)
+  most_neg_vals, most_neg_idxs = torch.topk(-num_neg, k=100)
   assert all(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > NUM_TRAIN_SAMPLES/2)
                           for idx in largest_idxs]).view(-1))
   assert all(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= NUM_TRAIN_SAMPLES/2)

@@ -18,8 +18,7 @@ def _calc_laplacian(): raise NotImplementedError()
 def calc_test_hvps(criterion: Callable,
                    trained_model: nn.Module,
                    train_dataloader: DeviceDataLoader,
-                   test_dataset: Dataset,
-                   collate_fn: Callable[[Any], torch.Tensor],
+                   test_dataloader: DataLoader,
                    run_params: Mapping):
   device = train_dataloader.device
   diff_wrt = [p for p in trained_model.parameters() if p.requires_grad]
@@ -34,8 +33,8 @@ def calc_test_hvps(criterion: Callable,
           max_iters=maybe(run_params['max_cg_iters'],
                           sum(p.numel() for p in diff_wrt)))
   test_hvps = []
-  for sample in test_dataset:
-    x_test, label = to_device(collate_fn([sample]), device)
+  for batch in test_dataloader:
+    x_test, label = to_device(batch, device)
     loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())
     grads = autograd.grad(loss_at_x_test, diff_wrt)
     grad_at_z_test = collect(grads)
@@ -57,3 +56,11 @@ def calc_influence(criterion: Callable,
   with torch.no_grad():
     influence = test_hvps.matmul(grad_at_train_sample)
   return influence
+
+def get_num_neg_influences(criterion: Callable,
+                           trained_model: nn.Module,
+                           train_sample: Tuple[torch.Tensor, torch.Tensor],
+                           test_hvps: torch.Tensor,
+                           thresh: Optional[float]=0.0):
+  influence = calc_influence(criterion, trained_model, train_sample, test_hvps)
+  return torch.sum(influence < thresh)
