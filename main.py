@@ -90,6 +90,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'use_cnn', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_cosine_similarity', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_cyclical_lr', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'use_dense', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_doc_out', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_truncated_hinge_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_glove', 'for': 'model_params', 'type': 'flag', 'default': False},
@@ -125,6 +126,7 @@ def main():
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
   if rabbit.run_params.load_model and not rabbit.run_params.calc_influence:
     raise NotImplementedError('loading a trained model and testing is not implemented yet')
+  if rabbit.model_params.frame_as_qa: raise NotImplementedError
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
@@ -180,12 +182,8 @@ def main():
                                                                  token_lookup=document_token_lookup,
                                                                  token_set=doc_token_set,
                                                                  drop_if_any_unk=True))
-  if rabbit.model_params.frame_as_qa or rabbit.model_params.use_single_word_embed_set:
-    raise NotImplementedError
-    query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
-                            for query_token, idx in query_token_lookup.items()}
-  else:
-    query_tok_to_doc_tok = None
+  query_tok_to_doc_tok = {idx: document_token_lookup.get(query_token) or document_token_lookup['<unk>']
+                          for query_token, idx in query_token_lookup.items()}
   names = [RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set]]
   if rabbit.train_params.use_pointwise_loss or not rabbit.run_params.just_caches:
     train_data = read_cache(name('./robust_train_query_results_tokens_106756.json', names),

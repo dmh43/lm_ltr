@@ -2,6 +2,8 @@ import ast
 from random import sample, randint, choice
 from functools import reduce
 import pydash as _
+from itertools import chain
+from collections import Counter
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -35,6 +37,7 @@ class QueryDataset(Dataset):
                is_test=False):
     self.documents = documents
     self.use_bow_model = use_bow_model
+    self.use_dense = model_params.use_dense
     self.num_doc_tokens = train_params.num_doc_tokens_to_consider
     if not self.use_bow_model:
       self.padded_docs = pad([torch.tensor(doc[:self.num_doc_tokens]) for doc in documents])
@@ -47,10 +50,20 @@ class QueryDataset(Dataset):
     self.normalized_score_lookup = normalized_score_lookup
     self.use_doc_out = model_params.use_doc_out
     self.dont_include_normalized_score = model_params.dont_include_normalized_score
+    if self.use_dense:
+      self.dfs = Counter(chain(*[doc.keys() for doc in self.documents]))
+    self.use_single_word_embed_set = model_params.use_single_word_embed_set
 
   def _get_document(self, elem_idx):
     if self.use_doc_out:
       return torch.tensor(elem_idx), torch.tensor(0)
+    elif self.use_dense:
+      doc = self.documents[elem_idx]
+      query = remap_if_exists(self.data[elem_idx]['query'], self.query_tok_to_doc_tok)
+      tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+      df = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+      q_len = len(query)
+      return (tf, df, q_len), torch.tensor(sum(self.documents[elem_idx].values()))
     elif self.use_bow_model:
       return self.documents[elem_idx], torch.tensor(sum(self.documents[elem_idx].values()))
     else:
@@ -60,7 +73,10 @@ class QueryDataset(Dataset):
     return len(self.data)
 
   def __getitem__(self, idx):
-    query = remap_if_exists(self.data[idx]['query'], self.query_tok_to_doc_tok)
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(self.data[idx]['query'], self.query_tok_to_doc_tok)
+    else:
+      query = self.data[idx]['query']
     doc_id = self.data[idx]['doc_id']
     if self.dont_include_normalized_score:
       doc_score = 0.0
@@ -106,13 +122,15 @@ class RankingDataset(Dataset):
     if self.is_test:
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
       self.q_strs = list(set(rankings.keys()).intersection(set(self.rel_by_q_str.keys())))
+    self.use_single_word_embed_set = model_params.use_single_word_embed_set
 
   def __len__(self):
     return len(self.rankings)
 
   def _get_train_item(self, idx):
     query, ranking = self.rankings[idx]
-    query = remap_if_exists(query, self.query_tok_to_doc_tok)
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(ranking[:self.k])
     if len(ranking) < self.num_to_rank:
       neg_samples = sample(set(range(len(self.documents))) - set(ranking),
@@ -137,7 +155,8 @@ class RankingDataset(Dataset):
     q_str = self.q_strs[idx]
     query, relevant = self.rel_by_q_str[q_str]
     q_str = str(query)[1:-1]
-    query = remap_if_exists(query, self.query_tok_to_doc_tok)
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
     if self.cheat:
@@ -297,7 +316,10 @@ class QueryPairwiseDataset(QueryDataset):
                            self.cumu_ranking_lengths,
                            remapped_idx,
                            self.use_variable_loss)
-    query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
+    else:
+      query = elem['query']
     doc_1 = self._get_document(elem['doc_id_1'])
     if use_neg_sample:
       doc_id_2 = choice(range(self.num_documents))

@@ -3,6 +3,7 @@ import ast
 import random
 import re
 from typing import List
+from math import log
 
 import pydash as _
 import numpy as np
@@ -109,7 +110,10 @@ def _collate_bow_doc(bow_doc):
   cnts = torch.tensor([pad_to_len(doc_term_cnts, max_len, pad_with=0) for doc_term_cnts in cnts])
   return terms, cnts
 
-def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=None):
+def _collate_dense_doc(dense_doc):
+  return torch.tensor([[tf, df, 1.0/log(df + 1), q_len] for tf, df, q_len in dense_doc])
+
+def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=None, use_dense=False):
   use_noise_aware_loss = calc_marginals is not None
   x, target_info = list(zip(*samples))
   x = list(zip(*x))
@@ -118,9 +122,21 @@ def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=
   doc_2, lens_2 = list(zip(*x[2]))
   doc_1_score = x[3]
   doc_2_score = x[4]
+  if use_bow_model:
+    coll_doc_2 = _collate_bow_doc(doc_1),
+  elif use_dense:
+    coll_doc_2 = _collate_dense_doc(doc_1),
+  else:
+    coll_doc_1 = torch.stack(doc_1)
+  if use_bow_model:
+    coll_doc_2 = _collate_bow_doc(doc_2),
+  elif use_dense:
+    coll_doc_2 = _collate_dense_doc(doc_2),
+  else:
+    coll_doc_2 = torch.stack(doc_2)
   args = (torch.tensor(query),
-          torch.stack(doc_1) if not use_bow_model else _collate_bow_doc(doc_1),
-          torch.stack(doc_2) if not use_bow_model else _collate_bow_doc(doc_2),
+          coll_doc_1,
+          coll_doc_2,
           torch.stack(lens_1),
           torch.stack(lens_2),
           torch.tensor(doc_1_score),

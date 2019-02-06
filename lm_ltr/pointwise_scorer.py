@@ -26,6 +26,7 @@ class PointwiseScorer(nn.Module):
     self.use_layer_norm = train_params.use_layer_norm
     self.use_batch_norm = train_params.use_batch_norm
     self.frame_as_qa = model_params.frame_as_qa
+    self.use_dense = model_params.use_dense
     self.use_bow_model = use_bow_model
     self.document_encoder = DocumentEncoder(document_token_embeds,
                                             doc_encoder,
@@ -49,7 +50,10 @@ class PointwiseScorer(nn.Module):
         else:
           concat_len = 1600
     else:
-      concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
+      if self.use_dense:
+        concat_len = 6
+      else:
+        concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
     concat_len += 1
     self.layers = nn.ModuleList()
     if not model_params.use_cosine_similarity:
@@ -72,7 +76,7 @@ class PointwiseScorer(nn.Module):
     self.append_hadamard = model_params.append_hadamard
 
 
-  def forward(self, query, document, lens, doc_score):
+  def _forward(self, query, document, lens, doc_score):
     sorted_lens, sort_order = torch.sort(lens, descending=True)
     batch_range, unsort_order = torch.sort(sort_order)
     if self.frame_as_qa:
@@ -107,3 +111,15 @@ class PointwiseScorer(nn.Module):
       return pipe(hidden,
                   *self.layers,
                   torch.squeeze)[unsort_order]
+
+  def _dense_forward(self, query, document, lens, doc_score):
+    features = torch.cat([document, lens.unsqueeze(1), doc_score.unsqueeze(1)], 1)
+    return pipe(features,
+                *self.layers,
+                torch.squeeze)
+
+  def forward(self, query, document, lens, doc_score):
+    if self.use_dense:
+      return self._dense_forward(query, document, lens, doc_score)
+    else:
+      return self._forward(query, document, lens, doc_score)
