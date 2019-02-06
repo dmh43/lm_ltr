@@ -310,7 +310,7 @@ class QueryPairwiseDataset(QueryDataset):
       doc_2 = self._get_document(elem['doc_id_2'])
       target_info = ((elem['doc_id_1'], elem['doc_id_2']),
                      elem['query'],
-                     elem['target_info'] if self._check_flip(elem) else 1 - elem['target_info'])
+                     elem['target_info'] if not self._check_flip(elem) else 1 - elem['target_info'])
     if self.dont_include_normalized_score:
       doc_1_score = 0.0
       doc_2_score = 0.0
