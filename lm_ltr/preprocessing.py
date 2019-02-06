@@ -111,7 +111,7 @@ def _collate_bow_doc(bow_doc):
   return terms, cnts
 
 def _collate_dense_doc(dense_doc):
-  return torch.tensor([[tf, df, 1.0/log(df + 1), q_len] for tf, df, q_len in dense_doc])
+  return torch.tensor([[tf, df, log(1.0/(df + 1.0)), q_len] for tf, df, q_len in dense_doc])
 
 def collate_query_pairwise_samples(samples, use_bow_model=False, calc_marginals=None, use_dense=False):
   use_noise_aware_loss = calc_marginals is not None
