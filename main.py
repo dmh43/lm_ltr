@@ -61,6 +61,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'keep_top_uniq_terms', 'for': 'model_params', 'type': optional_arg(int), 'default': None},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
+         {'name': 'load_influences', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'load_path', 'for': 'run_params', 'type': optional_arg(str), 'default': None},
          {'name': 'lstm_hidden_size', 'for': 'model_params', 'type': int, 'default': 100},
          {'name': 'max_cg_iters', 'for': 'run_params', 'type': optional_arg(int), 'default': None},
