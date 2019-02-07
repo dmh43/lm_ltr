@@ -113,7 +113,7 @@ class PointwiseScorer(nn.Module):
                   torch.squeeze)[unsort_order]
 
   def _dense_forward(self, query, document, lens, doc_score):
-    features = torch.cat([document, lens.unsqueeze(1), doc_score.unsqueeze(1)], 1)
+    features = torch.cat([document, lens.unsqueeze(1).float(), doc_score.unsqueeze(1)], 1)
     return pipe(features,
                 *self.layers,
                 torch.squeeze)
