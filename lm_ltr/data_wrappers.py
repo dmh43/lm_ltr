@@ -156,7 +156,7 @@ class RankingDataset(Dataset):
         tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
         df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
         q_len = len(query)
-        query_documents.append((tf, df, q_len), sum(doc.values()))
+        query_documents.append(((tf, df, q_len), sum(doc.values())))
     else:
       query_documents = documents
     return {'query': torch.tensor(query, dtype=torch.long),
@@ -193,7 +193,7 @@ class RankingDataset(Dataset):
         tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
         df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
         q_len = len(query)
-        query_documents.append((tf, df, q_len), sum(doc.values()))
+        query_documents.append(((tf, df, q_len), sum(doc.values())))
     else:
       query_documents = documents
     return {'query': torch.tensor(query, dtype=torch.long),
