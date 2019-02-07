@@ -82,7 +82,7 @@ class QueryDataset(Dataset):
       doc_score = 0.0
     else:
       doc_score = self.normalized_score_lookup[tuple(query)].get(doc_id, -20.0)
-    return ((query, self._get_document(doc_id, query), doc_score),
+    return ((query, self._get_document(doc_id, self.data[idx]['query']), doc_score),
             self.rel_method(self.data[idx]))
 
 def _shuffle_doc_doc_ids(documents, doc_ids):
@@ -133,8 +133,6 @@ class RankingDataset(Dataset):
 
   def _get_train_item(self, idx):
     query, ranking = self.rankings[idx]
-    if self.use_single_word_embed_set:
-      query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(ranking[:self.k])
     if len(ranking) < self.num_to_rank:
       neg_samples = sample(set(range(len(self.documents))) - set(ranking),
@@ -159,6 +157,8 @@ class RankingDataset(Dataset):
         query_documents.append(((tf, df, q_len), sum(doc.values())))
     else:
       query_documents = documents
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(query, self.query_tok_to_doc_tok)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': query_documents,
             'doc_ids': doc_ids,
@@ -170,8 +170,6 @@ class RankingDataset(Dataset):
     q_str = self.q_strs[idx]
     query, relevant = self.rel_by_q_str[q_str]
     q_str = str(query)[1:-1]
-    if self.use_single_word_embed_set:
-      query = remap_if_exists(query, self.query_tok_to_doc_tok)
     relevant = set(relevant)
     ranking = self.rankings[q_str][:self.num_to_rank]
     if self.cheat:
@@ -196,6 +194,8 @@ class RankingDataset(Dataset):
         query_documents.append(((tf, df, q_len), sum(doc.values())))
     else:
       query_documents = documents
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(query, self.query_tok_to_doc_tok)
     return {'query': torch.tensor(query, dtype=torch.long),
             'documents': query_documents,
             'doc_ids': doc_ids,
@@ -342,10 +342,7 @@ class QueryPairwiseDataset(QueryDataset):
                            self.cumu_ranking_lengths,
                            remapped_idx,
                            self.use_variable_loss)
-    if self.use_single_word_embed_set:
-      query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
-    else:
-      query = elem['query']
+    query = elem['query']
     doc_1 = self._get_document(elem['doc_id_1'], query)
     if use_neg_sample or self._check_flip(elem):
       doc_id_2 = choice(range(self.num_documents))
@@ -365,6 +362,8 @@ class QueryPairwiseDataset(QueryDataset):
     else:
       doc_1_score = self.normalized_score_lookup[tuple(query)].get(elem['doc_id_1'], -20.0)
       doc_2_score = self.normalized_score_lookup[tuple(query)].get(elem['doc_id_2'], -20.0)
+    if self.use_single_word_embed_set:
+      query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), target_info)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
