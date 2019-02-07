@@ -156,7 +156,7 @@ class RankingDataset(Dataset):
         tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
         df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
         q_len = len(query)
-        query_documents.append((tf, df, q_len), torch.tensor(sum(self.documents[elem_idx].values())))
+        query_documents.append((tf, df, q_len), torch.tensor(sum(doc.values())))
     else:
       query_documents = documents
     return {'query': torch.tensor(query, dtype=torch.long),
@@ -185,8 +185,19 @@ class RankingDataset(Dataset):
     doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
                                if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                for doc_id in doc_ids.tolist()])
+    if self.use_doc_out:
+      query_documents = doc_ids
+    elif self.use_dense:
+      query_documents = []
+      for doc in documents:
+        tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+        df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+        q_len = len(query)
+        query_documents.append((tf, df, q_len), torch.tensor(sum(doc.values())))
+    else:
+      query_documents = documents
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': documents if not self.use_doc_out else doc_ids,
+            'documents': query_documents,
             'doc_ids': doc_ids,
             'ranking': self.rel_by_q_str[q_str][1][:self.k],
             'relevant': relevant,
