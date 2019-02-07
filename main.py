@@ -58,6 +58,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': list_arg(int), 'default': [128, 64, 16]},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
+         {'name': 'influences_path', 'for': 'run_params', 'type': str, 'default': 'most_hurtful.json'},
          {'name': 'keep_top_uniq_terms', 'for': 'model_params', 'type': optional_arg(int), 'default': None},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
@@ -368,7 +369,7 @@ def main():
                                                                 use_dense=rabbit.model_params.use_dense)
     if rabbit.run_params.load_influences:
       try:
-        with open('./most_hurtful.json') as fh:
+        with open(rabbit.run_params.influences_path) as fh:
           pairs_to_flip = defaultdict(set)
           for pair, num_neg_influences in json.load(fh):
             if rabbit.train_params.use_pointwise_loss:
@@ -507,7 +508,7 @@ def main():
                                                    multi_objective_model.to(model_data.device),
                                                    device_train_sample,
                                                    test_hvps)))
-    with open('./most_hurtful.json', 'w+') as fh:
+    with open(rabbit.run_params.influences_path, 'w+') as fh:
       json.dump([[train_dl.dataset[idx][1], num_neg_influences.item()] for idx, num_neg_influences in influences], fh)
 
 if __name__ == "__main__":
