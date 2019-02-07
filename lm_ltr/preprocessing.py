@@ -15,7 +15,7 @@ from fastai.text import Tokenizer, fix_html, spec_add_spaces, rm_useless_spaces
 from torch.nn.utils.rnn import pad_sequence
 from gensim.parsing.preprocessing import strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric, remove_stopwords, strip_short
 
-from .utils import append_at
+from .utils import append_at, to_list
 
 pad_token_idx = 1
 unk_token_idx = 0

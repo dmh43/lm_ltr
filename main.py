@@ -422,7 +422,8 @@ def main():
                                          rabbit.run_params,
                                          query_tok_to_doc_tok=query_tok_to_doc_tok,
                                          normalized_score_lookup=train_normalized_score_lookup,
-                                         use_bow_model=use_bow_model)
+                                         use_bow_model=use_bow_model,
+                                         use_dense=rabbit.model_params.use_dense)
   test_ranking_dataset = RankingDataset(documents,
                                         test_ranking_candidates,
                                         rabbit.train_params,
@@ -432,7 +433,8 @@ def main():
                                         query_tok_to_doc_tok=query_tok_to_doc_tok,
                                         cheat=rabbit.run_params.cheat,
                                         normalized_score_lookup=test_normalized_score_lookup,
-                                        use_bow_model=use_bow_model)
+                                        use_bow_model=use_bow_model,
+                                        use_dense=rabbit.model_params.use_dense)
   val_ranking_dataset = RankingDataset(documents,
                                        val_ranking_candidates,
                                        rabbit.train_params,
@@ -442,7 +444,8 @@ def main():
                                        query_tok_to_doc_tok=query_tok_to_doc_tok,
                                        cheat=rabbit.run_params.cheat,
                                        normalized_score_lookup=val_normalized_score_lookup,
-                                       use_bow_model=use_bow_model)
+                                       use_bow_model=use_bow_model,
+                                       use_dense=rabbit.model_params.use_dense)
   if rabbit.train_params.memorize_test:
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset

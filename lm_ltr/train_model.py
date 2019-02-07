@@ -52,7 +52,8 @@ def train_model(model,
                                      experiment,
                                      doc_chunk_size=train_params.batch_size if model_params.use_pretrained_doc_encoder else -1,
                                      dont_smooth=model_params.dont_smooth,
-                                     dont_include_normalized_score=model_params.dont_include_normalized_score),
+                                     dont_include_normalized_score=model_params.dont_include_normalized_score,
+                                     use_dense=model_params.use_dense),
                MaxIter(train_params.max_iter)]
   callback_fns = []
   if train_params.use_gradient_clipping:

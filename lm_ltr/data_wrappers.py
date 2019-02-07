@@ -61,7 +61,7 @@ class QueryDataset(Dataset):
       doc = self.documents[elem_idx]
       query = remap_if_exists(self.data[elem_idx]['query'], self.query_tok_to_doc_tok)
       tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
-      df = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+      df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
       q_len = len(query)
       return (tf, df, q_len), torch.tensor(sum(self.documents[elem_idx].values()))
     elif self.use_bow_model:
@@ -102,7 +102,8 @@ class RankingDataset(Dataset):
                query_tok_to_doc_tok=None,
                cheat=False,
                normalized_score_lookup=None,
-               use_bow_model=False):
+               use_bow_model=False,
+               use_dense=False):
     self.use_bow_model = use_bow_model
     self.rankings = rankings
     self.documents = documents
@@ -123,6 +124,9 @@ class RankingDataset(Dataset):
       self.rel_by_q_str = {str(query)[1:-1]: [query, rel] for query, rel in self.relevant}
       self.q_strs = list(set(rankings.keys()).intersection(set(self.rel_by_q_str.keys())))
     self.use_single_word_embed_set = model_params.use_single_word_embed_set
+    self.use_dense = use_dense
+    if self.use_dense:
+      self.dfs = Counter(chain(*[doc.keys() for doc in self.documents]))
 
   def __len__(self):
     return len(self.rankings)
@@ -144,8 +148,19 @@ class RankingDataset(Dataset):
     doc_scores = torch.tensor([self.normalized_score_lookup[tuple(query)][doc_id]
                                if doc_id in self.normalized_score_lookup[tuple(query)] else smallest_score
                                for doc_id in doc_ids.tolist()])
+    if self.use_doc_out:
+      query_documents = doc_ids
+    elif self.use_dense:
+      query_documents = []
+      for doc in documents:
+        tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+        df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
+        q_len = len(query)
+        query_documents.append((tf, df, q_len), torch.tensor(sum(self.documents[elem_idx].values())))
+    else:
+      query_documents = documents
     return {'query': torch.tensor(query, dtype=torch.long),
-            'documents': documents if not self.use_doc_out else doc_ids,
+            'documents': query_documents,
             'doc_ids': doc_ids,
             'ranking': ranking[:self.k],
             'relevant': relevant,

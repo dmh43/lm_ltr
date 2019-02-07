@@ -3,7 +3,7 @@ import pydash as _
 import torch
 import torch.nn as nn
 
-from .preprocessing import pad, _collate_bow_doc
+from .preprocessing import pad, _collate_bow_doc, _collate_dense_doc
 from .utils import at_least_one_dim
 
 def smooth_scores(scores, doc_scores, smooth):
@@ -16,12 +16,14 @@ class PointwiseRanker:
                pointwise_scorer,
                doc_chunk_size=-1,
                use_doc_scores_for_smoothing=False,
-               dont_include_normalized_score=False):
+               dont_include_normalized_score=False,
+               use_dense=False):
     self.device = device
     self.pointwise_scorer = pointwise_scorer
     self.doc_chunk_size = doc_chunk_size
     self.use_doc_scores_for_smoothing = use_doc_scores_for_smoothing
     self.dont_include_normalized_score = dont_include_normalized_score
+    self.use_dense = use_dense
 
   def _scores_for_chunk(self, query, documents, doc_scores) -> None:
     if isinstance(documents, torch.Tensor) and len(documents.shape) == 1:
@@ -29,6 +31,10 @@ class PointwiseRanker:
       lens = torch.zeros_like(documents)
     elif isinstance(documents[0], torch.Tensor):
       padded_doc, lens = pad(documents, self.device)
+    elif self.use_dense:
+      padded_doc = tuple([tens.to(self.device) for tens in _collate_dense_doc(documents)])
+      lens = torch.tensor([sum(doc.values()) for doc in documents],
+                          device=self.device)
     else:
       padded_doc = tuple([tens.to(self.device) for tens in _collate_bow_doc(documents)])
       lens = torch.tensor([sum(doc.values()) for doc in documents],
