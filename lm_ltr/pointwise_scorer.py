@@ -5,7 +5,7 @@ from toolz import pipe
 
 from .query_encoder import QueryEncoder
 from .document_encoder import DocumentEncoder
-from .utils import Identity
+from .utils import Identity, dont_update
 
 def _get_layer(from_size, to_size, dropout_keep_prob, activation=None, use_layer_norm=False, use_batch_norm=False):
   return [nn.Linear(from_size, to_size),
@@ -74,6 +74,9 @@ class PointwiseScorer(nn.Module):
     self.use_cosine_similarity = model_params.use_cosine_similarity
     self.append_difference = model_params.append_difference
     self.append_hadamard = model_params.append_hadamard
+    if model_params.use_dense:
+      dont_update(self.pointwise_scorer.document_encoder)
+      dont_update(self.pointwise_scorer.query_encoder)
 
 
   def _forward(self, query, document, lens, doc_score):
