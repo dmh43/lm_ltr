@@ -75,8 +75,8 @@ class PointwiseScorer(nn.Module):
     self.append_difference = model_params.append_difference
     self.append_hadamard = model_params.append_hadamard
     if model_params.use_dense:
-      dont_update(self.pointwise_scorer.document_encoder)
-      dont_update(self.pointwise_scorer.query_encoder)
+      dont_update(self.document_encoder)
+      dont_update(self.query_encoder)
 
 
   def _forward(self, query, document, lens, doc_score):
