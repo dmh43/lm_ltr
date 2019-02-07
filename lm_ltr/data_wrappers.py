@@ -347,7 +347,7 @@ class QueryPairwiseDataset(QueryDataset):
     else:
       query = elem['query']
     doc_1 = self._get_document(elem['doc_id_1'], query)
-    if use_neg_sample:
+    if use_neg_sample or self._check_flip(elem):
       doc_id_2 = choice(range(self.num_documents))
       while doc_id_2 in elem['doc_ids']: doc_id_2 = choice(range(self.num_documents))
       doc_2 = self._get_document(doc_id_2, query)
@@ -358,7 +358,7 @@ class QueryPairwiseDataset(QueryDataset):
       doc_2 = self._get_document(elem['doc_id_2'], query)
       target_info = ((elem['doc_id_1'], elem['doc_id_2']),
                      elem['query'],
-                     elem['target_info'] if not self._check_flip(elem) else 1 - elem['target_info'])
+                     elem['target_info'])
     if self.dont_include_normalized_score:
       doc_1_score = 0.0
       doc_2_score = 0.0
