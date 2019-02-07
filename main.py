@@ -371,7 +371,11 @@ def main():
         with open('./most_hurtful.json') as fh:
           pairs_to_flip = defaultdict(set)
           for pair, num_neg_influences in json.load(fh):
-            if num_neg_influences > 100:
+            if rabbit.train_params.use_pointwise_loss:
+              condition = True
+            else:
+              condition = num_neg_influences > 100
+            if condition:
               query = tuple(pair[1])
               pairs_to_flip[query].add(tuple(pair[0]))
       except FileNotFoundError:
