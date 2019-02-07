@@ -32,9 +32,9 @@ class PointwiseRanker:
     elif isinstance(documents[0], torch.Tensor):
       padded_doc, lens = pad(documents, self.device)
     elif self.use_dense:
-      padded_doc = tuple([tens.to(self.device) for tens in _collate_dense_doc(documents)])
-      lens = torch.tensor([sum(doc.values()) for doc in documents],
-                          device=self.device)
+      x, lens = list(zip(*documents))
+      padded_doc = tuple([tens.to(self.device) for tens in _collate_dense_doc(x)])
+      lens = torch.tensor(lens, device=self.device)
     else:
       padded_doc = tuple([tens.to(self.device) for tens in _collate_bow_doc(documents)])
       lens = torch.tensor([sum(doc.values()) for doc in documents],
