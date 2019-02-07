@@ -307,7 +307,8 @@ def main():
     normalized_train_data = read_cache(name('./normalized_train_query_data_106756.json', names),
                                        lambda: normalize_scores_query_wise(train_data))
     collate_fn = lambda samples: collate_query_samples(samples,
-                                                       use_bow_model=use_bow_model)
+                                                       use_bow_model=use_bow_model,
+                                                       use_dense=rabbit.model_params.use_dense)
     train_dl = build_query_dataloader(documents,
                                       normalized_train_data,
                                       rabbit.train_params,

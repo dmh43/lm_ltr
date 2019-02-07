@@ -85,14 +85,20 @@ def pad(batch, device=torch.device('cpu')):
   return (pad_sequence(batch, batch_first=True, padding_value=1).to(device),
           batch_lengths)
 
-def collate_query_samples(samples, use_bow_model=False):
+def collate_query_samples(samples, use_bow_model=False, use_dense=False):
   x, rel = list(zip(*samples))
   x = list(zip(*x))
   query = pad_to_max_len(x[0])
   doc, lens = list(zip(*x[1]))
   doc_score = x[2]
+  if use_dense:
+    coll_doc = _collate_dense_doc(doc)
+  elif use_bow_model:
+    coll_doc = _collate_bow_doc(doc)
+  else:
+    coll_doc = torch.stack(doc)
   return ((torch.tensor(query),
-           torch.stack(doc) if not use_bow_model else _collate_bow_doc(doc),
+           coll_doc,
            torch.stack(lens),
            torch.tensor(doc_score)),
           torch.tensor(rel, dtype=torch.float32))
