@@ -54,12 +54,12 @@ class QueryDataset(Dataset):
       self.dfs = Counter(chain(*[doc.keys() for doc in self.documents]))
     self.use_single_word_embed_set = model_params.use_single_word_embed_set
 
-  def _get_document(self, elem_idx):
+  def _get_document(self, elem_idx, query=None):
     if self.use_doc_out:
       return torch.tensor(elem_idx), torch.tensor(0)
     elif self.use_dense:
       doc = self.documents[elem_idx]
-      query = remap_if_exists(self.data[elem_idx]['query'], self.query_tok_to_doc_tok)
+      query = remap_if_exists(query, self.query_tok_to_doc_tok)
       tf = sum(doc.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
       df = sum(self.dfs.get(query_tok_doc_tok_id, 0) for query_tok_doc_tok_id in to_list(query))
       q_len = len(query)
@@ -82,7 +82,7 @@ class QueryDataset(Dataset):
       doc_score = 0.0
     else:
       doc_score = self.normalized_score_lookup[tuple(query)][doc_id]
-    return ((query, self._get_document(doc_id), doc_score),
+    return ((query, self._get_document(doc_id, query), doc_score),
             self.rel_method(self.data[idx]))
 
 def _shuffle_doc_doc_ids(documents, doc_ids):
@@ -346,16 +346,16 @@ class QueryPairwiseDataset(QueryDataset):
       query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     else:
       query = elem['query']
-    doc_1 = self._get_document(elem['doc_id_1'])
+    doc_1 = self._get_document(elem['doc_id_1'], query)
     if use_neg_sample:
       doc_id_2 = choice(range(self.num_documents))
       while doc_id_2 in elem['doc_ids']: doc_id_2 = choice(range(self.num_documents))
-      doc_2 = self._get_document(doc_id_2)
+      doc_2 = self._get_document(doc_id_2, query)
       target_info = ((elem['doc_id_1'], doc_id_2),
                      elem['query'],
                      1)
     else:
-      doc_2 = self._get_document(elem['doc_id_2'])
+      doc_2 = self._get_document(elem['doc_id_2'], query)
       target_info = ((elem['doc_id_1'], elem['doc_id_2']),
                      elem['query'],
                      elem['target_info'] if not self._check_flip(elem) else 1 - elem['target_info'])
