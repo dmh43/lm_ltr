@@ -162,8 +162,6 @@ class DocumentEncoder(nn.Module):
     elif self.use_doc_out:
       document_ids = document
       return self._doc_out(document_ids)
-    elif self.use_dense:
-      return self._weighted_forward_dense(document)
     elif self.use_bow_model:
       return self._weighted_forward_bow(document)
     else:
