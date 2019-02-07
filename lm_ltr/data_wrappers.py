@@ -81,7 +81,7 @@ class QueryDataset(Dataset):
     if self.dont_include_normalized_score:
       doc_score = 0.0
     else:
-      doc_score = self.normalized_score_lookup[tuple(query)][doc_id]
+      doc_score = self.normalized_score_lookup[tuple(query)].get(doc_id, 0.0)
     return ((query, self._get_document(doc_id, query), doc_score),
             self.rel_method(self.data[idx]))
 
@@ -363,8 +363,8 @@ class QueryPairwiseDataset(QueryDataset):
       doc_1_score = 0.0
       doc_2_score = 0.0
     else:
-      doc_1_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_1']]
-      doc_2_score = self.normalized_score_lookup[tuple(query)][elem['doc_id_2']]
+      doc_1_score = self.normalized_score_lookup[tuple(query)].get(elem['doc_id_1'], 0.0)
+      doc_2_score = self.normalized_score_lookup[tuple(query)].get(elem['doc_id_2'], 0.0)
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), target_info)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
