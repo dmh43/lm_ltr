@@ -51,7 +51,7 @@ class PointwiseScorer(nn.Module):
           concat_len = 1600
     else:
       if self.use_dense:
-        concat_len = 6
+        concat_len = 5
       else:
         concat_len = model_params.document_token_embed_len + model_params.query_token_embed_len
     concat_len += 1
