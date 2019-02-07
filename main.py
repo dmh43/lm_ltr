@@ -124,8 +124,6 @@ def main():
   global rabbit
   rabbit = MyRabbit(args)
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
-  if rabbit.run_params.load_model and not rabbit.run_params.calc_influence:
-    raise NotImplementedError('loading a trained model and testing is not implemented yet')
   if rabbit.model_params.frame_as_qa: raise NotImplementedError
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
@@ -493,7 +491,11 @@ def main():
                                val_dl,
                                rabbit.run_params)
     influences = []
-    for i in range(train_dl.dataset._num_pos_pairs):
+    if rabbit.train_params.use_pointwise_loss:
+      num_real_samples = len(train_dl.dataset)
+    else:
+      num_real_samples = train_dl.dataset._num_pos_pairs
+    for i in range(num_real_samples):
       train_sample = train_dl.dataset[i]
       x, labels = to_device(collate_fn([train_sample]), device)
       device_train_sample = (x, labels.squeeze())
