@@ -107,6 +107,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_word2vec', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
          {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0}]
@@ -198,14 +199,17 @@ def main():
     assert q_embed_len == doc_embed_len, 'Must use same size doc and query embeds when appending diff or hadamard'
   if q_embed_len == doc_embed_len:
     glove_lookup = get_glove_lookup(embedding_dim=q_embed_len,
-                                    use_large_embed=rabbit.model_params.use_large_embed)
+                                    use_large_embed=rabbit.model_params.use_large_embed,
+                                    use_word2vec=rabbit.model_params.use_word2vec)
     q_glove_lookup = glove_lookup
     doc_glove_lookup = glove_lookup
   else:
     q_glove_lookup = get_glove_lookup(embedding_dim=q_embed_len,
-                                      use_large_embed=rabbit.model_params.use_large_embed)
+                                      use_large_embed=rabbit.model_params.use_large_embed,
+                                      use_word2vec=rabbit.model_params.use_word2vec)
     doc_glove_lookup = get_glove_lookup(embedding_dim=doc_embed_len,
-                                        use_large_embed=rabbit.model_params.use_large_embed)
+                                        use_large_embed=rabbit.model_params.use_large_embed,
+                                        use_word2vec=rabbit.model_params.use_word2vec)
   num_query_tokens = len(query_token_lookup)
   num_doc_tokens = len(document_token_lookup)
   doc_encoder = None

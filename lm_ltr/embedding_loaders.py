@@ -1,25 +1,37 @@
+import gensim
 import torch
 import torch.nn as nn
 import math
 
-def get_glove_lookup(path=None, embedding_dim=100, use_large_embed=False):
-  if path is None:
-    if use_large_embed:
-      path = f'./glove/glove.840B.{embedding_dim}d.txt'
-    else:
-      path = f'./glove/glove.6B.{embedding_dim}d.txt'
-  lookup = {'<pad>': torch.zeros(size=(embedding_dim,), dtype=torch.float32),
-            '<unk>': torch.randn(size=(embedding_dim,), dtype=torch.float32)}
-  try:
-    f = open(path)
-  except:
-    f = open('./glove/glove.6B.100d.txt')
-  for line in f:
-    split_line = line.rstrip().split(' ')
-    lookup[split_line[0]] = torch.tensor([float(val) for val in split_line[1:]],
-                                         dtype=torch.float32)
-  f.close()
-  return lookup
+def get_glove_lookup(path=None, embedding_dim=100, use_large_embed=False, use_word2vec=False):
+  if use_word2vec:
+    model = gensim.models.KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
+    assert embedding_dim == 300, 'only d=300 supported for word2vec'
+    lookup = {'<pad>': torch.zeros(size=(300,), dtype=torch.float32),
+              '<unk>': torch.randn(size=(300,), dtype=torch.float32)}
+    word2vec = dict(zip(model.index2word,
+                        (torch.tensor(vec) for vec in model.vectors)))
+    word2vec['<pad>'] = torch.zeros(size=(300,), dtype=torch.float32)
+    word2vec['<unk>'] = torch.randn(size=(300,), dtype=torch.float32)
+    return word2vec
+  else:
+    if path is None:
+      if use_large_embed:
+        path = f'./glove/glove.840B.{embedding_dim}d.txt'
+      else:
+        path = f'./glove/glove.6B.{embedding_dim}d.txt'
+    lookup = {'<pad>': torch.zeros(size=(embedding_dim,), dtype=torch.float32),
+              '<unk>': torch.randn(size=(embedding_dim,), dtype=torch.float32)}
+    try:
+      f = open(path)
+    except:
+      f = open('./glove/glove.6B.100d.txt')
+    for line in f:
+      split_line = line.rstrip().split(' ')
+      lookup[split_line[0]] = torch.tensor([float(val) for val in split_line[1:]],
+                                           dtype=torch.float32)
+    f.close()
+    return lookup
 
 def init_embedding(glove_lookup, token_lookup, num_tokens, embed_len):
   embedding = nn.Embedding(num_tokens, embed_len, padding_idx=1)
