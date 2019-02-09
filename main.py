@@ -148,7 +148,7 @@ def main():
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  with open('./caches/qrels_and_106756_most_common_doc.json', 'r') as fh:
+  with open('./caches/106756_most_common_doc.json', 'r') as fh:
     doc_token_set = set(json.load(fh))
     tokenizer = Tokenizer()
     tokenized = set(sum(tokenizer.process_all(get_robust_eval_queries().values()), []))
