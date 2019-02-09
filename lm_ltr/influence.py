@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, Any, Optional, Mapping
+from typing import Callable, Tuple, Any, Optional, Mapping, List
 
 import torch
 import torch.nn as nn
@@ -32,7 +32,7 @@ def calc_test_hvps(criterion: Callable,
           result_len=sum(p.numel() for p in diff_wrt),
           max_iters=maybe(run_params['max_cg_iters'],
                           sum(p.numel() for p in diff_wrt)))
-  test_hvps = []
+  test_hvps: List[torch.Tensor] = []
   for batch in test_dataloader:
     x_test, label = to_device(batch, device)
     loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())

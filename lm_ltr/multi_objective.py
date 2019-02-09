@@ -13,6 +13,7 @@ class MultiObjective(nn.Module):
     self.use_pointwise_loss = train_params.use_pointwise_loss
     self.use_truncated_hinge_loss = train_params.use_truncated_hinge_loss
     self.use_variable_loss = train_params.use_variable_loss
+    self.use_weighted_loss = train_params.use_weighted_loss
     self.use_bce_loss = train_params.use_bce_loss
     self.use_label_smoothing = train_params.use_label_smoothing
     self.use_l1_loss = train_params.use_l1_loss
@@ -50,6 +51,10 @@ class MultiObjective(nn.Module):
       margin = torch.abs(target)
       rounded_target = (target > 0).float() - (target < 0).float()
       pred_loss = self.loss_fn(pred_out, rounded_target, margin)
+    elif self.use_weighted_loss:
+      weight = torch.abs(target)
+      rounded_target = (target > 0).float() - (target < 0).float()
+      pred_loss = self.loss_fn(pred_out, rounded_target, weight)
     else:
       pred_loss = self.loss_fn(pred_out, target)
     if self.add_rel_score:

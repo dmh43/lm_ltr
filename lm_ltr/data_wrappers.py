@@ -206,7 +206,7 @@ class RankingDataset(Dataset):
   def __getitem__(self, idx):
     return self._get_test_item(idx) if self.is_test else self._get_train_item(idx)
 
-def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False):
+def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False, use_weighted_loss=False):
   ranking_idx = np.searchsorted(cumu_num_pairs, idx, side='right')
   offset = idx - cumu_num_pairs[ranking_idx - 1] if ranking_idx != 0 else idx
   query = rankings[ranking_idx][0]
@@ -221,6 +221,12 @@ def _get_nth_pair(rankings, cumu_num_pairs, idx, use_variable_loss=False):
             'doc_id_1': doc_ids[doc_1_idx],
             'doc_id_2': doc_ids[doc_2_idx],
             'target_info': (doc_2_idx - doc_1_idx) / (len(doc_ids) ** 2 - len(doc_ids)),
+            'doc_ids': doc_ids}
+  elif use_weighted_loss:
+    return {'query': query,
+            'doc_id_1': doc_ids[doc_1_idx],
+            'doc_id_2': doc_ids[doc_2_idx],
+            'target_info': np.log2(2 + doc_2_idx) - np.log2(2 + doc_1_idx),
             'doc_ids': doc_ids}
   else:
     return {'query': query,
@@ -293,6 +299,7 @@ class QueryPairwiseDataset(QueryDataset):
                      use_bow_model=use_bow_model,
                      is_test=is_test)
     self.use_variable_loss = train_params.use_variable_loss
+    self.use_weighted_loss = train_params.use_weighted_loss
     self.bin_rankings = train_params.bin_rankings
     self.num_documents = len(documents)
     self.num_neg_samples = train_params.num_neg_samples if not is_test else 0
@@ -341,7 +348,8 @@ class QueryPairwiseDataset(QueryDataset):
       elem = _get_nth_pair(self.rankings_for_train,
                            self.cumu_ranking_lengths,
                            remapped_idx,
-                           self.use_variable_loss)
+                           self.use_variable_loss,
+                           self.use_weighted_loss)
     query = elem['query']
     doc_1 = self._get_document(elem['doc_id_1'], query)
     if use_neg_sample or self._check_flip(elem):

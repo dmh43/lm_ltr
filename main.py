@@ -107,6 +107,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'use_pretrained_doc_encoder', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_weighted_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_word2vec', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
