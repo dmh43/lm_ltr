@@ -151,7 +151,7 @@ def main():
   with open('./caches/106756_most_common_doc.json', 'r') as fh:
     doc_token_set = set(json.load(fh))
     tokenizer = Tokenizer()
-    tokenized = set(sum(tokenizer.process_all(get_robust_eval_queries().values()), []))
+    tokenized = set(sum(tokenizer.process_all(list(get_robust_eval_queries().values())), []))
     doc_token_set = doc_token_set.union(tokenized)
   use_bow_model = not any([rabbit.model_params[attr] for attr in ['use_doc_out',
                                                                   'use_cnn',
