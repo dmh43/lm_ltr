@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 from fastai.basic_data import DataBunch, DeviceDataLoader
 from fastai import to_device
+from fastai.text import Tokenizer
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles, get_ranker_query_str_to_pairwise_bins, get_ranker_query_str_to_rankings
@@ -147,15 +148,18 @@ def main():
   num_doc_tokens_to_consider = rabbit.train_params.num_doc_tokens_to_consider
   document_title_to_id = read_cache('./document_title_to_id.json',
                                     lambda: create_id_lookup(document_lookup.keys()))
-  with open('./caches/106756_most_common_doc.json', 'r') as fh:
+  with open('./caches/qrels_and_106756_most_common_doc.json', 'r') as fh:
     doc_token_set = set(json.load(fh))
+    tokenizer = Tokenizer()
+    tokenized = set(sum(tokenizer.process_all(get_robust_eval_queries().values()), []))
+    doc_token_set = doc_token_set.union(tokenized)
   use_bow_model = not any([rabbit.model_params[attr] for attr in ['use_doc_out',
                                                                   'use_cnn',
                                                                   'use_lstm',
                                                                   'use_pretrained_doc_encoder']])
   use_bow_model = use_bow_model and not rabbit.model_params.dont_use_bow
   if use_bow_model:
-    documents, document_token_lookup = read_cache(name(f'./docs_fs_tokens_limit_uniq_toks_106756.pkl',
+    documents, document_token_lookup = read_cache(name(f'./docs_fs_tokens_limit_uniq_toks_qrels_and_106756.pkl',
                                                        _names),
                                                 lambda: prepare_fs(document_lookup,
                                                                    document_title_to_id,
@@ -167,7 +171,7 @@ def main():
                                  itemgetter(1)))
                    for doc in documents]
   else:
-    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_106756.json',
+    documents, document_token_lookup = read_cache(name(f'./parsed_docs_{num_doc_tokens_to_consider}_tokens_limit_uniq_toks_qrels_and_106756.json',
                                                      _names),
                                                 lambda: prepare(document_lookup,
                                                                 document_title_to_id,
@@ -187,7 +191,7 @@ def main():
                           for query_token, idx in query_token_lookup.items()}
   names = [RANKER_NAME_TO_SUFFIX[rabbit.train_params.ranking_set]]
   if rabbit.train_params.use_pointwise_loss or not rabbit.run_params.just_caches:
-    train_data = read_cache(name('./robust_train_query_results_tokens_106756.json', names),
+    train_data = read_cache(name('./robust_train_query_results_tokens_qrels_and_106756.json', names),
                             lambda: read_query_result(train_query_name_to_id,
                                                       document_title_to_id,
                                                       train_queries,
@@ -308,7 +312,7 @@ def main():
   test_normalized_score_lookup = get_normalized_score_lookup(test_candidates_data)
   val_normalized_score_lookup = get_normalized_score_lookup(val_candidates_data)
   if use_pointwise_loss:
-    normalized_train_data = read_cache(name('./normalized_train_query_data_106756.json', names),
+    normalized_train_data = read_cache(name('./normalized_train_query_data_qrels_and_106756.json', names),
                                        lambda: normalize_scores_query_wise(train_data))
     collate_fn = lambda samples: collate_query_samples(samples,
                                                        use_bow_model=use_bow_model,
@@ -317,7 +321,7 @@ def main():
                                       normalized_train_data,
                                       rabbit.train_params,
                                       rabbit.model_params,
-                                      cache=name('train_ranking_106756.json', names),
+                                      cache=name('train_ranking_qrels_and_106756.json', names),
                                       limit=10,
                                       query_tok_to_doc_tok=query_tok_to_doc_tok,
                                       normalized_score_lookup=train_normalized_score_lookup,
@@ -393,7 +397,7 @@ def main():
                                                rabbit.train_params,
                                                rabbit.model_params,
                                                pairs_to_flip=pairs_to_flip,
-                                               cache=name('train_ranking_106756.json', names),
+                                               cache=name('train_ranking_qrels_and_106756.json', names),
                                                limit=10,
                                                query_tok_to_doc_tok=query_tok_to_doc_tok,
                                                normalized_score_lookup=train_normalized_score_lookup,
