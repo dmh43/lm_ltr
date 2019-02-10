@@ -2,20 +2,26 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def hinge_loss(score_difference, target, margin=1.0):
+def hinge_loss(score_difference, target, margin=1.0, reduction='elementwise_mean'):
   maxes = torch.max(torch.tensor(0.0, device=score_difference.device),
                     torch.tensor(margin, device=score_difference.device) - target * score_difference)
-  return 1.0 / len(maxes) * maxes.sum()
+  if reduction is 'none':
+    return maxes
+  elif reduction is 'elementwise_mean':
+    return 1.0 / len(maxes) * maxes.sum()
+  else:
+    raise NotImplementedError()
 
-def bce_loss(score_difference, target, weight=None):
+def bce_loss(score_difference, target, weight=None, reduction='elementwise_mean'):
   y = (target > 0).float()
-  return nn.functional.binary_cross_entropy_with_logits(score_difference, y, weight=weight)
+  return nn.functional.binary_cross_entropy_with_logits(score_difference, y, weight=weight, reduction=reduction)
 
-def l1_loss(score_difference, target):
+def l1_loss(score_difference, target, reduction='elementwise_mean'):
   y = (target > 0).float()
-  return F.l1_loss(score_difference, y)
+  return F.l1_loss(score_difference, y, reduction=reduction)
 
-def smoothed_bce_loss(score_difference, target):
+def smoothed_bce_loss(score_difference, target, reduction='elementwise_mean'):
+  if reduction is not 'elementwise_mean': raise NotImplementedError()
   device = score_difference.device
   total_loss = torch.tensor(0.0, device=device)
   scale = 0.9
@@ -27,9 +33,14 @@ def smoothed_bce_loss(score_difference, target):
     total_loss += y.dot(loss)
   return total_loss / score_difference.shape[0]
 
-def truncated_hinge_loss(score_difference, target, margin=1.0, truncation=-1.0):
+def truncated_hinge_loss(score_difference, target, margin=1.0, truncation=-1.0, reduction='elementwise_mean'):
   maxes = torch.max(torch.tensor(0.0, device=score_difference.device),
                     torch.tensor(margin, device=score_difference.device) - target * score_difference)
   truncated = torch.min(torch.tensor(margin - truncation, device=score_difference.device),
                         maxes)
-  return 1.0 / len(truncated) * truncated.sum()
+  if reduction is 'none':
+    return truncated
+  elif reduction is 'elementwise_mean':
+    return 1.0 / len(truncated) * truncated.sum()
+  else:
+    raise NotImplementedError()

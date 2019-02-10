@@ -45,19 +45,20 @@ class MultiObjective(nn.Module):
       self.loss_fn = partial(hinge_loss,
                              margin=self.margin)
 
-  def loss(self, multi_objective_out, target):
+  def loss(self, multi_objective_out, target, **kwargs):
     pred_out = multi_objective_out[0]
     if self.use_variable_loss:
       margin = torch.abs(target)
       rounded_target = (target > 0).float() - (target < 0).float()
-      pred_loss = self.loss_fn(pred_out, rounded_target, margin)
+      pred_loss = self.loss_fn(pred_out, rounded_target, margin, **kwargs)
     elif self.use_weighted_loss:
       weight = torch.abs(target)
       rounded_target = (target > 0).float() - (target < 0).float()
-      pred_loss = self.loss_fn(pred_out, rounded_target, weight)
+      pred_loss = self.loss_fn(pred_out, rounded_target, weight, **kwargs)
     else:
-      pred_loss = self.loss_fn(pred_out, target)
+      pred_loss = self.loss_fn(pred_out, target, **kwargs)
     if self.add_rel_score:
+      if getattr(kwargs, 'reduction', None) is 'none': raise NotImplementedError
       side_loss = torch.sum(sum(multi_objective_out[1:]))
       reg = torch.sum(sum([p ** 2 for p in self.additive.parameters()]))
       return pred_loss + self.rel_score_obj_scale * side_loss + self.rel_score_penalty * reg
