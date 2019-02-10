@@ -56,6 +56,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'dont_use_bow', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'freeze_all_but_last_for_influence', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': list_arg(int), 'default': [128, 64, 16]},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
@@ -499,11 +500,17 @@ def main():
   multi_objective_model.eval()
   device = model_data.device
   if rabbit.run_params.calc_influence:
+    if rabbit.run_params.freeze_all_but_last_for_influence:
+      last_layer = multi_objective_model.model.pointwise_scorer.layers[-1]
+      diff_wrt = [p for p in last_layer.parameters() if p.requires_grad]
+    else:
+      diff_wrt = None
     test_hvps = calc_test_hvps(multi_objective_model.loss,
                                multi_objective_model.to(device),
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
                                val_dl,
-                               rabbit.run_params)
+                               rabbit.run_params,
+                               diff_wrt=diff_wrt)
     influences = []
     if rabbit.train_params.use_pointwise_loss:
       num_real_samples = len(train_dl.dataset)
@@ -516,7 +523,8 @@ def main():
       influences.append((i, get_num_neg_influences(multi_objective_model.loss,
                                                    multi_objective_model.to(model_data.device),
                                                    device_train_sample,
-                                                   test_hvps)))
+                                                   test_hvps,
+                                                   diff_wrt=diff_wrt)))
     with open(rabbit.run_params.influences_path, 'w+') as fh:
       json.dump([[train_dl.dataset[idx][1], num_neg_influences.item()] for idx, num_neg_influences in influences], fh)
 

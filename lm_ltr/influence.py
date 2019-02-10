@@ -19,9 +19,10 @@ def calc_test_hvps(criterion: Callable,
                    trained_model: nn.Module,
                    train_dataloader: DeviceDataLoader,
                    test_dataloader: DataLoader,
-                   run_params: Mapping):
+                   run_params: Mapping,
+                   diff_wrt: Optional[torch.Tensor]=None):
   device = train_dataloader.device
-  diff_wrt = [p for p in trained_model.parameters() if p.requires_grad]
+  diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
   hvp = HVP(calc_loss=lambda xs, target: criterion(trained_model(*xs), target),
             parameters=diff_wrt,
             data=train_dataloader,
@@ -47,10 +48,11 @@ def calc_test_hvps(criterion: Callable,
 def calc_influence(criterion: Callable,
                    trained_model: nn.Module,
                    train_sample: Tuple[torch.Tensor, torch.Tensor],
-                   test_hvps: torch.Tensor):
+                   test_hvps: torch.Tensor,
+                   diff_wrt: Optional[torch.Tensor]=None):
   features, target = train_sample
   train_loss = criterion(trained_model(*features), target)
-  diff_wrt = [p for p in trained_model.parameters() if p.requires_grad]
+  diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
   grads = autograd.grad(train_loss, diff_wrt)
   grad_at_train_sample = collect(grads)
   with torch.no_grad():
@@ -61,6 +63,7 @@ def get_num_neg_influences(criterion: Callable,
                            trained_model: nn.Module,
                            train_sample: Tuple[torch.Tensor, torch.Tensor],
                            test_hvps: torch.Tensor,
-                           thresh: Optional[float]=0.0):
-  influence = calc_influence(criterion, trained_model, train_sample, test_hvps)
+                           thresh: Optional[float]=0.0,
+                           diff_wrt: Optional[torch.Tensor]=None):
+  influence = calc_influence(criterion, trained_model, train_sample, test_hvps, diff_wrt=diff_wrt)
   return torch.sum(influence < thresh)
