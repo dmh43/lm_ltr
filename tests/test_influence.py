@@ -106,7 +106,6 @@ def test_num_neg(criterion, trained_model, train_dataloader, test_dataloader):
   for train_sample in train_dataloader.dataset:
     num_neg.append(i.get_num_neg_influences(criterion, trained_model, train_sample, test_hvps).item())
   num_neg = torch.tensor(num_neg)
-  print(num_neg.tolist())
   assert torch.sum(num_neg[:100] > 5) > 90
 
 def test_calc_influence_gn(criterion, trained_model, train_dataloader, test_dataloader):
@@ -140,5 +139,4 @@ def test_num_neg_gn(criterion, trained_model, train_dataloader, test_dataloader)
   for train_sample in train_dataloader.dataset:
     num_neg.append(i.get_num_neg_influences(criterion, trained_model, train_sample, test_hvps).item())
   num_neg = torch.tensor(num_neg)
-  print(num_neg.tolist())
   assert torch.sum(num_neg[:100] > 0) > 90
