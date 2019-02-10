@@ -44,7 +44,7 @@ class GNP:
       grad_vec = self._grad_vec
     else:
       loss = self.calc_loss(x_chunk, target)
-      grad_dict = torch.autograd.grad(loss, self.parameters, create_graph=True)
+      grad_dict = torch.autograd.grad(loss, self.parameters, retain_graph=True)
       grad_vec = collect(grad_dict)
     if self.cache_batch and self._grad_vec is None:
       self._grad_vec = grad_vec
