@@ -75,7 +75,73 @@ def trained_model(criterion, train_dataloader):
   model.eval()
   return model
 
-def test_calc_influence(criterion, trained_model, train_dataloader, test_dataloader):
+# def test_calc_influence(criterion, trained_model, train_dataloader, test_dataloader):
+#   test_hvps = i.calc_test_hvps(criterion,
+#                                trained_model,
+#                                train_dataloader,
+#                                test_dataloader,
+#                                {'max_cg_iters': 3, 'use_gauss_newton': False})
+#   influences = []
+#   for train_sample in train_dataloader.dataset:
+#     influences.append(i.calc_influence(criterion, trained_model, train_sample, test_hvps).sum())
+#   influences = torch.tensor(influences)
+#   largest_vals, largest_idxs = torch.topk(influences, k=100)
+#   most_neg_vals, most_neg_idxs = torch.topk(-influences, k=100)
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > 0)
+#                                  for idx in largest_idxs]).view(-1).float()) > 0.9
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= 0)
+#                                  for idx in largest_idxs]).view(-1).float()) > 0.9
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] > 0)
+#                                  for idx in most_neg_idxs]).view(-1).float()) > 0.9
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= 0)
+#                                  for idx in most_neg_idxs]).view(-1).float()) > 0.9
+
+# def test_num_neg(criterion, trained_model, train_dataloader, test_dataloader):
+#   test_hvps = i.calc_test_hvps(criterion,
+#                                trained_model,
+#                                train_dataloader,
+#                                test_dataloader,
+#                                {'max_cg_iters': 3, 'use_gauss_newton': False})
+#   num_neg = []
+#   for train_sample in train_dataloader.dataset:
+#     num_neg.append(i.get_num_neg_influences(criterion, trained_model, train_sample, test_hvps).item())
+#   num_neg = torch.tensor(num_neg)
+#   assert torch.sum(num_neg[:100] > 5) > 90
+
+# def test_calc_influence_gn(criterion, trained_model, train_dataloader, test_dataloader):
+#   test_hvps = i.calc_test_hvps(criterion,
+#                                trained_model,
+#                                train_dataloader,
+#                                test_dataloader,
+#                                {'max_cg_iters': 3, 'use_gauss_newton': True})
+#   influences = []
+#   for train_sample in train_dataloader.dataset:
+#     influences.append(i.calc_influence(criterion, trained_model, train_sample, test_hvps).sum())
+#   influences = torch.tensor(influences)
+#   largest_vals, largest_idxs = torch.topk(influences, k=100)
+#   most_neg_vals, most_neg_idxs = torch.topk(-influences, k=100)
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > 0)
+#                                  for idx in largest_idxs]).view(-1).float()) > 0.9
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= 0)
+#                                  for idx in largest_idxs]).view(-1).float()) > 0.9
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] > 0)
+#                                  for idx in most_neg_idxs]).view(-1).float()) > 0.9
+#   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= 0)
+#                                  for idx in most_neg_idxs]).view(-1).float()) > 0.9
+
+# def test_num_neg_gn(criterion, trained_model, train_dataloader, test_dataloader):
+#   test_hvps = i.calc_test_hvps(criterion,
+#                                trained_model,
+#                                train_dataloader,
+#                                test_dataloader,
+#                                {'max_cg_iters': 3, 'use_gauss_newton': True})
+#   num_neg = []
+#   for train_sample in train_dataloader.dataset:
+#     num_neg.append(i.get_num_neg_influences(criterion, trained_model, train_sample, test_hvps).item())
+#   num_neg = torch.tensor(num_neg)
+#   assert torch.sum(num_neg[:100] > 0) > 90
+
+def test_calc_dataset_influence(criterion, trained_model, train_dataloader, test_dataloader):
   test_hvps = i.calc_test_hvps(criterion,
                                trained_model,
                                train_dataloader,
@@ -95,48 +161,3 @@ def test_calc_influence(criterion, trained_model, train_dataloader, test_dataloa
                                  for idx in most_neg_idxs]).view(-1).float()) > 0.9
   assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= 0)
                                  for idx in most_neg_idxs]).view(-1).float()) > 0.9
-
-def test_num_neg(criterion, trained_model, train_dataloader, test_dataloader):
-  test_hvps = i.calc_test_hvps(criterion,
-                               trained_model,
-                               train_dataloader,
-                               test_dataloader,
-                               {'max_cg_iters': 3, 'use_gauss_newton': False})
-  num_neg = []
-  for train_sample in train_dataloader.dataset:
-    num_neg.append(i.get_num_neg_influences(criterion, trained_model, train_sample, test_hvps).item())
-  num_neg = torch.tensor(num_neg)
-  assert torch.sum(num_neg[:100] > 5) > 90
-
-def test_calc_influence_gn(criterion, trained_model, train_dataloader, test_dataloader):
-  test_hvps = i.calc_test_hvps(criterion,
-                               trained_model,
-                               train_dataloader,
-                               test_dataloader,
-                               {'max_cg_iters': 3, 'use_gauss_newton': True})
-  influences = []
-  for train_sample in train_dataloader.dataset:
-    influences.append(i.calc_influence(criterion, trained_model, train_sample, test_hvps).sum())
-  influences = torch.tensor(influences)
-  largest_vals, largest_idxs = torch.topk(influences, k=100)
-  most_neg_vals, most_neg_idxs = torch.topk(-influences, k=100)
-  assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] > 0)
-                                 for idx in largest_idxs]).view(-1).float()) > 0.9
-  assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] <= 0)
-                                 for idx in largest_idxs]).view(-1).float()) > 0.9
-  assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 0) == (train_dataloader.dataset[idx][0][0] > 0)
-                                 for idx in most_neg_idxs]).view(-1).float()) > 0.9
-  assert torch.mean(torch.stack([(train_dataloader.dataset[idx][1] == 1) == (train_dataloader.dataset[idx][0][0] <= 0)
-                                 for idx in most_neg_idxs]).view(-1).float()) > 0.9
-
-def test_num_neg_gn(criterion, trained_model, train_dataloader, test_dataloader):
-  test_hvps = i.calc_test_hvps(criterion,
-                               trained_model,
-                               train_dataloader,
-                               test_dataloader,
-                               {'max_cg_iters': 3, 'use_gauss_newton': True})
-  num_neg = []
-  for train_sample in train_dataloader.dataset:
-    num_neg.append(i.get_num_neg_influences(criterion, trained_model, train_sample, test_hvps).item())
-  num_neg = torch.tensor(num_neg)
-  assert torch.sum(num_neg[:100] > 0) > 90

@@ -23,4 +23,5 @@ class LossesRecorder(Recorder):
     if hasattr(self, 'losses'):
       model_name = self.experiment.model_name
       with open(f'./losses_{model_name}.json', 'w+') as fh:
-        json.dump({'train_loss': self.losses, 'val_loss': self.val_losses}, fh)
+        json.dump({'train_loss': [loss.item() for loss in self.losses],
+                   'val_loss': [loss.item() for loss in self.val_losses]}, fh)

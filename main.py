@@ -135,6 +135,7 @@ def main():
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
   if rabbit.model_params.frame_as_qa: raise NotImplementedError
   if rabbit.run_params.drop_val_loss_calc: raise NotImplementedError
+  if rabbit.train_params.weight_influence: raise NotImplementedError
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
