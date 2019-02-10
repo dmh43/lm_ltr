@@ -79,7 +79,7 @@ class PointwiseScorer(nn.Module):
       dont_update(self.query_encoder)
 
 
-  def _forward(self, query, document, lens, doc_score):
+  def _forward(self, query, document, lens, doc_score, to_idx):
     sorted_lens, sort_order = torch.sort(lens, descending=True)
     batch_range, unsort_order = torch.sort(sort_order)
     if self.frame_as_qa:
@@ -108,21 +108,21 @@ class PointwiseScorer(nn.Module):
         hidden = torch.cat([hidden, doc_score[sort_order].unsqueeze(1)], 1)
     if self.use_bow_model:
       return pipe(hidden,
-                  *self.layers,
+                  *self.layers[:to_idx],
                   torch.squeeze)
     else:
       return pipe(hidden,
-                  *self.layers,
+                  *self.layers[:to_idx],
                   torch.squeeze)[unsort_order]
 
-  def _dense_forward(self, query, document, lens, doc_score):
+  def _dense_forward(self, query, document, lens, doc_score, to_idx):
     features = torch.cat([document, lens.unsqueeze(1).float(), doc_score.unsqueeze(1)], 1)
     return pipe(features,
-                *self.layers,
+                *self.layers[:to_idx],
                 torch.squeeze)
 
-  def forward(self, query, document, lens, doc_score):
+  def forward(self, query, document, lens, doc_score, to_idx=None):
     if self.use_dense:
-      return self._dense_forward(query, document, lens, doc_score)
+      return self._dense_forward(query, document, lens, doc_score, to_idx)
     else:
-      return self._forward(query, document, lens, doc_score)
+      return self._forward(query, document, lens, doc_score, to_idx)

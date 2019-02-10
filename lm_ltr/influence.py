@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 from fastai.basic_data import DeviceDataLoader
 from fastai import to_device
 from progressbar import progressbar
+import pydash as _
 
 from .hvp import HVP
 from .gnp import GNP
@@ -76,6 +77,20 @@ def calc_influence(criterion: Callable,
   with torch.no_grad():
     influence = test_hvps.matmul(grad_at_train_sample)
   return influence
+
+def calc_dataset_influence(criterion: Callable,
+                           trained_model: nn.Module,
+                           train_dataloader: DeviceDataLoader,
+                           test_hvps: torch.Tensor):
+  with torch.no_grad():
+    influences = []
+    last_layer_idx = _.find_last_index(trained_model.model.pointwise_scorer.layers,
+                                       lambda layer: isinstance(layer, nn.Linear))
+    for x, target in train_dataloader:
+      train_loss = criterion(trained_model(*x), target, reduction='none')
+      grads_at_train_sample = trained_model(*x, to_idx=last_layer_idx) * train_loss
+      influences.append(test_hvps.matmul(grads_at_train_sample))
+  return influences
 
 def get_num_neg_influences(criterion: Callable,
                            trained_model: nn.Module,

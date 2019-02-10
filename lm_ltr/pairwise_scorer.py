@@ -19,7 +19,7 @@ class PairwiseScorer(nn.Module):
                                             train_params,
                                             use_bow_model=use_bow_model)
 
-  def forward(self, query, document_1, document_2, lens_1, lens_2, doc_1_score, doc_2_score):
-    score_1 = self.pointwise_scorer(query, document_1, lens_1, doc_1_score)
-    score_2 = self.pointwise_scorer(query, document_2, lens_2, doc_2_score)
+  def forward(self, query, document_1, document_2, lens_1, lens_2, doc_1_score, doc_2_score, to_idx=None):
+    score_1 = self.pointwise_scorer(query, document_1, lens_1, doc_1_score, to_idx=to_idx)
+    score_2 = self.pointwise_scorer(query, document_2, lens_2, doc_2_score, to_idx=to_idx)
     return score_1 - score_2
