@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, Any, Optional, Mapping, List
+from typing import Callable, Tuple, Any, Optional, Mapping, List, Union, Type
 
 import torch
 import torch.nn as nn
@@ -27,7 +27,7 @@ def calc_test_hvps(criterion: Callable,
   device = train_dataloader.device
   diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
   if run_params['use_gauss_newton']:
-    matmul_class = GNP
+    matmul_class: Union[Type[GNP], Type[HVP]] = GNP
     damping = 0.001
   else:
     matmul_class = HVP
