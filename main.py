@@ -503,7 +503,8 @@ def main():
   device = model_data.device
   if rabbit.run_params.calc_influence:
     if rabbit.run_params.freeze_all_but_last_for_influence:
-      last_layer = multi_objective_model.model.pointwise_scorer.layers[-1]
+      last_layer = _.find_last(multi_objective_model.model.pointwise_scorer.layers,
+                               lambda layer: isinstance(layer, nn.Linear))
       diff_wrt = [p for p in last_layer.parameters() if p.requires_grad]
     else:
       diff_wrt = None
