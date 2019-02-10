@@ -480,7 +480,7 @@ def main():
     train_dl = test_dl
     train_ranking_dataset = test_ranking_dataset
   model_data = DataBunch(train_dl,
-                         val_dl,
+                         val_rel_dl,
                          test_dl,
                          collate_fn=collate_fn,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
@@ -514,8 +514,8 @@ def main():
                 rabbit.model_params,
                 experiment)
   if rabbit.train_params.fine_tune_on_val:
-    fine_tune_model_data = DataBunch(val_dl,
-                                     val_dl,
+    fine_tune_model_data = DataBunch(val_rel_dl,
+                                     val_rel_dl,
                                      test_dl,
                                      collate_fn=collate_fn,
                                      device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
