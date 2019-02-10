@@ -115,6 +115,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'use_word2vec', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'weight_decay', 'for': 'train_params', 'type': float, 'default': 0.0},
+         {'name': 'weight_influence', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'word_level_do_kp', 'for': 'train_params', 'type': float, 'default': 1.0}]
 
 class MyRabbit(Rabbit):

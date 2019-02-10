@@ -43,15 +43,22 @@ def calc_test_hvps(criterion: Callable,
           max_iters=maybe(run_params['max_cg_iters'],
                           sum(p.numel() for p in diff_wrt)))
   test_hvps: List[torch.Tensor] = []
+  tmp = test_dataloader.dataset.use_weighted_loss
+  if getattr(run_params, 'weight_influence', False):
+    test_dataloader.dataset.use_weighted_loss = True
+  else:
+    test_dataloader.dataset.use_weighted_loss = False
   iterator = progressbar(test_dataloader) if show_progress else test_dataloader
   for batch in iterator:
-    x_test, label = to_device(batch, device)
+    x_test, target = to_device(batch, device)
+    label = target > 0
     loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())
     grads = autograd.grad(loss_at_x_test, diff_wrt)
     grad_at_z_test = collect(grads)
-    test_hvps.append(cg.solve(grad_at_z_test,
-                              test_hvps[-1] if len(test_hvps) != 0 else None))
+    test_hvps.append(abs(target) * cg.solve(grad_at_z_test,
+                                            test_hvps[-1] if len(test_hvps) != 0 else None))
     matmul.clear_batch()
+  test_dataloader.dataset.use_weighted_loss = tmp
   return torch.stack(test_hvps)
 
 
