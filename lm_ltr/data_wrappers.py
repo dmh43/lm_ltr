@@ -371,7 +371,8 @@ class QueryPairwiseDataset(QueryDataset):
                                         self.use_variable_loss)
     elif self.rel_vs_irrel:
       query = choice(self.queries)
-      rel, irrel = self.rel_irrel_by_query[query]
+      q_str = str(query)[1:-1]
+      rel, irrel = self.rel_irrel_by_query[q_str]
       elem = {'query': query,
               'doc_id_1': choice(rel),
               'doc_id_2': choice(irrel),
