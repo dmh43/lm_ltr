@@ -359,7 +359,7 @@ class QueryPairwiseDataset(QueryDataset):
 
   def __getitem__(self, idx):
     remapped_idx = idx % self._num_pos_pairs
-    if idx >= self._num_pos_pairs:
+    if idx >= self._num_pos_pairs and not self.rel_vs_irrel:
       use_neg_sample = True
     else:
       use_neg_sample = False
