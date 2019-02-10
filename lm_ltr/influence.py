@@ -24,9 +24,9 @@ def calc_test_hvps(criterion: Callable,
                    diff_wrt: Optional[torch.Tensor]=None):
   device = train_dataloader.device
   diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
-  if run_params.use_gauss_newton:
+  if run_params['use_gauss_newton']:
     matmul_class = GNP
-    damping = 0.0
+    damping = 0.001
   else:
     matmul_class = HVP
     damping = 0.01
