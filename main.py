@@ -134,6 +134,7 @@ def main():
   rabbit = MyRabbit(args)
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
   if rabbit.model_params.frame_as_qa: raise NotImplementedError
+  if rabbit.run_params.drop_val_loss_calc: raise NotImplementedError
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
   use_pretrained_doc_encoder = rabbit.model_params.use_pretrained_doc_encoder
@@ -484,8 +485,6 @@ def main():
                          test_dl,
                          collate_fn=collate_fn,
                          device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-  if rabbit.run_params.drop_val_loss_calc:
-    model_data.valid_dl = None
   multi_objective_model = MultiObjective(model, rabbit.train_params, rel_score, additive)
   model_to_save = multi_objective_model
   if rabbit.train_params.memorize_test:
