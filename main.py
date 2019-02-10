@@ -56,6 +56,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'dont_include_titles', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'dont_use_bow', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'num_to_drop_in_ranking', 'for': 'train_params', 'type': int, 'default': 0},
+         {'name': 'fine_tune_on_val', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'frame_as_qa', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'freeze_all_but_last_for_influence', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'gradient_clipping_norm', 'for': 'train_params', 'type': float, 'default': 0.1},
@@ -507,6 +508,21 @@ def main():
     train_model(multi_objective_model,
                 model_data,
                 train_ranking_dataset,
+                val_ranking_dataset,
+                test_ranking_dataset,
+                rabbit.train_params,
+                rabbit.model_params,
+                experiment)
+  if rabbit.train_params.fine_tune_on_val:
+    fine_tune_model_data = DataBunch(val_dl,
+                                     val_dl,
+                                     test_dl,
+                                     collate_fn=collate_fn,
+                                     device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+    experiment.record_note('Fine tuning on val...')
+    train_model(multi_objective_model,
+                fine_tune_model_data,
+                val_ranking_dataset,
                 val_ranking_dataset,
                 test_ranking_dataset,
                 rabbit.train_params,
