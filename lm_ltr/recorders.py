@@ -7,18 +7,6 @@ class PlottingRecorder(Recorder):
     super().__init__(*args, **kwargs)
     self.experiment = experiment
 
-  def on_train_begin(self, pbar, metrics, **kwargs)->None:
-    pass
-
-  def on_batch_begin(self, **kwargs)->None:
-    pass
-
-  def on_backward_begin(self, smooth_loss, **kwargs)->None:
-    pass
-
-  def on_epoch_end(self, epoch, num_batch, smooth_loss, last_metrics, **kwargs)->bool:
-    pass
-
   def on_train_end(self, **kwargs):
     if hasattr(self, 'losses'):
       self.plot_losses()
@@ -30,18 +18,6 @@ class LossesRecorder(Recorder):
   def __init__(self, experiment, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.experiment = experiment
-
-  def on_train_begin(self, pbar, metrics, **kwargs)->None:
-    pass
-
-  def on_batch_begin(self, **kwargs)->None:
-    pass
-
-  def on_backward_begin(self, smooth_loss, **kwargs)->None:
-    pass
-
-  def on_epoch_end(self, epoch, num_batch, smooth_loss, last_metrics, **kwargs)->bool:
-    pass
 
   def on_train_end(self, **kwargs):
     if hasattr(self, 'losses'):
