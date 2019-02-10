@@ -31,7 +31,10 @@ class CG:
   def solve(self, vec: torch.Tensor, init: Optional[torch.Tensor]=None):
     """See `An Introduction to the Conjugate Gradient Method Without the
        Agonizing Pain` by Jonathan Richard Shewchuk"""
-    result = maybe(init, torch.zeros(self.result_len, device=vec.device, dtype=vec.dtype))
+    if init is not None:
+      result = init.detach().clone()
+    else:
+      result = torch.zeros(self.result_len, device=vec.device, dtype=vec.dtype)
     r = vec - self.matmul(result)
     d = self._apply_preconditioner(r)
     delta_new = r.dot(d)
