@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from fastai.basic_data import DeviceDataLoader
 from fastai import to_device
+from progressbar import progressbar
 
 from .hvp import HVP
 from .gnp import GNP
@@ -21,7 +22,8 @@ def calc_test_hvps(criterion: Callable,
                    train_dataloader: DeviceDataLoader,
                    test_dataloader: DataLoader,
                    run_params: Mapping,
-                   diff_wrt: Optional[torch.Tensor]=None):
+                   diff_wrt: Optional[torch.Tensor]=None,
+                   show_progress: bool=False):
   device = train_dataloader.device
   diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
   if run_params['use_gauss_newton']:
@@ -41,7 +43,8 @@ def calc_test_hvps(criterion: Callable,
           max_iters=maybe(run_params['max_cg_iters'],
                           sum(p.numel() for p in diff_wrt)))
   test_hvps: List[torch.Tensor] = []
-  for batch in test_dataloader:
+  iterator = progressbar(test_dataloader) if show_progress else test_dataloader
+  for batch in iterator:
     x_test, label = to_device(batch, device)
     loss_at_x_test = criterion(trained_model(*x_test), label.squeeze())
     grads = autograd.grad(loss_at_x_test, diff_wrt)

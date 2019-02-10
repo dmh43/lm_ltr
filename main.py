@@ -13,6 +13,7 @@ import torch.nn as nn
 from fastai.basic_data import DataBunch, DeviceDataLoader
 from fastai import to_device
 from fastai.text import Tokenizer
+from progressbar import progressbar
 
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles, get_ranker_query_str_to_pairwise_bins, get_ranker_query_str_to_rankings
@@ -511,13 +512,14 @@ def main():
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
                                val_dl,
                                rabbit.run_params,
-                               diff_wrt=diff_wrt)
+                               diff_wrt=diff_wrt,
+                               show_progress=True)
     influences = []
     if rabbit.train_params.use_pointwise_loss:
       num_real_samples = len(train_dl.dataset)
     else:
       num_real_samples = train_dl.dataset._num_pos_pairs
-    for i in range(num_real_samples):
+    for i in progressbar(range(num_real_samples)):
       train_sample = train_dl.dataset[i]
       x, labels = to_device(collate_fn([train_sample]), device)
       device_train_sample = (x, labels.squeeze())
