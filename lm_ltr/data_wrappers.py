@@ -273,6 +273,21 @@ def _get_num_pos_pairs_with_bins(rankings, bin_rankings):
 def _drop_next_n_from_ranking(num_to_drop_in_ranking, rankings):
   return [[query, ranking[:1] + ranking[1 + num_to_drop_in_ranking:]] for query, ranking in rankings]
 
+def _get_rel_irrel_by_query(query_ranking_pairs, candidates_by_q_str, num_to_rank):
+  rel_irrel_by_query = {}
+  for query, ranking in query_ranking_pairs:
+    q_str = str(query)[1:-1]
+    all_rel = set(ranking)
+    all_cands = set(candidates_by_q_str[q_str][:num_to_rank])
+    ids = all_rel.intersection(all_cands)
+    rel = []
+    irrel = []
+    for doc_id in ids:
+      if doc_id in all_rel: rel.append(doc_id)
+      else: irrel.append(doc_id)
+    rel_irrel_by_query[q_str] = [rel, irrel]
+  return rel_irrel_by_query
+
 class QueryPairwiseDataset(QueryDataset):
   def __init__(self,
                documents,
@@ -284,7 +299,10 @@ class QueryPairwiseDataset(QueryDataset):
                query_tok_to_doc_tok=None,
                normalized_score_lookup=None,
                use_bow_model=False,
-               is_test=False):
+               is_test=False,
+               rel_vs_irrel=False,
+               candidates=None,
+               num_to_rank=1000):
     self.num_to_drop_in_ranking = train_params.num_to_drop_in_ranking
     if self.num_to_drop_in_ranking > 0:
       assert train_params.bin_rankings == 1, 'bin_rankings != 1 is not supported'
@@ -319,8 +337,14 @@ class QueryPairwiseDataset(QueryDataset):
     else:
       self._num_pos_pairs = _get_num_pairs(self.rankings_for_train, 0)
     self.pairs_to_flip = pairs_to_flip
+    self.candidates = candidates
+    self.queries = [query for query, ranking in self.rankings]
+    self.rel_irrel_by_query = _get_rel_irrel_by_query(self.rankings, self.candidates, num_to_rank)
+    self.rel_vs_irrel = rel_vs_irrel
 
   def __len__(self):
+    if self.rel_vs_irrel:
+      return sum(len(rel) * len(irrel) for rel, irrel in self.rel_irrel_by_query.values())
     self._num_pairs = self._num_pairs or _get_num_pairs(self.rankings_for_train,
                                                         self.num_neg_samples,
                                                         self.bin_rankings)
@@ -344,6 +368,13 @@ class QueryPairwiseDataset(QueryDataset):
                                         self.bin_rankings,
                                         remapped_idx,
                                         self.use_variable_loss)
+    elif self.rel_vs_irrel:
+      query = choice(self.queries)
+      rel, irrel = self.rel_irrel_by_query[query]
+      elem = {'query': query,
+              'doc_id_1': choice(rel),
+              'doc_id_2': choice(irrel),
+              'target_info': 1}
     else:
       elem = _get_nth_pair(self.rankings_for_train,
                            self.cumu_ranking_lengths,
@@ -444,7 +475,10 @@ def build_query_pairwise_dataloader(documents,
                                     normalized_score_lookup=None,
                                     use_bow_model=False,
                                     collate_fn=None,
-                                    is_test=False) -> DataLoader:
+                                    is_test=False,
+                                    rel_vs_irrel=False,
+                                    candidates=None,
+                                    num_to_rank=1000) -> DataLoader:
   rankings = read_cache(cache, lambda: to_query_rankings_pairs(data, limit=limit)) if cache is not None else None
   dataset = QueryPairwiseDataset(documents,
                                  data,
@@ -455,7 +489,10 @@ def build_query_pairwise_dataloader(documents,
                                  query_tok_to_doc_tok=query_tok_to_doc_tok,
                                  normalized_score_lookup=normalized_score_lookup,
                                  use_bow_model=use_bow_model,
-                                 is_test=is_test)
+                                 is_test=is_test,
+                                 rel_vs_irrel=rel_vs_irrel,
+                                 candidates=candidates,
+                                 num_to_rank=num_to_rank)
   sampler = SequentialSampler if train_params.use_sequential_sampler or is_test else TrueRandomSampler
   return DataLoader(dataset,
                     batch_sampler=BatchSampler(sampler(dataset), train_params.batch_size, False),

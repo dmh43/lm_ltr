@@ -426,6 +426,18 @@ def main():
                                              use_bow_model=use_bow_model,
                                              collate_fn=collate_fn,
                                              is_test=True)
+    val_rel_dl = build_query_pairwise_dataloader(documents,
+                                                 val_data,
+                                                 rabbit.train_params,
+                                                 rabbit.model_params,
+                                                 query_tok_to_doc_tok=query_tok_to_doc_tok,
+                                                 normalized_score_lookup=val_normalized_score_lookup,
+                                                 use_bow_model=use_bow_model,
+                                                 collate_fn=collate_fn,
+                                                 is_test=True,
+                                                 rel_vs_irrel=True,
+                                                 candidates=val_ranking_candidates,
+                                                 num_to_rank=rabbit.run_params.num_to_rank)
     model = PairwiseScorer(query_token_embeds,
                            document_token_embeds,
                            doc_encoder,
@@ -512,7 +524,7 @@ def main():
     test_hvps = calc_test_hvps(multi_objective_model.loss,
                                multi_objective_model.to(device),
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
-                               val_dl,
+                               val_rel_dl,
                                rabbit.run_params,
                                diff_wrt=diff_wrt,
                                show_progress=True)
