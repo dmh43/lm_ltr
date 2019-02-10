@@ -58,8 +58,8 @@ def train_model(model,
   callback_fns = []
   if train_params.use_gradient_clipping:
     callback_fns.append(partial(GradientClipping, clip=train_params.gradient_clipping_norm))
-  callback_fns.extend([partial(PlottingRecorder, experiment),
-                       partial(LossesRecorder, experiment)])
+  # other_recorders = partial(PlottingRecorder, experiment),
+  callback_fns.extend([partial(LossesRecorder, experiment)])
   print("Training:")
   if train_params.optimizer == 'adam':
     opt_func = Adam

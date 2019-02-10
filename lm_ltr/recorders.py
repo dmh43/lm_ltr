@@ -1,6 +1,6 @@
 from fastai import Recorder
 import matplotlib.pyplot as plt
-import pickle
+import json
 
 class PlottingRecorder(Recorder):
   def __init__(self, experiment, *args, **kwargs):
@@ -22,5 +22,5 @@ class LossesRecorder(Recorder):
   def on_train_end(self, **kwargs):
     if hasattr(self, 'losses'):
       model_name = self.experiment.model_name
-      with open(f'./losses_{model_name}.pkl', 'wb+') as fh:
-        pickle.dump(fh, self.losses)
+      with open(f'./losses_{model_name}.json', 'w+') as fh:
+        json.dump({'train_loss': self.losses, 'val_loss': self.val_losses}, fh)
