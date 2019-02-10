@@ -337,10 +337,11 @@ class QueryPairwiseDataset(QueryDataset):
     else:
       self._num_pos_pairs = _get_num_pairs(self.rankings_for_train, 0)
     self.pairs_to_flip = pairs_to_flip
-    self.candidates = candidates
-    self.queries = [query for query, ranking in self.rankings]
-    self.rel_irrel_by_query = _get_rel_irrel_by_query(self.rankings, self.candidates, num_to_rank)
     self.rel_vs_irrel = rel_vs_irrel
+    if self.rel_vs_irrel:
+      self.candidates = candidates
+      self.queries = [query for query, ranking in self.rankings]
+      self.rel_irrel_by_query = _get_rel_irrel_by_query(self.rankings, self.candidates, num_to_rank)
 
   def __len__(self):
     if self.rel_vs_irrel:
