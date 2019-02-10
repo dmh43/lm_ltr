@@ -279,7 +279,7 @@ def _get_rel_irrel_by_query(query_ranking_pairs, candidates_by_q_str, num_to_ran
     q_str = str(query)[1:-1]
     all_rel = set(ranking)
     all_cands = set(candidates_by_q_str[q_str][:num_to_rank])
-    ids = all_rel.intersection(all_cands)
+    ids = all_rel.union(all_cands)
     rel = []
     irrel = []
     for doc_id in ids:
