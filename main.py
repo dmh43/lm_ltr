@@ -556,12 +556,10 @@ def main():
     else:
       num_real_samples = train_dl.dataset._num_pos_pairs
     if rabbit.run_params.freeze_all_but_last_for_influence:
-      sampler = SequentialSamplerWithLimit(train_dl.dataset, num_real_samples)
-      sequential_train_dl = DataLoader(train_dl.dataset,
-                                       batch_sampler=BatchSampler(sampler,
-                                                                  rabbit.train_params.batch_size,
-                                                                  False),
-                                       collate_fn=collate_fn)
+      _sampler = SequentialSamplerWithLimit(train_dl.dataset, num_real_samples)
+      _batch_sampler = BatchSampler(_sampler, rabbit.train_params.batch_size, False)
+      _dl = DataLoader(train_dl.dataset, batch_sampler=_batch_sampler, collate_fn=collate_fn)
+      sequential_train_dl = DeviceDataLoader(_dl, device, collate_fn=collate_fn)
       influences = calc_dataset_influence(gpu_multi_objective_model,
                                           to_last_layer,
                                           sequential_train_dl,
