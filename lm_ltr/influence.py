@@ -78,7 +78,7 @@ def calc_dataset_influence(trained_model: nn.Module,
     influences = []
     for x, target in train_dataloader_sequential:
       plus_minus_target = 2 * target -1
-      neg_like = - torch.sigmoid(- trained_model(*x) * plus_minus_target)
+      neg_like = - torch.sigmoid(- trained_model(*x)[0] * plus_minus_target)
       features = to_last_layer(*x)
       bias = torch.ones_like(features)
       in_last_layer = torch.stack([features, bias])
