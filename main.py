@@ -564,19 +564,20 @@ def main():
       influences = calc_dataset_influence(gpu_multi_objective_model,
                                           to_last_layer,
                                           sequential_train_dl,
-                                          test_hvps).sum(1)
+                                          test_hvps,
+                                          sum_p=True).tolist()
     else:
       for i in progressbar(range(num_real_samples)):
         train_sample = train_dl.dataset[i]
         x, labels = to_device(collate_fn([train_sample]), device)
         device_train_sample = (x, labels.squeeze())
-        influences.append((i, calc_influence(multi_objective_model.loss,
-                                             gpu_multi_objective_model,
-                                             device_train_sample,
-                                             test_hvps,
-                                             diff_wrt=diff_wrt).sum()))
+        influences.append(calc_influence(multi_objective_model.loss,
+                                         gpu_multi_objective_model,
+                                         device_train_sample,
+                                         test_hvps,
+                                         diff_wrt=diff_wrt).sum().tolist())
     with open(rabbit.run_params.influences_path, 'w+') as fh:
-      json.dump([[train_dl.dataset[idx][1], influence.item()] for idx, influence in influences], fh)
+      json.dump([[train_dl.dataset[idx][1], influence] for idx, influence in enumerate(influences)], fh)
 
 if __name__ == "__main__":
   import ipdb

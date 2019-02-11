@@ -73,7 +73,8 @@ def calc_influence(criterion: Callable,
 def calc_dataset_influence(trained_model: nn.Module,
                            to_last_layer: Callable,
                            train_dataloader_sequential: DeviceDataLoader,
-                           test_hvps: torch.Tensor):
+                           test_hvps: torch.Tensor,
+                           sum_p: bool=False):
   with torch.no_grad():
     influences = []
     for x, target in train_dataloader_sequential:
@@ -83,7 +84,8 @@ def calc_dataset_influence(trained_model: nn.Module,
       bias = torch.ones(len(features), dtype=features.dtype, device=features.device)
       in_last_layer = torch.cat([features, bias.unsqueeze(1)], 1)
       grads_at_train_batch = in_last_layer * neg_like.unsqueeze(1) * plus_minus_target.unsqueeze(1)
-      influences.append(grads_at_train_batch.matmul(test_hvps.t()))
+      result = grads_at_train_batch.matmul(test_hvps.t())
+      influences.append(result.sum(1) if sum_p else result)
   return torch.cat(influences, 0)
 
 def get_num_neg_influences(criterion: Callable,
