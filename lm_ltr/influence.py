@@ -66,7 +66,7 @@ def calc_test_hvps(criterion: Callable,
     def _hess(x, p):
       grad_tens = torch.tensor(p)
       return np.array(matmul(grad_tens))
-    if getattr(run_params, 'use_scipy'):
+    if getattr(run_params, 'use_scipy', False):
       test_hvps.append(torch.tensor(fmin_ncg(f=_min,
                                              x0=init,
                                              fprime=_grad,
