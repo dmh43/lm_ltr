@@ -79,11 +79,11 @@ def calc_dataset_influence(trained_model: nn.Module,
     for x, target in train_dataloader_sequential:
       plus_minus_target = 2 * target -1
       neg_like = - torch.sigmoid(- trained_model(*x)[0] * plus_minus_target)
-      features = to_last_layer(*x)
-      bias = torch.ones_like(features)
-      in_last_layer = torch.stack([features, bias])
-      grads_at_train_batch = in_last_layer * neg_like * plus_minus_target
-      influences.append(test_hvps.matmul(grads_at_train_batch).t())
+      features = to_last_layer(x)[0]
+      bias = torch.ones(len(features), dtype=features.dtype, device=features.device)
+      in_last_layer = torch.cat([features, bias.unsqueeze(1)], 1)
+      grads_at_train_batch = in_last_layer * neg_like.unsqueeze(1) * plus_minus_target.unsqueeze(1)
+      influences.append(grads_at_train_batch.matmul(test_hvps.t()))
   return torch.cat(influences, 0)
 
 def get_num_neg_influences(criterion: Callable,
