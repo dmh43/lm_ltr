@@ -391,12 +391,14 @@ class QueryPairwiseDataset(QueryDataset):
       doc_2 = self._get_document(doc_id_2, query)
       target_info = ((elem['doc_id_1'], doc_id_2),
                      elem['query'],
-                     1)
+                     1,
+                     True)
     else:
       doc_2 = self._get_document(elem['doc_id_2'], query)
       target_info = ((elem['doc_id_1'], elem['doc_id_2']),
                      elem['query'],
-                     elem['target_info'])
+                     elem['target_info'],
+                     False)
     if self.dont_include_normalized_score:
       doc_1_score = 0.0
       doc_2_score = 0.0

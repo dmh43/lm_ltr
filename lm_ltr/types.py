@@ -7,4 +7,4 @@ QueryPairwiseBinsByRanker = Dict[str, QueryPairwiseBins]
 
 DocIdPair = Tuple[int, int]
 Query = List[int]
-TargetInfo = Tuple[DocIdPair, Query, int]
+TargetInfo = Tuple[DocIdPair, Query, int, bool]

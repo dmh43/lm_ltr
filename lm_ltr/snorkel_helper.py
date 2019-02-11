@@ -90,7 +90,7 @@ class Snorkeller:
     deltas: List[int] = []
     delta_idxs: List[int] = []
     for idx, info in enumerate(target_info):
-      if isinstance(info, int):
+      if info[3]:
         deltas.append(deltas[-1] + 1 if len(deltas) != 0 else 0)
         delta_idxs.append(idx)
       else:
