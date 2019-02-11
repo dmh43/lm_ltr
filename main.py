@@ -66,6 +66,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'hidden_layer_sizes', 'for': 'model_params', 'type': list_arg(int), 'default': [128, 64, 16]},
          {'name': 'just_caches', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'influences_path', 'for': 'run_params', 'type': str, 'default': 'most_hurtful.json'},
+         {'name': 'influence_thresh', 'for': 'train_params', 'type': float, 'default': -1500.0},
          {'name': 'keep_top_uniq_terms', 'for': 'model_params', 'type': optional_arg(int), 'default': None},
          {'name': 'learning_rate', 'for': 'train_params', 'type': float, 'default': 1e-3},
          {'name': 'load_model', 'for': 'run_params', 'type': 'flag', 'default': False},
@@ -390,11 +391,11 @@ def main():
       try:
         with open(rabbit.run_params.influences_path) as fh:
           pairs_to_flip = defaultdict(set)
-          for pair, num_neg_influences in json.load(fh):
+          for pair, influence in json.load(fh):
             if rabbit.train_params.use_pointwise_loss:
               condition = True
             else:
-              condition = num_neg_influences > 100
+              condition = influence < rabbit.train_params.influence_thresh
             if condition:
               query = tuple(pair[1])
               pairs_to_flip[query].add(tuple(pair[0]))
