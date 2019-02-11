@@ -70,8 +70,7 @@ def calc_influence(criterion: Callable,
     influence = test_hvps.matmul(grad_at_train_sample)
   return influence
 
-def calc_dataset_influence(criterion: Callable,
-                           trained_model: nn.Module,
+def calc_dataset_influence(trained_model: nn.Module,
                            to_last_layer: Callable,
                            train_dataloader_sequential: DeviceDataLoader,
                            test_hvps: torch.Tensor):

@@ -15,12 +15,15 @@ from fastai import to_device
 from fastai.text import Tokenizer
 from progressbar import progressbar
 
+from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.sampler import BatchSampler, Sampler, SequentialSampler
+
 from lm_ltr.embedding_loaders import get_glove_lookup, init_embedding, extend_token_lookup, from_doc_to_query_embeds, get_additive_regularized_embeds
 from lm_ltr.fetchers import get_raw_documents, get_supervised_raw_data, get_weak_raw_data, read_or_cache, read_cache, get_robust_documents, get_robust_train_queries, get_robust_eval_queries, get_robust_rels, read_query_result, read_query_test_rankings, read_from_file, get_robust_documents_with_titles, get_ranker_query_str_to_pairwise_bins, get_ranker_query_str_to_rankings
 from lm_ltr.pointwise_scorer import PointwiseScorer
 from lm_ltr.pairwise_scorer import PairwiseScorer
 from lm_ltr.preprocessing import preprocess_texts, all_ones, score, inv_log_rank, inv_rank, exp_score, collate_query_samples, collate_query_pairwise_samples, prepare, prepare_fs, create_id_lookup, normalize_scores_query_wise, process_rels, get_normalized_score_lookup, process_raw_candidates
-from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset
+from lm_ltr.data_wrappers import build_query_dataloader, build_query_pairwise_dataloader, RankingDataset, SequentialSamplerWithLimit
 from lm_ltr.train_model import train_model
 from lm_ltr.pretrained import get_doc_encoder_and_embeddings
 from lm_ltr.utils import dont_update, do_update, name
@@ -29,7 +32,7 @@ from lm_ltr.rel_score import RelScore
 from lm_ltr.regularization import Regularization
 from lm_ltr.snorkel_helper import Snorkeller
 from lm_ltr.globals import RANKER_NAME_TO_SUFFIX
-from lm_ltr.influence import get_num_neg_influences, calc_test_hvps, calc_influence
+from lm_ltr.influence import get_num_neg_influences, calc_test_hvps, calc_influence, calc_dataset_influence
 
 from rabbit_ml.rabbit_ml import Rabbit
 from rabbit_ml.rabbit_ml.arg_parsers import list_arg, optional_arg
@@ -530,15 +533,18 @@ def main():
                 experiment)
   multi_objective_model.eval()
   device = model_data.device
+  gpu_multi_objective_model = multi_objective_model.to(device)
   if rabbit.run_params.calc_influence:
     if rabbit.run_params.freeze_all_but_last_for_influence:
-      last_layer = _.find_last(multi_objective_model.model.pointwise_scorer.layers,
-                               lambda layer: isinstance(layer, nn.Linear))
+      last_layer_idx = _.find_last_index(multi_objective_model.model.pointwise_scorer.layers,
+                                         lambda layer: isinstance(layer, nn.Linear))
+      to_last_layer = lambda x: gpu_multi_objective_model(*x, to_idx=last_layer_idx)
+      last_layer = gpu_multi_objective_model.model.pointwise_scorer.layers[last_layer_idx]
       diff_wrt = [p for p in last_layer.parameters() if p.requires_grad]
     else:
       diff_wrt = None
     test_hvps = calc_test_hvps(multi_objective_model.loss,
-                               multi_objective_model.to(device),
+                               gpu_multi_objective_model,
                                DeviceDataLoader(train_dl, device, collate_fn=collate_fn),
                                val_rel_dl,
                                rabbit.run_params,
@@ -549,15 +555,27 @@ def main():
       num_real_samples = len(train_dl.dataset)
     else:
       num_real_samples = train_dl.dataset._num_pos_pairs
-    for i in progressbar(range(num_real_samples)):
-      train_sample = train_dl.dataset[i]
-      x, labels = to_device(collate_fn([train_sample]), device)
-      device_train_sample = (x, labels.squeeze())
-      influences.append((i, calc_influence(multi_objective_model.loss,
-                                           multi_objective_model.to(model_data.device),
-                                           device_train_sample,
-                                           test_hvps,
-                                           diff_wrt=diff_wrt).sum()))
+    if rabbit.run_params.freeze_all_but_last_for_influence:
+      sampler = SequentialSamplerWithLimit(train_dl.dataset, num_real_samples)
+      sequential_train_dl = DataLoader(train_dl.dataset,
+                                       batch_sampler=BatchSampler(sampler,
+                                                                  rabbit.train_params.batch_size,
+                                                                  False),
+                                       collate_fn=collate_fn)
+      influences = calc_dataset_influence(gpu_multi_objective_model,
+                                          to_last_layer,
+                                          sequential_train_dl,
+                                          test_hvps).sum(1)
+    else:
+      for i in progressbar(range(num_real_samples)):
+        train_sample = train_dl.dataset[i]
+        x, labels = to_device(collate_fn([train_sample]), device)
+        device_train_sample = (x, labels.squeeze())
+        influences.append((i, calc_influence(multi_objective_model.loss,
+                                             gpu_multi_objective_model,
+                                             device_train_sample,
+                                             test_hvps,
+                                             diff_wrt=diff_wrt).sum()))
     with open(rabbit.run_params.influences_path, 'w+') as fh:
       json.dump([[train_dl.dataset[idx][1], influence.item()] for idx, influence in influences], fh)
 

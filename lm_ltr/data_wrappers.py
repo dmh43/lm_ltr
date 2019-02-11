@@ -426,6 +426,15 @@ def get_top_k(scores, k=1000):
   sorted_scores, idxs = torch.sort(scores, descending=True)
   return idxs[:k]
 
+class SequentialSamplerWithLimit(Sampler):
+  def __init__(self, data_source, limit):
+    self.data_source = data_source
+    self.limit = limit
+
+  def __iter__(self): return iter(range(len(self)))
+
+  def __len__(self): return min(self.limit, len(self.data_source))
+
 class TrueRandomSampler(Sampler):
   def __init__(self, data_source):
     self.data_source = data_source

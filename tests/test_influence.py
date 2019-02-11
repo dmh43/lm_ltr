@@ -161,8 +161,7 @@ def test_calc_dataset_influence(criterion,
                                train_dataloader,
                                test_dataloader,
                                {'max_cg_iters': 3, 'use_gauss_newton': False})
-  influences = i.calc_dataset_influence(criterion,
-                                        trained_model,
+  influences = i.calc_dataset_influence(trained_model,
                                         lambda x: x[0],
                                         train_dataloader_sequential,
                                         test_hvps).sum(1)
@@ -187,8 +186,7 @@ def test_num_neg_dataset(criterion,
                                train_dataloader,
                                test_dataloader,
                                {'max_cg_iters': 3, 'use_gauss_newton': False})
-  influences = i.calc_dataset_influence(criterion,
-                                        trained_model,
+  influences = i.calc_dataset_influence(trained_model,
                                         lambda x: x[0],
                                         train_dataloader_sequential,
                                         test_hvps)
