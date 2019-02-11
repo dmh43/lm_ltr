@@ -508,7 +508,12 @@ def main():
     del q_glove_lookup
     del doc_glove_lookup
   if rabbit.run_params.load_model:
-    multi_objective_model.load_state_dict(torch.load(rabbit.run_params.load_path))
+    try:
+      multi_objective_model.load_state_dict(torch.load(rabbit.run_params.load_path))
+    except RuntimeError:
+      dp = nn.DataParallel(multi_objective_model)
+      dp.load_state_dict(torch.load(rabbit.run_params.load_path))
+      multi_objective_model = dp.module
   else:
     train_model(multi_objective_model,
                 model_data,

@@ -83,4 +83,4 @@ def train_model(model,
     plt.savefig('./lr.png')
   else:
     learner.fit(train_params.num_epochs, lr=train_params.learning_rate)
-  torch.save(model.state_dict(), './model_save_' + experiment.model_name)
+  torch.save(model.module.state_dict(), './model_save_' + experiment.model_name)
