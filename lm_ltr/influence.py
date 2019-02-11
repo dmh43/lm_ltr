@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.autograd as autograd
 from torch.utils.data import DataLoader, Dataset
 from scipy.optimize import fmin_ncg
+import numpy as np
 
 from fastai.basic_data import DeviceDataLoader
 from fastai import to_device
@@ -55,16 +56,25 @@ def calc_test_hvps(criterion: Callable,
       init = test_hvps[-1].detach().clone()
     else:
       init = torch.zeros_like(grad_at_z_test)
-    def _min(x, grad_at_z_test=grad_at_z_test): return 0.5 * matmul(x).dot(x) - grad_at_z_test.dot(x)
-    def _grad(x, grad_at_z_test=grad_at_z_test): return matmul(x) - grad_at_z_test.dot(x)
-    def _hess(x, grad_at_z_test=grad_at_z_test): return matmul(x)
+    def _min(x, grad_at_z_test=grad_at_z_test):
+      x_tens = torch.tensor(x)
+      grad_tens = torch.tensor(grad_at_z_test)
+      return np.array(0.5 * matmul(x_tens).dot(x_tens) - grad_tens.dot(x_tens))
+    def _grad(x, grad_at_z_test=grad_at_z_test):
+      x_tens = torch.tensor(x)
+      return np.array(matmul(x_tens) - grad_at_z_test)
+    def _hess(x, p):
+      grad_tens = torch.tensor(p)
+      return np.array(matmul(grad_tens))
     if getattr(run_params, 'use_scipy'):
-      test_hvps.append(fmin_ncg(f=_min,
-                                x0=init,
-                                fprime=_grad,
-                                fhess_p=_hess,
-                                avextol=1e-8,
-                                maxiter=100))
+      test_hvps.append(torch.tensor(fmin_ncg(f=_min,
+                                             x0=init,
+                                             fprime=_grad,
+                                             fhess_p=_hess,
+                                             avextol=1e-8,
+                                             maxiter=100,
+                                             disp=False),
+                                    device=grad_at_z_test.device))
     else:
       test_hvps.append(cg.solve(grad_at_z_test,
                                 test_hvps[-1] if len(test_hvps) != 0 else None))
