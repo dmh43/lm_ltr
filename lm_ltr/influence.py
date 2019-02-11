@@ -57,14 +57,14 @@ def calc_test_hvps(criterion: Callable,
     else:
       init = torch.zeros_like(grad_at_z_test)
     def _min(x, grad_at_z_test=grad_at_z_test):
-      x_tens = torch.tensor(x)
-      grad_tens = torch.tensor(grad_at_z_test)
+      x_tens = torch.tensor(x, device=device)
+      grad_tens = torch.tensor(grad_at_z_test, device=device)
       return np.array(0.5 * matmul(x_tens).dot(x_tens) - grad_tens.dot(x_tens))
     def _grad(x, grad_at_z_test=grad_at_z_test):
-      x_tens = torch.tensor(x)
+      x_tens = torch.tensor(x, device=device)
       return np.array(matmul(x_tens) - grad_at_z_test)
     def _hess(x, p):
-      grad_tens = torch.tensor(p)
+      grad_tens = torch.tensor(p, device=device)
       return np.array(matmul(grad_tens))
     if getattr(run_params, 'use_scipy', False):
       test_hvps.append(torch.tensor(fmin_ncg(f=_min,
@@ -74,7 +74,7 @@ def calc_test_hvps(criterion: Callable,
                                              avextol=1e-8,
                                              maxiter=100,
                                              disp=False),
-                                    device=grad_at_z_test.device))
+                                    device=device))
     else:
       test_hvps.append(cg.solve(grad_at_z_test,
                                 test_hvps[-1] if len(test_hvps) != 0 else None))
