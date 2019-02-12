@@ -1,7 +1,9 @@
 Weak Supervision for Document Retrieval
 ======
 
-This project has transitioned from: using a pretrained neural language model for document retrieval, to investigating different representations of documents and queries, to reproducing the results of (https://arxiv.org/abs/1704.08803)[1], to investigating methods of learning from weak supervision with fewer training examples. Despite the name of this repo, the transfer learning experiments are no longer the focus of this codebase.
+This project has transitioned from: using a pretrained neural language model for document retrieval, to investigating different representations of documents and queries, to reproducing the results of `[1]`_, to investigating methods of learning from weak supervision with fewer training examples. Despite the name of this repo, the transfer learning experiments are no longer the focus of this codebase.
+
+.. _[1]: https://arxiv.org/abs/1704.08803
 
 Usage
 -----
