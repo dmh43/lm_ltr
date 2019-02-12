@@ -1,7 +1,7 @@
 Weak Supervision for Document Retrieval
 ======
 
-Learning to rank by fine tuning an LM
+This project has transitioned from: using a pretrained neural language model for document retrieval, to investigating different representations of documents and queries, to reproducing the results of (https://arxiv.org/abs/1704.08803)[1], to investigating methods of learning from weak supervision with fewer training examples. Despite the name of this repo, the transfer learning experiments are no longer the focus of this codebase.
 
 Usage
 -----
@@ -13,9 +13,6 @@ If the db is not available, create `./rows` or `./preprocessed` by running `main
 - Run `IndriRunQuery query_params.xml -count=10 -index=PATH_TO_PROJECT/lm_ltr/indri/out -trecFormat=true > query_result` to query the Indri index and save results to `query_result`
 - Run `read_query_results.py` to process the results and save them to `./indri_results.pkl`
 - Run `main.py` with the desired arguments. To load a previously trained model, use `--load_model`. Training and testing results are stored using `rabbit_ml` (https://github.com/dmh43/rabbit-ml).
-
-Installation
-------------
 
 Requirements
 ^^^^^^^^^^^^
