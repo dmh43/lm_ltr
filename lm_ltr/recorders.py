@@ -25,7 +25,3 @@ class LossesRecorder(Recorder):
       with open(f'./losses_{model_name}.json', 'w+') as fh:
         json.dump({'train_loss': [loss.item() for loss in self.losses],
                    'val_loss': [loss.item() for loss in self.val_losses]}, fh)
-
-  def on_batch_end(self, last_metrics, **kwargs):
-    if last_metrics is not None:
-      self.val_losses.append(last_metrics[0])
