@@ -30,7 +30,8 @@ class RankingMetricRecorder(MetricRecorder):
                doc_chunk_size=-1,
                dont_smooth=False,
                dont_include_normalized_score=False,
-               use_dense=False):
+               use_dense=False,
+               record_every_n=10000):
     super().__init__(model)
     self.device = device
     self.ranker = PointwiseRanker(device,
@@ -45,6 +46,7 @@ class RankingMetricRecorder(MetricRecorder):
     self.experiment_context = None
     self.experiment = experiment
     self.dont_smooth = dont_smooth
+    self.record_every_n = record_every_n
 
   def metrics_at_k(self, dataset, smooth, k=10):
     relevant_doc_ids = (to_rank['relevant'] for to_rank in dataset)
@@ -96,7 +98,7 @@ class RankingMetricRecorder(MetricRecorder):
                                    batch_num)
 
   def on_batch_begin(self, num_batch, **kwargs):
-    if num_batch % 10000 == 0:
+    if num_batch % self.record_every_n == 0:
       self._check(num_batch)
 
   def on_epoch_begin(self, epoch, **kwargs):

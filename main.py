@@ -93,6 +93,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'rel_score_penalty', 'for': 'train_params', 'type': float, 'default': 5e-4},
          {'name': 'num_snorkel_train_queries', 'for': 'train_params', 'type': int, 'default': 10000},
+         {'name': 'record_every_n', 'for': 'run_params', 'type': int, 'default': 10000},
          {'name': 'truncation', 'for': 'train_params', 'type': float, 'default': -1.0},
          {'name': 'use_batch_norm', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_bce_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
@@ -522,6 +523,7 @@ def main():
                 test_ranking_dataset,
                 rabbit.train_params,
                 rabbit.model_params,
+                rabbit.run_params,
                 experiment)
   if rabbit.train_params.fine_tune_on_val:
     fine_tune_model_data = DataBunch(val_rel_dl,
@@ -537,6 +539,7 @@ def main():
                 test_ranking_dataset,
                 rabbit.train_params,
                 rabbit.model_params,
+                rabbit.run_params,
                 experiment)
   multi_objective_model.eval()
   device = model_data.device
