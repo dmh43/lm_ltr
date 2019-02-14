@@ -531,7 +531,6 @@ def main():
                                      test_dl,
                                      collate_fn=collate_fn,
                                      device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-    experiment.record_note('Fine tuning on val...')
     train_model(multi_objective_model,
                 fine_tune_model_data,
                 val_ranking_dataset,
