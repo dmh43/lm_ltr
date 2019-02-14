@@ -81,7 +81,12 @@ def train_model(model,
                     callback_fns=callback_fns,
                     wd=train_params.weight_decay)
   if load_path is not None:
-    learner.model.load_state_dict(torch.load(load_path))
+    try:
+      learner.model.load_state_dict(torch.load(load_path))
+    except RuntimeError:
+      dp = nn.DataParallel(learner.model)
+      dp.load_state_dict(torch.load(load_path))
+      learner.model = dp.module
   if train_params.use_cyclical_lr:
     lr_find(learner, num_it=1000)
     learner.recorder.plot()
