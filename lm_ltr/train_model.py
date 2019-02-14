@@ -40,7 +40,8 @@ def train_model(model,
                 train_params,
                 model_params,
                 run_params,
-                experiment):
+                experiment,
+                load_path=None):
   model.apply(weight_init)
   loss = model.loss
   model = nn.DataParallel(model)
@@ -79,6 +80,8 @@ def train_model(model,
                     callbacks=callbacks,
                     callback_fns=callback_fns,
                     wd=train_params.weight_decay)
+  if load_path is not None:
+    learner.model.load_state_dict(torch.load(load_path))
   if train_params.use_cyclical_lr:
     lr_find(learner, num_it=1000)
     learner.recorder.plot()

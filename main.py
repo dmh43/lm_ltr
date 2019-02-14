@@ -539,7 +539,8 @@ def main():
                 rabbit.train_params,
                 rabbit.model_params,
                 rabbit.run_params,
-                experiment)
+                experiment,
+                load_path=rabbit.run_params.load_path)
   multi_objective_model.eval()
   device = model_data.device
   gpu_multi_objective_model = multi_objective_model.to(device)
