@@ -397,7 +397,7 @@ def main():
             if rabbit.train_params.use_pointwise_loss:
               condition = True
             else:
-              condition = influence > rabbit.train_params.influence_thresh
+              condition = influence < rabbit.train_params.influence_thresh
             if condition:
               query = tuple(pair[1])
               pairs_to_flip[query].add(tuple(pair[0]))
