@@ -82,7 +82,7 @@ def train_model(model,
                     wd=train_params.weight_decay)
   if load_path is not None:
     try:
-      learner.model.load_state_dict(torch.load(load_path))
+      learner.model.module.load_state_dict(torch.load(load_path))
     except RuntimeError:
       dp = nn.DataParallel(learner.model)
       dp.load_state_dict(torch.load(load_path))
