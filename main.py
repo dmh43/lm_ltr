@@ -92,7 +92,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'rel_method', 'for': 'train_params', 'type': eval, 'default': score},
          {'name': 'rel_score_obj_scale', 'for': 'train_params', 'type': float, 'default': 0.1},
          {'name': 'rel_score_penalty', 'for': 'train_params', 'type': float, 'default': 5e-4},
-         {'name': 'swap_labels', 'for': 'train_params', 'type': 'flag', 'default': False},
+         {'name': 'swap_labels', 'for': 'train_params', 'type': float, 'default': 0.0},
          {'name': 'num_snorkel_train_queries', 'for': 'train_params', 'type': int, 'default': 10000},
          {'name': 'record_every_n', 'for': 'run_params', 'type': int, 'default': 10000},
          {'name': 'truncation', 'for': 'train_params', 'type': float, 'default': -1.0},
