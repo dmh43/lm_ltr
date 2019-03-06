@@ -342,6 +342,7 @@ class QueryPairwiseDataset(QueryDataset):
       self.candidates = candidates
       self.queries = [query for query, ranking in self.rankings]
       self.rel_irrel_by_query = _get_rel_irrel_by_query(self.rankings, self.candidates, num_to_rank)
+    self.swap_labels = train_params.swap_labels
 
   def __len__(self):
     if self.rel_vs_irrel:
@@ -407,6 +408,8 @@ class QueryPairwiseDataset(QueryDataset):
       doc_2_score = self.normalized_score_lookup[tuple(query)].get(elem['doc_id_2'], -20.0)
     if self.use_single_word_embed_set:
       query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
+    if self.swap_labels:
+      target_info = tuple(target_info[:-1], not target_info[-1])
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), target_info)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
