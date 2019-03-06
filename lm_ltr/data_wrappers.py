@@ -1,5 +1,5 @@
 import ast
-from random import sample, randint, choice, random
+from random import sample, randint, choice
 from functools import reduce
 import pydash as _
 from itertools import chain
@@ -408,7 +408,7 @@ class QueryPairwiseDataset(QueryDataset):
       doc_2_score = self.normalized_score_lookup[tuple(query)].get(elem['doc_id_2'], -20.0)
     if self.use_single_word_embed_set:
       query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
-    if random() < self.swap_labels:
+    if idx < int(self.swap_labels * len(self)):
       target_info = tuple(target_info[:-1], not target_info[-1])
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), target_info)
 
