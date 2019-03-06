@@ -409,7 +409,7 @@ class QueryPairwiseDataset(QueryDataset):
     if self.use_single_word_embed_set:
       query = remap_if_exists(elem['query'], self.query_tok_to_doc_tok)
     if idx < int(self.swap_labels * len(self)):
-      target_info = tuple(target_info[:-1], not target_info[-1])
+      target_info = tuple([*target_info[:-1], not target_info[-1]])
     return ((query, doc_1, doc_2, doc_1_score, doc_2_score), target_info)
 
 def score_documents_embed(doc_word_embeds, query_word_embeds, documents, queries, device):
