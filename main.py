@@ -119,6 +119,7 @@ args =  [{'name': 'ablation', 'for': 'model_params', 'type': list_arg(str), 'def
          {'name': 'use_scipy', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'use_sequential_sampler', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_single_word_embed_set', 'for': 'model_params', 'type': 'flag', 'default': False},
+         {'name': 'use_softrank_influence', 'for': 'run_params', 'type': 'flag', 'default': False},
          {'name': 'use_weighted_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
          {'name': 'use_word2vec', 'for': 'model_params', 'type': 'flag', 'default': False},
          {'name': 'use_variable_loss', 'for': 'train_params', 'type': 'flag', 'default': False},
@@ -142,6 +143,7 @@ def main():
   if rabbit.model_params.dont_limit_num_uniq_tokens: raise NotImplementedError()
   if rabbit.model_params.frame_as_qa: raise NotImplementedError
   if rabbit.run_params.drop_val_loss_calc: raise NotImplementedError
+  if rabbit.run_params.use_softrank_influence and not rabbit.run_params.freeze_all_but_last_for_influence: raise NotImplementedError
   if rabbit.train_params.weight_influence: raise NotImplementedError
   experiment = Experiment(rabbit.train_params + rabbit.model_params + rabbit.run_params)
   print('Model name:', experiment.model_name)
@@ -560,7 +562,8 @@ def main():
                                val_rel_dl,
                                rabbit.run_params,
                                diff_wrt=diff_wrt,
-                               show_progress=True)
+                               show_progress=True,
+                               use_softrank_influence=rabbit.run_params.use_softrank_influence)
     influences = []
     if rabbit.train_params.use_pointwise_loss:
       num_real_samples = len(train_dl.dataset)

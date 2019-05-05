@@ -20,13 +20,13 @@ from .utils import maybe
 
 def _calc_laplacian(): raise NotImplementedError()
 
-def calc_test_hvps(criterion: Callable,
-                   trained_model: nn.Module,
-                   train_dataloader: DeviceDataLoader,
-                   test_dataloader: DataLoader,
-                   run_params: Mapping,
-                   diff_wrt: Optional[torch.Tensor]=None,
-                   show_progress: bool=False):
+def _calc_test_hvps_log_loss(criterion: Callable,
+                             trained_model: nn.Module,
+                             train_dataloader: DeviceDataLoader,
+                             test_dataloader: DataLoader,
+                             run_params: Mapping,
+                             diff_wrt: Optional[torch.Tensor]=None,
+                             show_progress: bool=False):
   device = train_dataloader.device
   diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
   if run_params['use_gauss_newton']:
@@ -81,6 +81,91 @@ def calc_test_hvps(criterion: Callable,
     matmul.clear_batch()
   return torch.stack(test_hvps)
 
+def _calc_test_hvps_softrank(criterion: Callable,
+                             trained_model: nn.Module,
+                             train_dataloader: DeviceDataLoader,
+                             test_dataloader: DataLoader,
+                             run_params: Mapping,
+                             diff_wrt: Optional[torch.Tensor]=None,
+                             show_progress: bool=False):
+  device = train_dataloader.device
+  diff_wrt = maybe(diff_wrt, [p for p in trained_model.parameters() if p.requires_grad])
+  if run_params['use_gauss_newton']:
+    matmul_class: Union[Type[GNP], Type[HVP]] = GNP
+    damping = 0.001
+  else:
+    matmul_class = HVP
+    damping = 0.01
+  matmul = matmul_class(calc_loss=lambda xs, target: criterion(trained_model(*xs), target),
+                        parameters=diff_wrt,
+                        data=train_dataloader,
+                        data_len=len(train_dataloader),
+                        damping=damping,
+                        cache_batch=True)
+  cg = CG(matmul=matmul,
+          result_len=sum(p.numel() for p in diff_wrt),
+          max_iters=maybe(run_params['max_cg_iters'],
+                          sum(p.numel() for p in diff_wrt)))
+  test_hvps: List[torch.Tensor] = []
+  iterator = progressbar(test_dataloader) if show_progress else test_dataloader
+  for batch in iterator:
+    x_test, target = to_device(batch, device)
+    loss_at_x_test = criterion(trained_model(*x_test), target.squeeze())
+    grads = autograd.grad(loss_at_x_test, diff_wrt)
+    grad_at_z_test = collect(grads)
+    if len(test_hvps) != 0:
+      init = test_hvps[-1].detach().clone()
+    else:
+      init = torch.zeros_like(grad_at_z_test)
+    def _min(x, grad_at_z_test=grad_at_z_test):
+      x_tens = torch.tensor(x, device=device) if not isinstance(x, torch.Tensor) else x
+      grad_tens = torch.tensor(grad_at_z_test, device=device) if not isinstance(grad_at_z_test, torch.Tensor) else grad_at_z_test
+      return np.array(0.5 * matmul(x_tens).dot(x_tens) - grad_tens.dot(x_tens))
+    def _grad(x, grad_at_z_test=grad_at_z_test):
+      x_tens = torch.tensor(x, device=device) if not isinstance(x, torch.Tensor) else x
+      return np.array(matmul(x_tens) - grad_at_z_test)
+    def _hess(x, p):
+      grad_tens = torch.tensor(p, device=device) if not isinstance(p, torch.Tensor) else p
+      return np.array(matmul(grad_tens))
+    if getattr(run_params, 'use_scipy', False):
+      test_hvps.append(torch.tensor(fmin_ncg(f=_min,
+                                             x0=init,
+                                             fprime=_grad,
+                                             fhess_p=_hess,
+                                             avextol=1e-8,
+                                             maxiter=100,
+                                             disp=False),
+                                    device=device))
+    else:
+      test_hvps.append(cg.solve(grad_at_z_test,
+                                test_hvps[-1] if len(test_hvps) != 0 else None))
+    matmul.clear_batch()
+  return torch.stack(test_hvps)
+
+def calc_test_hvps(criterion: Callable,
+                   trained_model: nn.Module,
+                   train_dataloader: DeviceDataLoader,
+                   test_dataloader: DataLoader,
+                   run_params: Mapping,
+                   diff_wrt: Optional[torch.Tensor]=None,
+                   show_progress: bool=False,
+                   use_softrank_influence: bool=True):
+  if use_softrank_influence:
+    return _calc_test_hvps_softrank(criterion,
+                                    trained_model,
+                                    train_dataloader,
+                                    test_dataloader,
+                                    run_params,
+                                    diff_wrt=diff_wrt,
+                                    show_progress=show_progress)
+  else:
+    return _calc_test_hvps_log_loss(criterion,
+                                    trained_model,
+                                    train_dataloader,
+                                    test_dataloader,
+                                    run_params,
+                                    diff_wrt=diff_wrt,
+                                    show_progress=show_progress)
 
 def calc_influence(criterion: Callable,
                    trained_model: nn.Module,
